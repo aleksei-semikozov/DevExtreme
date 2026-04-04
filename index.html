@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>npm audit: Reality Check — DevExtreme 26_1</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0d1117; color: #c9d1d9; font-family: -apple-system, 'Segoe UI', sans-serif; padding: 24px; }
+  h1 { font-size: 24px; margin-bottom: 4px; }
+  .subtitle { color: #8b949e; font-size: 14px; margin-bottom: 24px; }
+  .kpi-bar { display: flex; gap: 32px; margin-bottom: 24px; }
+  .kpi { text-align: center; }
+  .kpi .number { font-size: 48px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+  .kpi .label { font-size: 12px; color: #8b949e; margin-top: 4px; }
+  .kpi.green .number { color: #3fb950; }
+  .kpi.red .number { color: #f85149; }
+  .kpi.gray .number { color: #8b949e; }
+  .chart-container { background: #161b22; border-radius: 8px; padding: 20px; margin-bottom: 24px; position: relative; }
+  .chart-title { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+  .detail-panel { background: #161b22; border-radius: 8px; padding: 20px; display: none; }
+  .detail-panel.active { display: block; }
+  .detail-panel h3 { margin-bottom: 12px; font-size: 14px; }
+  .detail-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #21262d; font-size: 13px; font-family: 'JetBrains Mono', monospace; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .badge.noise { background: #484f58; color: #c9d1d9; }
+  .badge.real { background: #f8514933; color: #f85149; }
+  .badge.prod { background: #3fb95033; color: #3fb950; }
+  .note { color: #8b949e; font-size: 12px; margin-top: 16px; font-style: italic; }
+  canvas { max-height: 400px; }
+</style>
+</head>
+<body>
+
+<h1>npm audit: Reality Check</h1>
+<p class="subtitle">DevExtreme 26_1 branch — 22 checkpoints from Aug 2021 to Mar 2026</p>
+
+<div class="kpi-bar">
+  <div class="kpi green">
+    <div class="number">0</div>
+    <div class="label">Prod Critical (2021–2024)</div>
+  </div>
+  <div class="kpi red">
+    <div class="number">82</div>
+    <div class="label">Peak npm audit warnings</div>
+  </div>
+  <div class="kpi gray">
+    <div class="number">93%</div>
+    <div class="label">Findings in non-shipped packages</div>
+  </div>
+</div>
+
+<div class="chart-container">
+  <div class="chart-title">Vulnerability counts over time (click point for details)</div>
+  <canvas id="mainChart"></canvas>
+</div>
+
+<div class="chart-container">
+  <div class="chart-title">Production-only: Critical + High</div>
+  <canvas id="prodChart"></canvas>
+</div>
+
+<div id="detailPanel" class="detail-panel">
+  <h3 id="detailTitle">Point details</h3>
+  <div id="detailContent"></div>
+</div>
+
+<p class="note">
+  All tools queried against 2026 vulnerability databases (current knowledge applied to historical code).
+  pnpm audit --json broken in pnpm 9.15.9 — text output parsed. Snyk counts per-workspace.
+  Raw data: <a href="https://docs.google.com/spreadsheets/d/1daVB3KH_-Y7maZ3jfGj6cL87J-c1oZvFy5lV8SQJn8s" style="color:#58a6ff">Google Sheet</a>
+</p>
+
+<script>
+const data = [
+  {date:"2021-08",ovr:0,pnpm:82,pCrit:9,pHigh:33,prod:8,prCrit:0,prHigh:3,snyk:26,trivy:26,tCrit:0,tHigh:9},
+  {date:"2021-09",ovr:0,pnpm:76,pCrit:6,pHigh:32,prod:0,prCrit:0,prHigh:0,snyk:20,trivy:11,tCrit:0,tHigh:5},
+  {date:"2021-10",ovr:0,pnpm:76,pCrit:6,pHigh:32,prod:0,prCrit:0,prHigh:0,snyk:32,trivy:19,tCrit:1,tHigh:11},
+  {date:"2021-10b",ovr:0,pnpm:80,pCrit:6,pHigh:34,prod:4,prCrit:0,prHigh:2,snyk:32,trivy:23,tCrit:1,tHigh:13},
+  {date:"2021-12",ovr:0,pnpm:72,pCrit:6,pHigh:32,prod:0,prCrit:0,prHigh:0,snyk:26,trivy:21,tCrit:1,tHigh:12},
+  {date:"2022-04",ovr:0,pnpm:49,pCrit:4,pHigh:18,prod:0,prCrit:0,prHigh:0,snyk:38,trivy:26,tCrit:3,tHigh:16},
+  {date:"2022-07",ovr:0,pnpm:46,pCrit:4,pHigh:17,prod:0,prCrit:0,prHigh:0,snyk:46,trivy:35,tCrit:2,tHigh:25},
+  {date:"2022-09",ovr:0,pnpm:66,pCrit:6,pHigh:28,prod:0,prCrit:0,prHigh:0,snyk:64,trivy:40,tCrit:1,tHigh:27},
+  {date:"2022-11",ovr:0,pnpm:65,pCrit:6,pHigh:28,prod:0,prCrit:0,prHigh:0,snyk:64,trivy:40,tCrit:1,tHigh:27},
+  {date:"2022-12",ovr:0,pnpm:62,pCrit:6,pHigh:27,prod:0,prCrit:0,prHigh:0,snyk:64,trivy:40,tCrit:1,tHigh:27},
+  {date:"2023-06",ovr:0,pnpm:52,pCrit:4,pHigh:21,prod:0,prCrit:0,prHigh:0,snyk:20,trivy:16,tCrit:1,tHigh:11},
+  {date:"2023-10",ovr:0,pnpm:21,pCrit:0,pHigh:16,prod:0,prCrit:0,prHigh:0,snyk:46,trivy:12,tCrit:0,tHigh:9},
+  {date:"2023-12",ovr:0,pnpm:21,pCrit:0,pHigh:16,prod:0,prCrit:0,prHigh:0,snyk:48,trivy:12,tCrit:0,tHigh:9},
+  {date:"2024-02",ovr:0,pnpm:43,pCrit:2,pHigh:27,prod:0,prCrit:0,prHigh:0,snyk:105,trivy:66,tCrit:2,tHigh:34},
+  {date:"2024-05",ovr:0,pnpm:53,pCrit:2,pHigh:33,prod:0,prCrit:0,prHigh:0,snyk:206,trivy:88,tCrit:2,tHigh:53},
+  {date:"2024-09",ovr:0,pnpm:196,pCrit:13,pHigh:100,prod:80,prCrit:2,prHigh:51,snyk:217,trivy:91,tCrit:2,tHigh:58},
+  {date:"2025-01",ovr:0,pnpm:172,pCrit:10,pHigh:91,prod:80,prCrit:3,prHigh:48,snyk:200,trivy:83,tCrit:3,tHigh:48},
+  {date:"2025-04",ovr:0,pnpm:169,pCrit:10,pHigh:88,prod:117,prCrit:3,prHigh:60,snyk:197,trivy:138,tCrit:3,tHigh:61},
+  {date:"2025-10",ovr:1,pnpm:0,pCrit:0,pHigh:0,prod:124,prCrit:3,prHigh:66,snyk:338,trivy:144,tCrit:3,tHigh:61},
+  {date:"2026-01",ovr:14,pnpm:117,pCrit:3,pHigh:65,prod:96,prCrit:1,prHigh:58,snyk:320,trivy:111,tCrit:1,tHigh:66},
+  {date:"2026-02",ovr:14,pnpm:110,pCrit:3,pHigh:59,prod:93,prCrit:1,prHigh:52,snyk:250,trivy:104,tCrit:1,tHigh:59},
+  {date:"2026-03",ovr:27,pnpm:59,pCrit:2,pHigh:23,prod:46,prCrit:1,prHigh:20,snyk:164,trivy:53,tCrit:1,tHigh:22},
+];
+
+const labels = data.map(d => d.date);
+const gridColor = '#21262d';
+const tickColor = '#8b949e';
+
+// Main chart
+const mainCtx = document.getElementById('mainChart').getContext('2d');
+const mainChart = new Chart(mainCtx, {
+  type: 'line',
+  data: {
+    labels,
+    datasets: [
+      { label: 'pnpm audit (all)', data: data.map(d=>d.pnpm), borderColor: '#f85149', borderDash: [6,3], borderWidth: 2, pointRadius: 4, pointHoverRadius: 7, fill: false, tension: 0.3 },
+      { label: 'pnpm audit --prod', data: data.map(d=>d.prod), borderColor: '#f85149', borderWidth: 2, pointRadius: 4, pointHoverRadius: 7, fill: false, tension: 0.3 },
+      { label: 'Snyk', data: data.map(d=>d.snyk), borderColor: '#58a6ff', borderWidth: 2, pointRadius: 3, pointHoverRadius: 6, fill: false, tension: 0.3 },
+      { label: 'Trivy', data: data.map(d=>d.trivy), borderColor: '#3fb950', borderWidth: 2, pointRadius: 3, pointHoverRadius: 6, fill: false, tension: 0.3 },
+      { label: 'Overrides', data: data.map(d=>d.ovr), type: 'bar', backgroundColor: '#d2992244', borderColor: '#d29922', borderWidth: 1, yAxisID: 'y1' },
+    ]
+  },
+  options: {
+    responsive: true,
+    interaction: { mode: 'index', intersect: false },
+    onClick: (e, els) => { if(els.length) showDetail(els[0].index); },
+    scales: {
+      x: { ticks: { color: tickColor }, grid: { color: gridColor } },
+      y: { ticks: { color: tickColor }, grid: { color: gridColor }, title: { display: true, text: 'Vulnerabilities', color: tickColor } },
+      y1: { position: 'right', ticks: { color: '#d29922' }, grid: { display: false }, title: { display: true, text: 'Overrides', color: '#d29922' }, min: 0, max: 40 }
+    },
+    plugins: {
+      legend: { labels: { color: '#c9d1d9', usePointStyle: true } },
+      tooltip: {
+        callbacks: {
+          afterBody: (ctx) => {
+            const i = ctx[0].dataIndex;
+            const d = data[i];
+            return `\nOverrides: ${d.ovr}\npnpm crit: ${d.pCrit} | high: ${d.pHigh}\nprod crit: ${d.prCrit} | high: ${d.prHigh}`;
+          }
+        }
+      }
+    }
+  }
+});
+
+// Prod chart
+const prodCtx = document.getElementById('prodChart').getContext('2d');
+new Chart(prodCtx, {
+  type: 'bar',
+  data: {
+    labels,
+    datasets: [
+      { label: 'Prod Critical', data: data.map(d=>d.prCrit), backgroundColor: '#f8514999', borderColor: '#f85149', borderWidth: 1 },
+      { label: 'Prod High', data: data.map(d=>d.prHigh), backgroundColor: '#d2992266', borderColor: '#d29922', borderWidth: 1 },
+    ]
+  },
+  options: {
+    responsive: true,
+    scales: {
+      x: { ticks: { color: tickColor }, grid: { color: gridColor }, stacked: true },
+      y: { ticks: { color: tickColor }, grid: { color: gridColor }, stacked: true, title: { display: true, text: 'Production vulns', color: tickColor } }
+    },
+    plugins: { legend: { labels: { color: '#c9d1d9' } },
+      annotation: { annotations: {
+        box1: { type: 'box', xMin: 0, xMax: 14, backgroundColor: '#3fb95010', label: { content: '0 prod critical for 3 years', display: true, color: '#3fb950', font: { size: 11 } } }
+      }}
+    }
+  }
+});
+
+function showDetail(i) {
+  const d = data[i];
+  const panel = document.getElementById('detailPanel');
+  const title = document.getElementById('detailTitle');
+  const content = document.getElementById('detailContent');
+  panel.classList.add('active');
+  title.textContent = `${d.date} — ${d.ovr} overrides`;
+  content.innerHTML = `
+    <div class="detail-row"><span>pnpm audit (all)</span><span>${d.pnpm} total — <span class="badge ${d.pCrit>0?'real':'noise'}">${d.pCrit} critical</span> <span class="badge ${d.pHigh>0?'real':'noise'}">${d.pHigh} high</span></span></div>
+    <div class="detail-row"><span>pnpm audit --prod</span><span>${d.prod} total — <span class="badge ${d.prCrit>0?'real':'prod'}">${d.prCrit} critical</span> <span class="badge ${d.prHigh>0?'real':'prod'}">${d.prHigh} high</span></span></div>
+    <div class="detail-row"><span>Snyk (all projects)</span><span>${d.snyk} total</span></div>
+    <div class="detail-row"><span>Trivy</span><span>${d.trivy} total — <span class="badge noise">${d.tCrit} critical</span> <span class="badge noise">${d.tHigh} high</span></span></div>
+    <div class="detail-row" style="border:none;padding-top:12px;color:#8b949e"><span>Noise (full − prod)</span><span><strong>${d.pnpm - d.prod}</strong> dev-only findings</span></div>
+  `;
+}
+</script>
+</body>
+</html>
