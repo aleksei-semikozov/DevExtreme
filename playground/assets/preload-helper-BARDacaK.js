@@ -231601,6 +231601,32 @@ class ViewDataGenerator {
     }
     return this.skippedDays.length === 2 && this.skippedDays[0] === 0 && this.skippedDays[1] === 6;
   }
+  usesWeeklyDayLayout() {
+    return this.baseDaysInInterval >= 7;
+  }
+  getVisibleDaysOfWeek(firstDayOfWeek) {
+    const rotated = [];
+    for (let count = 0; count < 7; count += 1) {
+      const dow = (firstDayOfWeek + count) % 7;
+      if (!this.skippedDays.includes(dow)) {
+        rotated.push(dow);
+      }
+    }
+    return rotated;
+  }
+  getVisibleDayOffset(columnIndex, firstDayOfWeek) {
+    const rotated = this.getVisibleDaysOfWeek(firstDayOfWeek);
+    const visibleCount = rotated.length;
+    if (visibleCount === 0) {
+      return 0;
+    }
+    const week = Math.floor(columnIndex / visibleCount);
+    const idxInWeek = columnIndex % visibleCount;
+    const targetDayOfWeek = rotated[idxInWeek];
+    const naiveDayOffset = columnIndex;
+    const actualDayOffset = week * 7 + (targetDayOfWeek - firstDayOfWeek + 7) % 7;
+    return actualDayOffset - naiveDayOffset;
+  }
   isSkippedDate(date) {
     return this.skippedDays.includes(date.getDay());
   }
@@ -231947,7 +231973,14 @@ class ViewDataGenerator {
     const rowCountBase = this.getRowCount(options);
     const cellIndex = this.calculateCellIndex(rowIndex, columnIndex, rowCountBase, columnCountBase);
     const millisecondsOffset = this.getMillisecondsOffset(cellIndex, interval, cellCountInDay);
-    const offsetByCount = this.shouldApplyWeekendSkipOffset() ? this.getTimeOffsetByColumnIndex(columnIndex, this.getFirstDayOfWeek(firstDayOfWeek), columnCountBase, intervalCount) : 0;
+    let offsetByCount;
+    if (this.isWorkWeekView()) {
+      offsetByCount = this.getTimeOffsetByColumnIndex(columnIndex, this.getFirstDayOfWeek(firstDayOfWeek), columnCountBase, intervalCount);
+    } else if (this.skippedDays.length > 0 && this.usesWeeklyDayLayout()) {
+      offsetByCount = this.getVisibleDayOffset(columnIndex, this.getFirstDayOfWeek(firstDayOfWeek) ?? 0) * toMs$7('day');
+    } else {
+      offsetByCount = 0;
+    }
     const isStartViewDateDuringDST = startViewDate.getHours() !== Math.floor(startDayHour);
     let startViewDateTime = startViewDate.getTime();
     let currentDate = new Date(startViewDateTime + millisecondsOffset + offsetByCount + viewOffset);
