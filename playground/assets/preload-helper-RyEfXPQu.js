@@ -218878,9 +218878,17 @@ const nextMonth = date => {
   }, 1);
 };
 const isWeekend = date => [SATURDAY_INDEX$1, SUNDAY_INDEX$1].includes(date.getDay());
+const isSkippedDay = (date, skippedDays) => skippedDays.includes(date.getDay());
 const getWorkWeekStart = firstDayOfWeek => {
   let date = new Date(firstDayOfWeek);
   while (isWeekend(date)) {
+    date = nextDay(date);
+  }
+  return date;
+};
+const getFirstVisibleDay = (start, skippedDays) => {
+  let date = new Date(start);
+  while (isSkippedDay(date, skippedDays)) {
     date = nextDay(date);
   }
   return date;
@@ -218896,6 +218904,21 @@ const getDateAfterWorkWeek = workWeekStart => {
   }
   return date;
 };
+const getDateAfterVisibleWeek = (start, skippedDays) => {
+  const visibleCount = 7 - skippedDays.length;
+  if (visibleCount <= 0) {
+    return new Date(start);
+  }
+  let date = new Date(start);
+  let visited = 0;
+  while (visited < visibleCount) {
+    if (!isSkippedDay(date, skippedDays)) {
+      visited += 1;
+    }
+    date = nextDay(date);
+  }
+  return date;
+};
 const nextAgendaStart = (date, agendaDuration) => addDateInterval(date, {
   days: agendaDuration
 }, 1);
@@ -218903,13 +218926,21 @@ const getIntervalStartDate = options => {
   const {
     date,
     step,
-    firstDayOfWeek
+    firstDayOfWeek,
+    skippedDays
   } = options;
   switch (step) {
     case 'day':
-    case 'week':
     case 'month':
       return getPeriodStart(date, step, false, firstDayOfWeek);
+    case 'week':
+      {
+        const weekStart = getPeriodStart(date, step, false, firstDayOfWeek);
+        if (skippedDays && skippedDays.length > 0) {
+          return getFirstVisibleDay(weekStart, skippedDays);
+        }
+        return weekStart;
+      }
     case 'workWeek':
       return getWorkWeekStart(getWeekStart(date, firstDayOfWeek));
     case 'agenda':
@@ -218918,20 +218949,24 @@ const getIntervalStartDate = options => {
       return new Date(date);
   }
 };
-const getPeriodEndDate = (currentPeriodStartDate, step, agendaDuration) => {
+const getPeriodEndDate = (currentPeriodStartDate, step, agendaDuration, skippedDays) => {
   const calculators = {
     day: () => nextDay(currentPeriodStartDate),
-    week: () => nextWeek(currentPeriodStartDate),
+    week: () => skippedDays && skippedDays.length > 0 ? getDateAfterVisibleWeek(currentPeriodStartDate, skippedDays) : nextWeek(currentPeriodStartDate),
     month: () => nextMonth(currentPeriodStartDate),
     workWeek: () => getDateAfterWorkWeek(currentPeriodStartDate),
     agenda: () => nextAgendaStart(currentPeriodStartDate, agendaDuration)
   };
   return subMS(calculators[step]());
 };
-const getNextPeriodStartDate = (currentPeriodEndDate, step) => {
+const getNextPeriodStartDate = (currentPeriodEndDate, step, skippedDays) => {
   let date = addMS(currentPeriodEndDate);
   if (step === 'workWeek') {
     while (isWeekend(date)) {
+      date = nextDay(date);
+    }
+  } else if (step === 'week' && skippedDays && skippedDays.length > 0) {
+    while (isSkippedDay(date, skippedDays)) {
       date = nextDay(date);
     }
   }
@@ -218941,15 +218976,16 @@ const getIntervalEndDate = (startDate, options) => {
   const {
     intervalCount,
     step,
-    agendaDuration
+    agendaDuration,
+    skippedDays
   } = options;
   let periodStartDate = new Date(startDate);
   let periodEndDate = new Date(startDate);
   let nextPeriodStartDate = new Date(startDate);
   for (let i = 0; i < intervalCount; i += 1) {
     periodStartDate = nextPeriodStartDate;
-    periodEndDate = getPeriodEndDate(periodStartDate, step, agendaDuration ?? 0);
-    nextPeriodStartDate = getNextPeriodStartDate(periodEndDate, step);
+    periodEndDate = getPeriodEndDate(periodStartDate, step, agendaDuration ?? 0, skippedDays);
+    nextPeriodStartDate = getNextPeriodStartDate(periodEndDate, step, skippedDays);
   }
   return periodEndDate;
 };
@@ -219227,7 +219263,8 @@ class SchedulerHeader extends Widget$1 {
       step,
       firstDayOfWeek,
       intervalCount: currentView.intervalCount,
-      agendaDuration: currentView.agendaDuration
+      agendaDuration: currentView.agendaDuration,
+      skippedDays: currentView.skippedDays
     };
   }
   _getDefaultOptions() {
