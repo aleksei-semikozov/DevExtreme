@@ -231604,6 +231604,9 @@ class ViewDataGenerator {
   usesWeeklyDayLayout() {
     return this.baseDaysInInterval >= 7;
   }
+  usesMonthDayLayout() {
+    return false;
+  }
   getVisibleDaysOfWeek(firstDayOfWeek) {
     const rotated = [];
     for (let count = 0; count < 7; count += 1) {
@@ -231614,11 +231617,17 @@ class ViewDataGenerator {
     }
     return rotated;
   }
-  getVisibleDayOffset(columnIndex, firstDayOfWeek) {
+  getVisibleDayOffset(rowIndex, columnIndex, firstDayOfWeek) {
     const rotated = this.getVisibleDaysOfWeek(firstDayOfWeek);
     const visibleCount = rotated.length;
     if (visibleCount === 0) {
       return 0;
+    }
+    if (this.usesMonthDayLayout()) {
+      const targetDayOfWeek = rotated[columnIndex];
+      const naiveDayOffset = rowIndex * visibleCount + columnIndex;
+      const actualDayOffset = rowIndex * 7 + (targetDayOfWeek - firstDayOfWeek + 7) % 7;
+      return actualDayOffset - naiveDayOffset;
     }
     const week = Math.floor(columnIndex / visibleCount);
     const idxInWeek = columnIndex % visibleCount;
@@ -231976,8 +231985,8 @@ class ViewDataGenerator {
     let offsetByCount;
     if (this.isWorkWeekView()) {
       offsetByCount = this.getTimeOffsetByColumnIndex(columnIndex, this.getFirstDayOfWeek(firstDayOfWeek), columnCountBase, intervalCount);
-    } else if (this.skippedDays.length > 0 && this.usesWeeklyDayLayout()) {
-      offsetByCount = this.getVisibleDayOffset(columnIndex, this.getFirstDayOfWeek(firstDayOfWeek) ?? 0) * toMs$7('day');
+    } else if (this.skippedDays.length > 0 && (this.usesWeeklyDayLayout() || this.usesMonthDayLayout())) {
+      offsetByCount = this.getVisibleDayOffset(rowIndex, columnIndex, this.getFirstDayOfWeek(firstDayOfWeek) ?? 0) * toMs$7('day');
     } else {
       offsetByCount = 0;
     }
@@ -232292,7 +232301,10 @@ class ViewDataGeneratorMonth extends ViewDataGenerator {
     this.maxVisibleDate = new Date(nextMonthDate.setDate(0));
   }
   getCellCount() {
-    return DAYS_IN_WEEK;
+    return DAYS_IN_WEEK - this.skippedDays.length;
+  }
+  usesMonthDayLayout() {
+    return true;
   }
   getRowCount(options) {
     const startDate = new Date(options.currentDate);
