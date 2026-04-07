@@ -1218,7 +1218,9 @@ function setupThemeSelector(selectorId) {
       return;
     }
     initThemes(dropDownList);
-    const savedTheme = window.localStorage.getItem(themeKey) || themeList[0];
+    const DEFAULT_THEME = 'fluent.blue.light';
+    const fallback = themeList.includes(DEFAULT_THEME) ? DEFAULT_THEME : themeList[0];
+    const savedTheme = window.localStorage.getItem(themeKey) || fallback;
     dropDownList.value = savedTheme;
     loadThemeCss(savedTheme).then(() => {
       dropDownList.addEventListener('change', () => {
