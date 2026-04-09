@@ -19,9 +19,12 @@ $(() => {
 
   function showAllHiddenToast() {
     DevExpress.ui.notify(
-      'The hiddenWeekDays option cannot hide all days of the week. At least one day must remain visible.',
-      'warning',
-      4000,
+      {
+        message: 'The hiddenWeekDays option cannot hide all days of the week. At least one day must remain visible.',
+        type: 'warning',
+        displayTime: 4000,
+        position: { my: 'bottom', at: 'bottom', of: '#scheduler', offset: '0 -24' },
+      },
     );
   }
 
@@ -42,9 +45,9 @@ $(() => {
     },
   }).dxScheduler('instance');
 
-  const $container = $('#day-checkboxes');
+  const $optionsPanel = $('.options');
   dayLabels.forEach((label, idx) => {
-    const $cb = $('<div class="option"></div>').appendTo($container);
+    const $cb = $('<div class="option"></div>').appendTo($optionsPanel);
     $cb.dxCheckBox({
       text: label,
       value: visibleSet.has(idx),
