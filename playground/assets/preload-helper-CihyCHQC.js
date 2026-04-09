@@ -225447,6 +225447,9 @@ const splitByRecurrence = (entities, {
   regularIntervals
 }) => entities.reduce((acc, appointment) => {
   const intervals = appointment.allDay || appointment.isAllDayPanelOccupied ? allDayIntervals : regularIntervals;
+  if (intervals.length === 0) {
+    return acc;
+  }
   const recurrenceInterval = {
     min: intervals[0].min,
     max: intervals[intervals.length - 1].max
