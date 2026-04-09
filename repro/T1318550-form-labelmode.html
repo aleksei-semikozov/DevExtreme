@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>T1318550 — Scheduler recurrence editor labels with form.labelMode (v25.1.10)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" type="text/css" href="https://cdn3.devexpress.com/jslib/25.1.10/css/dx.light.css" />
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn3.devexpress.com/jslib/25.1.10/js/dx.all.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 24px; max-width: 1100px; margin: 0 auto; }
+    .controls { display: flex; gap: 12px; align-items: center; padding: 12px; margin-bottom: 16px; background: #f3f4f6; border-radius: 6px; }
+    .controls label { font-weight: 500; }
+    .repro-note { padding: 12px 16px; background: #fff7e6; border-left: 4px solid #f59e0b; margin-bottom: 16px; line-height: 1.5; }
+    .version { color: #888; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h1>T1318550 — Recurrence editor labels with form.labelMode <span class="version">(v25.1.10 CDN)</span></h1>
+  <div class="repro-note">
+    <strong>Repro:</strong> Click any recurring appointment ("Weekly sync", "Daily standup") → "Open" → expand <em>Repeat</em> section.
+    With <code>labelMode='static'</code> or <code>'floating'</code>, the inner editors of the recurrence form (e.g.
+    <em>byMonthDay</em>, <em>byDay</em>) render their <code>dataField</code> names as labels. <code>label.visible: false</code>
+    in <code>m_recurrence_editor.ts</code> only suppresses the outer Form labels.
+  </div>
+  <div class="controls">
+    <label>Form labelMode:</label>
+    <div id="label-mode"></div>
+  </div>
+  <div id="scheduler"></div>
+  <script>
+    const data = [
+      {
+        text: 'Weekly sync',
+        startDate: new Date(2025, 5, 2, 10, 0),
+        endDate: new Date(2025, 5, 2, 11, 0),
+        recurrenceRule: 'FREQ=WEEKLY;BYDAY=MO,WE,FR',
+      },
+      {
+        text: 'Daily standup',
+        startDate: new Date(2025, 5, 2, 9, 0),
+        endDate: new Date(2025, 5, 2, 9, 15),
+        recurrenceRule: 'FREQ=DAILY;COUNT=20',
+      },
+      {
+        text: 'Monthly review',
+        startDate: new Date(2025, 5, 5, 14, 0),
+        endDate: new Date(2025, 5, 5, 15, 0),
+        recurrenceRule: 'FREQ=MONTHLY;BYMONTHDAY=5',
+      },
+    ];
+
+    let currentLabelMode = 'static';
+
+    const scheduler = $('#scheduler').dxScheduler({
+      dataSource: data,
+      views: ['week', 'month'],
+      currentView: 'week',
+      currentDate: new Date(2025, 5, 2),
+      startDayHour: 8,
+      endDayHour: 18,
+      height: 640,
+      editing: {
+        allowAdding: true,
+        allowDeleting: true,
+        allowUpdating: true,
+      },
+      onAppointmentFormOpening(e) {
+        e.form.option('labelMode', currentLabelMode);
+      },
+    }).dxScheduler('instance');
+
+    $('#label-mode').dxSelectBox({
+      items: ['static', 'floating', 'hidden', 'outside'],
+      value: currentLabelMode,
+      width: 180,
+      onValueChanged(e) {
+        currentLabelMode = e.value;
+      },
+    });
+  </script>
+</body>
+</html>
