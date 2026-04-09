@@ -43,7 +43,14 @@ $(() => {
         } else {
           visibleSet.delete(idx);
         }
-        scheduler.option('hiddenWeekDays', computeHiddenWeekDays());
+        const hidden = computeHiddenWeekDays();
+        if (hidden.length === 7) {
+          DevExpress.ui.dialog.alert(
+            'All days are hidden. The Scheduler requires at least one visible day. The option is ignored and all days are shown.',
+            'Visible Week Days',
+          );
+        }
+        scheduler.option('hiddenWeekDays', hidden);
       },
     }).dxCheckBox('instance');
   });
