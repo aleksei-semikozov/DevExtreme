@@ -1,19 +1,30 @@
+.hidden-days-demo {
+  display: flex;
+  gap: 20px;
+}
+
+.scheduler-container {
+  flex: 1;
+  min-width: 0;
+}
+
 .options {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: 220px;
+  box-sizing: border-box;
   padding: 20px;
   background-color: rgba(191, 191, 191, 0.15);
-  margin-top: 20px;
+  gap: 12px;
 }
 
 .caption {
-  font-size: 18px;
   font-weight: 500;
+  font-size: 18px;
 }
 
 .option {
-  margin-top: 10px;
-}
-
-.options-container {
   display: flex;
-  align-items: center;
+  flex-direction: column;
 }

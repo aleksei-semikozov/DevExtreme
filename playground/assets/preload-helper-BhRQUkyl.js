@@ -21306,7 +21306,7 @@ const errors$1 = error(errors$2.ERROR_MESSAGES, {
   /**
    * @name ErrorsUIWidgets.W1029
    */
-  W1029: 'The "hiddenDays" option cannot hide all days of the week. At least one day must remain visible. The option is ignored.'
+  W1029: 'The "hiddenWeekDays" option cannot hide all days of the week. At least one day must remain visible. The option is ignored.'
 });
 
 const window$G = getWindow();
@@ -213900,7 +213900,7 @@ const DEFAULT_SCHEDULER_OPTIONS = {
   selectedCellData: [],
   groupByDate: false,
   // @ts-expect-error new public option not yet in upstream Properties type
-  hiddenDays: undefined,
+  hiddenWeekDays: undefined,
   onAppointmentRendered: undefined,
   onAppointmentClick: undefined,
   onAppointmentDblClick: undefined,
@@ -220623,7 +220623,7 @@ const normalizeView = (view, globalHiddenDays) => {
       return undefined;
     }
     const merged = extend$1({}, viewDefault, view);
-    merged.skippedDays = resolveSkippedDays(viewType, view.hiddenDays, globalHiddenDays, viewDefault.skippedDays);
+    merged.skippedDays = resolveSkippedDays(viewType, view.hiddenWeekDays, globalHiddenDays, viewDefault.skippedDays);
     return merged;
   }
   const defaultView = DEFAULT_VIEW_OPTIONS[view];
@@ -220875,9 +220875,9 @@ class SchedulerOptionsBaseWidget extends Widget$1 {
   }
   updateViews() {
     const views = this.option('views') ?? [];
-    const hiddenDays = this.option('hiddenDays');
-    this.views = getViews(views, hiddenDays);
-    this.currentView = getCurrentView(this.option('currentView') ?? '', views, hiddenDays);
+    const hiddenWeekDays = this.option('hiddenWeekDays');
+    this.views = getViews(views, hiddenWeekDays);
+    this.currentView = getCurrentView(this.option('currentView') ?? '', views, hiddenWeekDays);
   }
   _initMarkup() {
     // @ts-expect-error
@@ -220889,7 +220889,7 @@ class SchedulerOptionsBaseWidget extends Widget$1 {
     switch (args.name) {
       case 'currentView':
       case 'views':
-      case 'hiddenDays':
+      case 'hiddenWeekDays':
         this.updateViews();
         break;
     }
@@ -236906,7 +236906,7 @@ class Scheduler extends SchedulerOptionsBaseWidget {
           this.updateOption('header', 'views', this.views);
         }
         break;
-      case 'hiddenDays':
+      case 'hiddenWeekDays':
         this.repaint();
         break;
       case 'useDropDownViewSwitcher':
