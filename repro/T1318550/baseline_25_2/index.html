@@ -17,10 +17,12 @@
 </head>
 <body>
   <h1>T1318550 — BASELINE <span class="version">(25.2.6 CDN — NO FIX)</span></h1>
-  <div class="status status-bug">⚠ Using UNPATCHED CDN version — bug should be visible</div>
+  <div class="status status-bug">Using UNPATCHED CDN version — bug should be visible</div>
   <div class="repro-note">
     <strong>Repro:</strong> Click any appointment → Open → toggle Repeat ON → expand recurrence settings.
-    Inner editors WILL show dataField names (repeatEnd, count, until, etc.) as labels — this is the bug.
+    Inner editors WILL show dataField names as labels — this is the bug.
+    <br><br>
+    <code>dxForm.defaultOptions + onAppointmentFormOpening</code> both set <code>labelMode='static'</code>.
   </div>
   <div class="dx-viewport demo-container">
     <div id="scheduler"></div>
@@ -55,6 +57,9 @@
       currentDate: new Date(2021, 3, 29),
       startDayHour: 9,
       height: 730,
+      onAppointmentFormOpening: function(e) {
+        e.form.option('labelMode', 'static');
+      },
     });
   </script>
 </body>
