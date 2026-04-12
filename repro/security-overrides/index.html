@@ -18,7 +18,7 @@ th{background:#f3f4f6;font-weight:600;position:sticky;top:0}.pkg{font-family:mon
 <p class="subtitle">Cherry-pick readiness: Dependabot 26_1 → 25_x security fixes</p>
 <div class="tabs">
 <div class="tab active" id="tab-current" onclick="showTab('current')">📍 Current State</div>
-<div class="tab" id="tab-after" onclick="showTab('after')">🎯 After Updated PRs Merge</div>
+<div class="tab" id="tab-after" onclick="showTab('after')">🎯 After Cleanup + Merge</div>
 </div>
 <div class="tab-content active" id="content-current">
 <h3>Current overrides divergence</h3><div class="summary"><div class="stat" style="background:#d1fae5">✅ Same: 8</div><div class="stat" style="background:#fef3c7">🟡 Different: 5</div><div class="stat" style="background:#fee2e2">🔴 Only 26_1: 24</div><div class="stat" style="background:#e0e7ff">🔵 Only 25_x: 4</div><div class="stat" style="background:#f3f4f6">Total: 41</div></div>
@@ -65,28 +65,27 @@ th{background:#f3f4f6;font-weight:600;position:sticky;top:0}.pkg{font-family:mon
 <tr style="background:#fee2e2"><td class="pkg">vite@>=7.0.0 <=7.3.1</td><td>—</td><td>—</td><td>^7.3.2</td><td>🔴 Only in 26_1</td></tr></tbody></table>
 </div>
 <div class="tab-content" id="content-after">
-<h3>After merging updated PRs #33160 + #33161 (synced with latest 26_1)</h3>
-<div class="improvement">🎯 Same: 8 → 37 | Different: 5 → 0 | Only 26_1: 24 → 0</div>
-<div class="summary"><div class="stat" style="background:#d1fae5">✅ Same: 37</div><div class="stat" style="background:#fef3c7">🟡 Different: 0</div><div class="stat" style="background:#fee2e2">🔴 Only 26_1: 0</div><div class="stat" style="background:#e0e7ff">🔵 Only 25_x: 43</div><div class="stat" style="background:#f3f4f6">Total: 80</div></div>
-<div class="note"><strong>🔵 Only 25_x (43):</strong> These are overrides needed by 25_x for older transitive deps that 26_1 doesn't have. They don't block cherry-picks FROM 26_1 — they're additive safety nets for older branches.<br><br>
-<strong>Cherry-pick readiness: 🟢 100%</strong> — zero "Only 26_1" and zero "Different" means any Dependabot PR from 26_1 cherry-picks cleanly to 25_x.</div>
+<h3>After cleanup (removed 22 unnecessary) + merge PRs #33160 + #33161</h3>
+<div class="improvement">🎯 Same: 8 → 37 | Different: 5 → 0 | Only 26_1: 24 → 0 | Only 25_x: 4 → 21</div>
+<div class="summary"><div class="stat" style="background:#d1fae5">✅ Same: 37</div><div class="stat" style="background:#fef3c7">🟡 Different: 0</div><div class="stat" style="background:#fee2e2">🔴 Only 26_1: 0</div><div class="stat" style="background:#e0e7ff">🔵 Only 25_x: 21</div><div class="stat" style="background:#f3f4f6">Total: 58</div></div>
+<div class="note">
+<strong>🔵 Only 25_x (21):</strong><br>
+• 6 = different major version (Angular 19, vite 5, immutable 4) — нужны только в 25_x<br>
+• 14 = 26_1 тоже уязвим — Dependabot задача (отдельный PR)<br>
+• 1 = node-forge (legacy)<br><br>
+<strong>Cherry-pick readiness: 🟢 100%</strong> — zero "Only 26_1" and zero "Different"
+</div>
 <table><thead><tr><th>Package</th><th>25_1</th><th>25_2</th><th>26_1</th><th>Status</th></tr></thead><tbody><tr style="background:#e0e7ff"><td class="pkg">@angular/common@>=19.0.0 <19.2.16</td><td>^19.2.20</td><td>—</td><td>—</td><td>🔵 Only in 25_x</td></tr>
 <tr style="background:#e0e7ff"><td class="pkg">@angular/compiler@>=19.0.0-next.0 <19.2.20</td><td>^19.2.20</td><td>—</td><td>—</td><td>🔵 Only in 25_x</td></tr>
 <tr style="background:#e0e7ff"><td class="pkg">@angular/core@>=19.0.0-next.0 <19.2.20</td><td>^19.2.20</td><td>—</td><td>—</td><td>🔵 Only in 25_x</td></tr>
 <tr style="background:#e0e7ff"><td class="pkg">@angular/platform-server@>=19.0.0-next.0 <19.2.20</td><td>^19.2.20</td><td>—</td><td>—</td><td>🔵 Only in 25_x</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">@babel/helpers@<7.26.10</td><td>^7.26.10</td><td>—</td><td>—</td><td>🔵 Only in 25_x</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">@babel/runtime@<7.26.10</td><td>^7.26.10</td><td>—</td><td>—</td><td>🔵 Only in 25_x</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">@devexpress/callsite-record@^4.1.6</td><td>4.1.7</td><td>4.1.7</td><td>4.1.7</td><td>✅ Same</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">@eslint/plugin-kit@<0.3.4</td><td>^0.3.4</td><td>^0.3.4</td><td>—</td><td>🔵 Only in 25_x</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">@hono/node-server@<1.19.10</td><td>^1.19.10</td><td>^1.19.10</td><td>^1.19.10</td><td>✅ Same</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">@isaacs/brace-expansion@<=5.0.0</td><td>^5.0.1</td><td>^5.0.1</td><td>^5.0.1</td><td>✅ Same</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">@modelcontextprotocol/sdk@>=1.10.0 <=1.25.3</td><td>^1.26.0</td><td>^1.26.0</td><td>^1.26.0</td><td>✅ Same</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">@remix-run/router@<=1.23.1</td><td>^1.23.2</td><td>—</td><td>—</td><td>🔵 Only in 25_x</td></tr>
 <tr style="background:#e0e7ff"><td class="pkg">@tootallnate/once@<3.0.1</td><td>^3.0.1</td><td>^3.0.1</td><td>—</td><td>🔵 Only in 25_x</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">ajv@<6.14.0</td><td>6.14.0</td><td>6.14.0</td><td>—</td><td>🔵 Only in 25_x</td></tr>
 <tr style="background:#e0e7ff"><td class="pkg">ajv@>=7.0.0-alpha.0 <8.18.0</td><td>^8.18.0</td><td>^8.18.0</td><td>—</td><td>🔵 Only in 25_x</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">axios@<=1.13.4</td><td>^1.13.5</td><td>^1.13.5</td><td>^1.13.5</td><td>✅ Same</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">basic-ftp@<5.2.0</td><td>~5.2.0</td><td>~5.2.0</td><td>—</td><td>🔵 Only in 25_x</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">basic-ftp@<5.2.1</td><td>~5.2.1</td><td>~5.2.1</td><td>~5.2.1</td><td>✅ Same</td></tr>
 <tr style="background:#e0e7ff"><td class="pkg">bn.js@<4.12.3</td><td>4.12.3</td><td>4.12.3</td><td>—</td><td>🔵 Only in 25_x</td></tr>
 <tr style="background:#e0e7ff"><td class="pkg">bn.js@>=5.0.0 <5.2.3</td><td>5.2.3</td><td>5.2.3</td><td>—</td><td>🔵 Only in 25_x</td></tr>
@@ -103,41 +102,29 @@ th{background:#f3f4f6;font-weight:600;position:sticky;top:0}.pkg{font-family:mon
 <tr style="background:#d1fae5"><td class="pkg">form-data@>=4.0.0 <4.0.4</td><td>^4.0.5</td><td>^4.0.5</td><td>^4.0.5</td><td>✅ Same</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">glob@>=10.2.0 <10.5.0</td><td>^10.5.0</td><td>^10.5.0</td><td>^10.5.0</td><td>✅ Same</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">hono@<4.12.4</td><td>^4.12.4</td><td>^4.12.4</td><td>^4.12.4</td><td>✅ Same</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">http-proxy-middleware@>=1.3.0 <2.0.9</td><td>^2.0.9</td><td>^2.0.9</td><td>—</td><td>🔵 Only in 25_x</td></tr>
 <tr style="background:#e0e7ff"><td class="pkg">immutable@>=4.0.0-rc.1 <4.3.8</td><td>^4.3.8</td><td>^4.3.8</td><td>—</td><td>🔵 Only in 25_x</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">immutable@>=5.0.0 <5.1.5</td><td>^5.1.5</td><td>^5.1.5</td><td>^5.1.5</td><td>✅ Same</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">js-yaml@<3.14.2</td><td>3.14.2</td><td>—</td><td>—</td><td>🔵 Only in 25_x</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">js-yaml@>=4.0.0 <4.1.1</td><td>^4.1.1</td><td>^4.1.1</td><td>—</td><td>🔵 Only in 25_x</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">json5@<1.0.2</td><td>^2.2.3</td><td>^2.2.3</td><td>^2.2.3</td><td>✅ Same</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">jspdf@<=4.2.0</td><td>^4.2.1</td><td>^4.2.1</td><td>—</td><td>🔵 Only in 25_x</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">lodash.template@<4.18.1</td><td>4.18.1</td><td>4.18.1</td><td>4.18.1</td><td>✅ Same</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">lodash@<4.18.1</td><td>4.18.1</td><td>4.18.1</td><td>4.18.1</td><td>✅ Same</td></tr>
 <tr style="background:#e0e7ff"><td class="pkg">micromatch@<4.0.8</td><td>^4.0.8</td><td>^4.0.8</td><td>—</td><td>🔵 Only in 25_x</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">minimatch@<3.1.5</td><td>3.1.5</td><td>3.1.5</td><td>3.1.5</td><td>✅ Same</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">minimatch@>=10.0.0 < 10.2.4</td><td>10.2.4</td><td>10.2.4</td><td>10.2.4</td><td>✅ Same</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">minimatch@>=10.0.0 <10.2.4</td><td>10.2.4</td><td>10.2.4</td><td>—</td><td>🔵 Only in 25_x</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">minimatch@>=4.0.0 <4.2.5</td><td>4.2.5</td><td>4.2.5</td><td>—</td><td>🔵 Only in 25_x</td></tr>
 <tr style="background:#e0e7ff"><td class="pkg">minimatch@>=5.0.0 <5.1.8</td><td>5.1.8</td><td>5.1.8</td><td>—</td><td>🔵 Only in 25_x</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">minimatch@>=9.0.0 < 9.0.7</td><td>9.0.9</td><td>9.0.9</td><td>9.0.9</td><td>✅ Same</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">minimatch@>=9.0.0 <9.0.7</td><td>9.0.9</td><td>9.0.9</td><td>—</td><td>🔵 Only in 25_x</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">nanoid@<3.3.8</td><td>^3.3.8</td><td>^3.3.8</td><td>—</td><td>🔵 Only in 25_x</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">node-forge@<1.4.0</td><td>1.4.0</td><td>1.4.0</td><td>1.4.0</td><td>✅ Same</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">on-headers@<1.1.0</td><td>^1.1.0</td><td>^1.1.0</td><td>—</td><td>🔵 Only in 25_x</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">path-to-regexp@0.1.12</td><td>0.1.13</td><td>0.1.13</td><td>0.1.13</td><td>✅ Same</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">path-to-regexp@>=8.0.0 <8.4.0</td><td>8.4.0</td><td>8.4.0</td><td>8.4.0</td><td>✅ Same</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">pbkdf2@<=3.1.2</td><td>^3.1.3</td><td>^3.1.3</td><td>^3.1.3</td><td>✅ Same</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">picomatch@>=2.0.0 <2.3.2</td><td>2.3.2</td><td>2.3.2</td><td>2.3.2</td><td>✅ Same</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">picomatch@>=4.0.0 <4.0.4</td><td>4.0.4</td><td>4.0.4</td><td>4.0.4</td><td>✅ Same</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">qs</td><td>>=6.14.1</td><td>>=6.14.1</td><td>>=6.14.1</td><td>✅ Same</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">react-router@>=6.0.0 <6.30.2</td><td>^6.30.2</td><td>—</td><td>—</td><td>🔵 Only in 25_x</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">rollup@< 4.59.0</td><td>^4.59.0</td><td>^4.59.0</td><td>^4.59.0</td><td>✅ Same</td></tr>
 <tr style="background:#e0e7ff"><td class="pkg">rollup@<2.79.2</td><td>^4.53.3</td><td>^4.53.3</td><td>—</td><td>🔵 Only in 25_x</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">rollup@>=4.0.0 <4.59.0</td><td>^4.59.0</td><td>^4.59.0</td><td>—</td><td>🔵 Only in 25_x</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">semver@<5.7.2</td><td>^5.7.2</td><td>^5.7.2</td><td>^5.7.2</td><td>✅ Same</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">serialize-javascript@<=7.0.2</td><td>7.0.5</td><td>7.0.5</td><td>7.0.5</td><td>✅ Same</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">sha.js@<=2.4.11</td><td>^2.4.12</td><td>^2.4.12</td><td>^2.4.12</td><td>✅ Same</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">socket.io-parser@>=4.0.0 <4.2.6</td><td>^4.2.6</td><td>^4.2.6</td><td>^4.2.6</td><td>✅ Same</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">storybook@>=10.0.0-beta.0 <10.2.10</td><td>^10.2.10</td><td>—</td><td>—</td><td>🔵 Only in 25_x</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">tar@<=7.5.9</td><td>^7.5.10</td><td>^7.5.10</td><td>^7.5.10</td><td>✅ Same</td></tr>
 <tr style="background:#e0e7ff"><td class="pkg">tmp@<=0.2.3</td><td>^0.2.4</td><td>^0.2.4</td><td>—</td><td>🔵 Only in 25_x</td></tr>
 <tr style="background:#e0e7ff"><td class="pkg">tough-cookie@<4.1.3</td><td>^4.1.3</td><td>^4.1.3</td><td>—</td><td>🔵 Only in 25_x</td></tr>
@@ -145,10 +132,6 @@ th{background:#f3f4f6;font-weight:600;position:sticky;top:0}.pkg{font-family:mon
 <tr style="background:#d1fae5"><td class="pkg">undici@<7.24.0</td><td>^7.24.0</td><td>^7.24.0</td><td>^7.24.0</td><td>✅ Same</td></tr>
 <tr style="background:#e0e7ff"><td class="pkg">vite@>=5.0.0 <=5.4.20</td><td>^5.4.21</td><td>—</td><td>—</td><td>🔵 Only in 25_x</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">vite@>=6.0.0 <6.4.1</td><td>^7.3.2</td><td>^7.3.2</td><td>^7.3.2</td><td>✅ Same</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">vite@>=7.0.0 <=7.3.1</td><td>^7.3.2</td><td>^7.3.2</td><td>^7.3.2</td><td>✅ Same</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">webpack-dev-server@<=5.2.0</td><td>^5.2.1</td><td>—</td><td>—</td><td>🔵 Only in 25_x</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">webpack@>=5.49.0 <=5.104.0</td><td>^5.104.1</td><td>^5.104.1</td><td>—</td><td>🔵 Only in 25_x</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">yaml@>=1.0.0 <1.10.3</td><td>1.10.3</td><td>1.10.3</td><td>—</td><td>🔵 Only in 25_x</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">yaml@>=2.0.0 <2.8.3</td><td>2.8.3</td><td>2.8.3</td><td>—</td><td>🔵 Only in 25_x</td></tr></tbody></table>
+<tr style="background:#d1fae5"><td class="pkg">vite@>=7.0.0 <=7.3.1</td><td>^7.3.2</td><td>^7.3.2</td><td>^7.3.2</td><td>✅ Same</td></tr></tbody></table>
 </div>
 </body></html>
