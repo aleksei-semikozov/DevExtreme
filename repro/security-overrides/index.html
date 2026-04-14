@@ -1,250 +1,158 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Security Overrides PRs - Before/After Comparison</title>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DevExtreme — dependency dashboard (current green state)</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; padding: 20px; max-width: 1400px; margin: 0 auto; }
-  h1 { text-align: center; margin-bottom: 6px; font-size: 1.6em; }
-  .timestamp { text-align: center; color: #888; font-size: 0.85em; margin-bottom: 24px; }
-  h2 { margin: 28px 0 10px; font-size: 1.25em; border-bottom: 2px solid #007bff; padding-bottom: 4px; }
-  h3 { margin: 18px 0 8px; font-size: 1.05em; color: #495057; }
-  .summary-box { background: #fff; padding: 16px 20px; border-radius: 6px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); line-height: 1.7; }
-  .summary-box ul { margin-left: 20px; }
-  .summary-box li { margin-bottom: 4px; }
-  .stat { display: inline-block; padding: 3px 10px; border-radius: 4px; font-weight: 600; font-size: 0.85em; margin: 2px 4px; }
-  .stat-add { background: #d4edda; color: #155724; }
-  .stat-upd { background: #cce5ff; color: #004085; }
-  .stat-rem { background: #f8d7da; color: #721c24; }
-  .stat-info { background: #e2e3e5; color: #383d41; }
-  table { width: 100%; border-collapse: collapse; margin-bottom: 16px; background: #fff; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-  th { background: #343a40; color: #fff; padding: 8px 10px; text-align: left; font-size: 0.85em; white-space: nowrap; }
-  td { padding: 6px 10px; border-bottom: 1px solid #eee; font-size: 0.82em; font-family: 'SFMono-Regular', Consolas, monospace; }
-  tr:last-child td { border-bottom: none; }
-  .pkg { font-weight: 600; color: #222; min-width: 260px; }
-  .added { background: #d4edda; }
-  .updated { background: #fff3cd; }
-  .removed { background: #f8d7da; text-decoration: line-through; color: #999; }
-  .unchanged { color: #aaa; }
-  .arrow { color: #007bff; font-weight: 700; padding: 0 4px; }
-  .branch-tag { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 0.78em; font-weight: 700; margin-right: 6px; }
-  .tag-252 { background: #cce5ff; color: #004085; }
-  .tag-251 { background: #d1ecf1; color: #0c5460; }
-  .toc { background: #fff; padding: 16px 20px; border-radius: 6px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-  .toc a { color: #007bff; text-decoration: none; display: block; padding: 2px 0; font-size: 0.9em; }
-  .toc a:hover { text-decoration: underline; }
-  .note { font-size: 0.8em; color: #888; margin-bottom: 8px; font-style: italic; }
-  .commit-count { font-size: 0.85em; color: #666; margin-bottom: 8px; }
-  .section-pair { display: flex; gap: 16px; flex-wrap: wrap; }
-  .section-pair > div { flex: 1; min-width: 400px; }
-  code { background: #f0f0f0; padding: 1px 5px; border-radius: 3px; font-size: 0.9em; }
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:24px;max-width:1300px;margin:0 auto}
+h1{font-size:22px;margin-bottom:4px}.subtitle{color:#888;font-size:13px;margin-bottom:16px}
+.tabs{display:flex;gap:0;margin-bottom:0;flex-wrap:wrap}.tab{padding:10px 20px;cursor:pointer;border:1px solid #d1d5db;border-bottom:none;border-radius:8px 8px 0 0;background:#f9fafb;font-weight:500;font-size:13px}
+.tab.active{background:#fff;border-bottom:1px solid #fff;margin-bottom:-1px;z-index:1}.tab-content{display:none;border:1px solid #d1d5db;border-radius:0 8px 8px 8px;padding:16px}
+.tab-content.active{display:block}.summary{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}.stat{padding:6px 14px;border-radius:6px;font-weight:600;font-size:14px}
+table{border-collapse:collapse;width:100%;font-size:13px}th,td{border:1px solid #d1d5db;padding:5px 8px;text-align:left}
+th{background:#f3f4f6;font-weight:600;position:sticky;top:0}.pkg{font-family:monospace;font-weight:500;white-space:nowrap}
+.note{margin-top:10px;padding:10px;background:#fff7e6;border-left:4px solid #f59e0b;font-size:13px;line-height:1.5}
+.good{margin-top:10px;padding:10px;background:#d1fae5;border-radius:8px;font-weight:500;font-size:13px}
 </style>
-</head>
-<body>
-<h1>Security Overrides PRs &mdash; Before / After Comparison</h1>
-<p class="timestamp">Generated: 2026-04-14 | Branches: 25_2 (14 commits) &amp; 25_1 (21 commits)</p>
+<script>function showTab(id){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));document.getElementById('tab-'+id).classList.add('active');document.getElementById('content-'+id).classList.add('active');}</script>
+</head><body>
+<h1>Dependency dashboard — current green state</h1>
+<p class="subtitle">25_1 / 25_2 / 26_1 — after overrides sync + patch bumps + eslint-config-devextreme 1.1.9 upgrade (CI green on both PRs)</p>
+<div class="tabs">
+<div class="tab active" id="tab-ovr" onclick="showTab('ovr')">📍 Overrides</div>
+<div class="tab" id="tab-deps" onclick="showTab('deps')">📦 Dependencies (diff only)</div>
+<div class="tab" id="tab-eslint" onclick="showTab('eslint')">📋 ESLint Upgrade</div>
+</div>
+<div class="tab-content active" id="content-ovr">
+<h3>pnpm overrides — current green state</h3>
+<div class="good">Cherry-pick readiness: 🟢 100% — zero "Only 26_1", zero "Different"</div>
+<div class="summary"><div class="stat" style="background:#d1fae5">✅ Same: 37</div><div class="stat" style="background:#fef3c7">🟡 Diff: 0</div><div class="stat" style="background:#fee2e2">🔴 Only 26_1: 0</div><div class="stat" style="background:#e0e7ff">🔵 Only 25_x: 21</div><div class="stat" style="background:#f3f4f6">Total: 58</div></div>
+<div class="note">🔵 Only 25_x (21): overrides needed by 25_x for older transitive deps. Don't block 26_1→25_x cherry-picks.</div>
+<table><thead><tr><th>Package</th><th>25_1</th><th>25_2</th><th>26_1</th><th>Status</th></tr></thead><tbody><tr style="background:#e0e7ff"><td class="pkg">@angular/common@>=19.0.0 <19.2.16</td><td>^19.2.20</td><td>—</td><td>—</td><td>🔵 25_x</td></tr>
+<tr style="background:#e0e7ff"><td class="pkg">@angular/compiler@>=19.0.0-next.0 <19.2.20</td><td>^19.2.20</td><td>—</td><td>—</td><td>🔵 25_x</td></tr>
+<tr style="background:#e0e7ff"><td class="pkg">@angular/core@>=19.0.0-next.0 <19.2.20</td><td>^19.2.20</td><td>—</td><td>—</td><td>🔵 25_x</td></tr>
+<tr style="background:#e0e7ff"><td class="pkg">@angular/platform-server@>=19.0.0-next.0 <19.2.20</td><td>^19.2.20</td><td>—</td><td>—</td><td>🔵 25_x</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">@devexpress/callsite-record@^4.1.6</td><td>4.1.7</td><td>4.1.7</td><td>4.1.7</td><td>✅</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">@hono/node-server@<1.19.10</td><td>^1.19.10</td><td>^1.19.10</td><td>^1.19.10</td><td>✅</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">@isaacs/brace-expansion@<=5.0.0</td><td>^5.0.1</td><td>^5.0.1</td><td>^5.0.1</td><td>✅</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">@modelcontextprotocol/sdk@>=1.10.0 <=1.25.3</td><td>^1.26.0</td><td>^1.26.0</td><td>^1.26.0</td><td>✅</td></tr>
+<tr style="background:#e0e7ff"><td class="pkg">@tootallnate/once@<3.0.1</td><td>^3.0.1</td><td>^3.0.1</td><td>—</td><td>🔵 25_x</td></tr>
+<tr style="background:#e0e7ff"><td class="pkg">ajv@>=7.0.0-alpha.0 <8.18.0</td><td>^8.18.0</td><td>^8.18.0</td><td>—</td><td>🔵 25_x</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">axios@<=1.13.4</td><td>^1.13.5</td><td>^1.13.5</td><td>^1.13.5</td><td>✅</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">basic-ftp@<5.2.1</td><td>~5.2.1</td><td>~5.2.1</td><td>~5.2.1</td><td>✅</td></tr>
+<tr style="background:#e0e7ff"><td class="pkg">bn.js@<4.12.3</td><td>4.12.3</td><td>4.12.3</td><td>—</td><td>🔵 25_x</td></tr>
+<tr style="background:#e0e7ff"><td class="pkg">bn.js@>=5.0.0 <5.2.3</td><td>5.2.3</td><td>5.2.3</td><td>—</td><td>🔵 25_x</td></tr>
+<tr style="background:#e0e7ff"><td class="pkg">brace-expansion@<1.1.13</td><td>1.1.13</td><td>1.1.13</td><td>—</td><td>🔵 25_x</td></tr>
+<tr style="background:#e0e7ff"><td class="pkg">brace-expansion@>=2.0.0 <2.0.3</td><td>2.0.3</td><td>2.0.3</td><td>—</td><td>🔵 25_x</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">braces@<3.0.3</td><td>^3.0.3</td><td>^3.0.3</td><td>^3.0.3</td><td>✅</td></tr>
+<tr style="background:#e0e7ff"><td class="pkg">cookie@<0.7.0</td><td>^0.7.0</td><td>^0.7.0</td><td>—</td><td>🔵 25_x</td></tr>
+<tr style="background:#e0e7ff"><td class="pkg">diff@>=4.0.0 <4.0.4</td><td>4.0.4</td><td>4.0.4</td><td>—</td><td>🔵 25_x</td></tr>
+<tr style="background:#e0e7ff"><td class="pkg">diff@>=5.0.0 <5.2.2</td><td>5.2.2</td><td>5.2.2</td><td>—</td><td>🔵 25_x</td></tr>
+<tr style="background:#e0e7ff"><td class="pkg">dompurify@<=3.3.1</td><td>^3.3.2</td><td>^3.3.2</td><td>—</td><td>🔵 25_x</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">express-rate-limit@>=8.2.0 <8.2.2</td><td>^8.2.2</td><td>^8.2.2</td><td>^8.2.2</td><td>✅</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">flatted@<3.4.0</td><td>^3.4.0</td><td>^3.4.0</td><td>^3.4.0</td><td>✅</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">form-data@<2.5.4</td><td>2.5.5</td><td>2.5.5</td><td>2.5.5</td><td>✅</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">form-data@>=4.0.0 <4.0.4</td><td>^4.0.5</td><td>^4.0.5</td><td>^4.0.5</td><td>✅</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">glob@>=10.2.0 <10.5.0</td><td>^10.5.0</td><td>^10.5.0</td><td>^10.5.0</td><td>✅</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">hono@<4.12.4</td><td>^4.12.4</td><td>^4.12.4</td><td>^4.12.4</td><td>✅</td></tr>
+<tr style="background:#e0e7ff"><td class="pkg">immutable@>=4.0.0-rc.1 <4.3.8</td><td>^4.3.8</td><td>^4.3.8</td><td>—</td><td>🔵 25_x</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">immutable@>=5.0.0 <5.1.5</td><td>^5.1.5</td><td>^5.1.5</td><td>^5.1.5</td><td>✅</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">json5@<1.0.2</td><td>^2.2.3</td><td>^2.2.3</td><td>^2.2.3</td><td>✅</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">lodash.template@<4.18.1</td><td>4.18.1</td><td>4.18.1</td><td>4.18.1</td><td>✅</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">lodash@<4.18.1</td><td>4.18.1</td><td>4.18.1</td><td>4.18.1</td><td>✅</td></tr>
+<tr style="background:#e0e7ff"><td class="pkg">micromatch@<4.0.8</td><td>^4.0.8</td><td>^4.0.8</td><td>—</td><td>🔵 25_x</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">minimatch@<3.1.5</td><td>3.1.5</td><td>3.1.5</td><td>3.1.5</td><td>✅</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">minimatch@>=10.0.0 < 10.2.4</td><td>10.2.4</td><td>10.2.4</td><td>10.2.4</td><td>✅</td></tr>
+<tr style="background:#e0e7ff"><td class="pkg">minimatch@>=5.0.0 <5.1.8</td><td>5.1.8</td><td>5.1.8</td><td>—</td><td>🔵 25_x</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">minimatch@>=9.0.0 < 9.0.7</td><td>9.0.9</td><td>9.0.9</td><td>9.0.9</td><td>✅</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">node-forge@<1.4.0</td><td>1.4.0</td><td>1.4.0</td><td>1.4.0</td><td>✅</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">path-to-regexp@0.1.12</td><td>0.1.13</td><td>0.1.13</td><td>0.1.13</td><td>✅</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">path-to-regexp@>=8.0.0 <8.4.0</td><td>8.4.0</td><td>8.4.0</td><td>8.4.0</td><td>✅</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">pbkdf2@<=3.1.2</td><td>^3.1.3</td><td>^3.1.3</td><td>^3.1.3</td><td>✅</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">picomatch@>=2.0.0 <2.3.2</td><td>2.3.2</td><td>2.3.2</td><td>2.3.2</td><td>✅</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">picomatch@>=4.0.0 <4.0.4</td><td>4.0.4</td><td>4.0.4</td><td>4.0.4</td><td>✅</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">qs</td><td>>=6.14.1</td><td>>=6.14.1</td><td>>=6.14.1</td><td>✅</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">rollup@< 4.59.0</td><td>^4.59.0</td><td>^4.59.0</td><td>^4.59.0</td><td>✅</td></tr>
+<tr style="background:#e0e7ff"><td class="pkg">rollup@<2.79.2</td><td>^4.53.3</td><td>^4.53.3</td><td>—</td><td>🔵 25_x</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">semver@<5.7.2</td><td>^5.7.2</td><td>^5.7.2</td><td>^5.7.2</td><td>✅</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">serialize-javascript@<=7.0.2</td><td>7.0.5</td><td>7.0.5</td><td>7.0.5</td><td>✅</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">sha.js@<=2.4.11</td><td>^2.4.12</td><td>^2.4.12</td><td>^2.4.12</td><td>✅</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">socket.io-parser@>=4.0.0 <4.2.6</td><td>^4.2.6</td><td>^4.2.6</td><td>^4.2.6</td><td>✅</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">tar@<=7.5.9</td><td>^7.5.10</td><td>^7.5.10</td><td>^7.5.10</td><td>✅</td></tr>
+<tr style="background:#e0e7ff"><td class="pkg">tmp@<=0.2.3</td><td>^0.2.4</td><td>^0.2.4</td><td>—</td><td>🔵 25_x</td></tr>
+<tr style="background:#e0e7ff"><td class="pkg">tough-cookie@<4.1.3</td><td>^4.1.3</td><td>^4.1.3</td><td>—</td><td>🔵 25_x</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">underscore@<=1.13.7</td><td>^1.13.8</td><td>^1.13.8</td><td>^1.13.8</td><td>✅</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">undici@<7.24.0</td><td>^7.24.0</td><td>^7.24.0</td><td>^7.24.0</td><td>✅</td></tr>
+<tr style="background:#e0e7ff"><td class="pkg">vite@>=5.0.0 <=5.4.20</td><td>^5.4.21</td><td>—</td><td>—</td><td>🔵 25_x</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">vite@>=6.0.0 <6.4.1</td><td>^7.3.2</td><td>^7.3.2</td><td>^7.3.2</td><td>✅</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">vite@>=7.0.0 <=7.3.1</td><td>^7.3.2</td><td>^7.3.2</td><td>^7.3.2</td><td>✅</td></tr></tbody></table>
+</div>
+<div class="tab-content" id="content-deps">
+<h3>Direct dependencies — packages/devextreme/package.json (diff only)</h3>
+<p class="subtitle">Showing only packages with version differences. 📎 = resolved from pnpm catalog. Total: 162, Identical: 128</p>
+<div class="summary"><div class="stat" style="background:#d1fae5">✅ Same: 128</div><div class="stat" style="background:#fef3c7">🟡 Diff: 30</div><div class="stat" style="background:#fee2e2">🔴 Only 26_1: 1</div><div class="stat" style="background:#e0e7ff">🔵 Only 25_x: 3</div><div class="stat" style="background:#f3f4f6">Total: 162</div></div>
+<div class="note">🟡 Different (30): includes eslint-config-devextreme 1.1.6 vs 1.1.9 (upgrade = separate task), @stylistic 2.13 vs 5.10, eslint-plugin-jest 27 vs 29, gulp-sass 5 vs 6, etc.<br><br>
+Patch bumps already applied. Minor+major bumps require eslint-config-devextreme@1.1.9 upgrade first (separate issue).</div>
+<table><thead><tr><th>Package</th><th>25_1</th><th>25_2</th><th>26_1</th><th>Status</th></tr></thead><tbody><tr style="background:#fef3c7"><td class="pkg">@babel/core</td><td>7.23.9</td><td>7.23.9</td><td>7.29.0</td><td>🟡</td></tr>
+<tr style="background:#fef3c7"><td class="pkg">@babel/eslint-parser</td><td>catalog: 7.26.5</td><td>catalog: 7.26.5</td><td>catalog: 7.28.6</td><td>🟡</td></tr>
+<tr style="background:#fef3c7"><td class="pkg">@babel/parser</td><td>7.23.9</td><td>7.23.9</td><td>7.29.0</td><td>🟡</td></tr>
+<tr style="background:#fef3c7"><td class="pkg">@babel/plugin-transform-modules-commonjs</td><td>7.23.3</td><td>7.23.3</td><td>7.28.6</td><td>🟡</td></tr>
+<tr style="background:#fef3c7"><td class="pkg">@babel/plugin-transform-runtime</td><td>7.23.3</td><td>7.23.3</td><td>7.29.0</td><td>🟡</td></tr>
+<tr style="background:#fef3c7"><td class="pkg">@babel/preset-env</td><td>7.23.9</td><td>7.23.9</td><td>7.29.0</td><td>🟡</td></tr>
+<tr style="background:#fef3c7"><td class="pkg">@eslint/eslintrc</td><td>catalog: 3.2.0</td><td>catalog: 3.2.0</td><td>catalog: 3.3.5</td><td>🟡</td></tr>
+<tr style="background:#fef3c7"><td class="pkg">@stylistic/eslint-plugin</td><td>catalog: 2.13.0</td><td>catalog: 2.13.0</td><td>catalog: 5.10.0</td><td>🟡</td></tr>
+<tr style="background:#fef3c7"><td class="pkg">@testing-library/jest-dom</td><td>^6.6.3</td><td>^6.6.3</td><td>6.9.1</td><td>🟡</td></tr>
+<tr style="background:#fef3c7"><td class="pkg">@testing-library/user-event</td><td>^14.5.2</td><td>^14.5.2</td><td>14.6.1</td><td>🟡</td></tr>
+<tr style="background:#fef3c7"><td class="pkg">@types/jquery</td><td>3.5.29</td><td>catalog: 3.5.29</td><td>catalog: 3.5.34</td><td>🟡</td></tr>
+<tr style="background:#fef3c7"><td class="pkg">@typescript-eslint/eslint-plugin</td><td>catalog: 8.23.0</td><td>catalog: 8.23.0</td><td>catalog: 8.52.0</td><td>🟡</td></tr>
+<tr style="background:#fef3c7"><td class="pkg">@typescript-eslint/parser</td><td>catalog: 8.23.0</td><td>catalog: 8.23.0</td><td>catalog: 8.52.0</td><td>🟡</td></tr>
+<tr style="background:#fef3c7"><td class="pkg">csstype</td><td>3.1.3</td><td>3.1.3</td><td>3.2.3</td><td>🟡</td></tr>
+<tr style="background:#fef3c7"><td class="pkg">devextreme-exceljs-fork</td><td>4.4.7</td><td>4.4.7</td><td>catalog: 4.4.7</td><td>🟡</td></tr>
+<tr style="background:#fef3c7"><td class="pkg">eslint</td><td>catalog: 9.18.0</td><td>catalog: 9.18.0</td><td>catalog: 9.39.4</td><td>🟡</td></tr>
+<tr style="background:#fef3c7"><td class="pkg">eslint-config-devextreme</td><td>1.1.6</td><td>1.1.6</td><td>catalog: 1.1.9</td><td>🟡</td></tr>
+<tr style="background:#fef3c7"><td class="pkg">eslint-plugin-import</td><td>catalog: 2.31.0</td><td>catalog: 2.31.0</td><td>catalog: 2.32.0</td><td>🟡</td></tr>
+<tr style="background:#fef3c7"><td class="pkg">eslint-plugin-jest</td><td>27.6.0</td><td>28.14.0</td><td>29.15.0</td><td>🟡</td></tr>
+<tr style="background:#fef3c7"><td class="pkg">eslint-plugin-jsx-a11y</td><td>6.8.0</td><td>6.8.0</td><td>catalog: 6.10.2</td><td>🟡</td></tr>
+<tr style="background:#fef3c7"><td class="pkg">eslint-plugin-n</td><td>—</td><td>^17.0.0</td><td>17.24.0</td><td>🟡</td></tr>
+<tr style="background:#e0e7ff"><td class="pkg">eslint-plugin-node</td><td>11.1.0</td><td>—</td><td>—</td><td>🔵 25_x</td></tr>
+<tr style="background:#fef3c7"><td class="pkg">eslint-plugin-qunit</td><td>catalog: 8.1.2</td><td>catalog: 8.1.2</td><td>catalog: 8.2.5</td><td>🟡</td></tr>
+<tr style="background:#fef3c7"><td class="pkg">eslint-plugin-react</td><td>7.33.2</td><td>7.33.2</td><td>7.37.5</td><td>🟡</td></tr>
+<tr style="background:#fef3c7"><td class="pkg">glob</td><td>10.4.5</td><td>11.1.0</td><td>11.1.0</td><td>🟡</td></tr>
+<tr style="background:#fef3c7"><td class="pkg">gulp-sass</td><td>5.1.0</td><td>5.1.0</td><td>6.0.1</td><td>🟡</td></tr>
+<tr style="background:#fef3c7"><td class="pkg">jquery</td><td>3.7.1</td><td>catalog: 3.7.1</td><td>catalog: 4.0.0</td><td>🟡</td></tr>
+<tr style="background:#fef3c7"><td class="pkg">jspdf</td><td>4.0.0</td><td>4.0.0</td><td>4.2.1</td><td>🟡</td></tr>
+<tr style="background:#e0e7ff"><td class="pkg">npm-run-all</td><td>4.1.5</td><td>4.1.5</td><td>—</td><td>🔵 25_x</td></tr>
+<tr style="background:#fee2e2"><td class="pkg">npm-run-all2</td><td>—</td><td>—</td><td>5.0.2</td><td>🔴 26_1</td></tr>
+<tr style="background:#fef3c7"><td class="pkg">sass-embedded</td><td>1.59.2</td><td>1.59.2</td><td>1.93.3</td><td>🟡</td></tr>
+<tr style="background:#e0e7ff"><td class="pkg">unplugin</td><td>—</td><td>^3.0.0</td><td>—</td><td>🔵 25_x</td></tr>
+<tr style="background:#fef3c7"><td class="pkg">webpack</td><td>5.103.0</td><td>5.103.0</td><td>5.105.4</td><td>🟡</td></tr>
+<tr style="background:#fef3c7"><td class="pkg">yaml</td><td>2.5.0</td><td>2.5.0</td><td>2.8.3</td><td>🟡</td></tr></tbody></table>
+</div>
+<div class="tab-content" id="content-eslint">
+<h3>eslint-config-devextreme 1.1.9 upgrade — both branches</h3>
+<div class="good">CI status: both PRs green</div>
 
-<div class="toc">
-  <strong>Table of Contents</strong>
-  <a href="#summary">1. Summary &mdash; What the PRs Do</a>
-  <a href="#workspace">2. Workspace Catalog Changes (pnpm-workspace.yaml)</a>
-  <a href="#overrides">3. Security Overrides (root package.json)</a>
-  <a href="#pkgjson">4. Package.json Dependency Bumps (devextreme)</a>
-  <a href="#eslint">5. eslint.config.mjs Changes</a>
+<h4 style="margin-top:16px">25_2 — PR <a href="https://github.com/nicknisi/devextreme/pull/33160">#33160</a></h4>
+<table><thead><tr><th>Package</th><th>Before</th><th>After</th><th>Notes</th></tr></thead><tbody>
+<tr><td class="pkg">eslint-config-devextreme</td><td>1.1.6</td><td>1.1.9 (catalog:)</td><td>Main upgrade</td></tr>
+<tr><td class="pkg">@stylistic/eslint-plugin</td><td>2.13.0</td><td>5.4.0</td><td>Major bump</td></tr>
+<tr><td class="pkg">@typescript-eslint/*</td><td>8.23.0</td><td>8.52.0</td><td>Minor bump</td></tr>
+<tr><td class="pkg">eslint-plugin-import</td><td>2.31.0</td><td>2.32.0</td><td>Patch bump</td></tr>
+<tr><td class="pkg">eslint-plugin-qunit</td><td>8.1.2</td><td>8.2.5</td><td>Minor bump</td></tr>
+<tr><td class="pkg">eslint-plugin-jest</td><td>28.14.0</td><td>29.0.1</td><td>Major bump</td></tr>
+<tr><td class="pkg">eslint-plugin-react</td><td>7.33.2</td><td>7.37.5</td><td>Minor bump</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">eslint-plugin-jsx-a11y</td><td>—</td><td>NEW</td><td>Added</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">eslint-plugin-vue</td><td>—</td><td>NEW</td><td>Added</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">vue-eslint-parser</td><td>—</td><td>NEW</td><td>Added</td></tr>
+</tbody></table>
+
+<div class="note" style="margin-top:12px"><strong>Config changes (25_2):</strong><br>
+- <code>eslint.config.mjs</code>: direct imports instead of <code>compat.extends</code><br>
+- Rules set to <code>warn</code>: <code>prefer-nullish-coalescing</code>, <code>only-throw-error</code>, <code>prefer-optional-chain</code>, <code>require-await</code>
 </div>
 
-<!-- ==================== SECTION 1: SUMMARY ==================== -->
-<h2 id="summary">1. Summary</h2>
-<div class="summary-box">
-  <p><strong>Goal:</strong> Align 25_2 and 25_1 branches with 26_1's security posture &mdash; upgrade vulnerable transitive dependencies via overrides, bump direct dev dependencies to patched versions, and upgrade <code>eslint-config-devextreme</code> to 1.1.9.</p>
-  <ul>
-    <li><strong>Security overrides:</strong> 25_2 went from <span class="stat stat-info">16 overrides</span> to <span class="stat stat-add">53 overrides</span> (+37). 25_1 went from <span class="stat stat-info">12 overrides</span> to <span class="stat stat-add">58 overrides</span> (+46).</li>
-    <li><strong>Workspace catalog:</strong> Added <code>eslint-config-devextreme</code>, new eslint plugins (<code>jsx-a11y</code>, <code>vue</code>, <code>vue-eslint-parser</code>), bumped <code>@typescript-eslint/*</code> from 8.23.0 to 8.52.0, <code>@stylistic/eslint-plugin</code> from 2.13.0 to 5.4.0.</li>
-    <li><strong>eslint.config.mjs:</strong> Replaced runtime <code>loadDevExtremeConfig()</code> shim with direct ESM imports; added 4 new warn-level TypeScript rules.</li>
-    <li><strong>Patch-level bumps:</strong> ~15-16 devDependencies in <code>packages/devextreme/package.json</code> bumped to latest patch versions (e.g. autoprefixer, globalize, knockout, recast, terser-webpack-plugin).</li>
-  </ul>
-</div>
-
-<!-- ==================== SECTION 2: WORKSPACE CATALOG ==================== -->
-<h2 id="workspace">2. Workspace Catalog Changes</h2>
-<p class="note">Showing only packages that changed. Green = added, yellow = version bumped, red = removed.</p>
-
-<div class="section-pair">
-<div>
-<h3><span class="branch-tag tag-252">25_2</span> pnpm-workspace.yaml &mdash; catalog</h3>
-<table>
-<thead><tr><th>Package</th><th>Before (upstream/25_2)</th><th></th><th>After (our branch)</th></tr></thead>
-<tbody>
-<tr class="updated"><td class="pkg">devextreme-quill</td><td>1.7.8</td><td class="arrow">&rarr;</td><td>1.7.9</td></tr>
-<tr class="added"><td class="pkg">eslint-config-devextreme</td><td>&mdash;</td><td class="arrow">+</td><td>1.1.9</td></tr>
-<tr class="updated"><td class="pkg">eslint-plugin-import</td><td>2.31.0</td><td class="arrow">&rarr;</td><td>2.32.0</td></tr>
-<tr class="added"><td class="pkg">eslint-plugin-jsx-a11y</td><td>&mdash;</td><td class="arrow">+</td><td>6.10.2</td></tr>
-<tr class="updated"><td class="pkg">eslint-plugin-qunit</td><td>8.1.2</td><td class="arrow">&rarr;</td><td>8.2.5</td></tr>
-<tr class="added"><td class="pkg">eslint-plugin-vue</td><td>&mdash;</td><td class="arrow">+</td><td>10.4.0</td></tr>
-<tr class="added"><td class="pkg">vue-eslint-parser</td><td>&mdash;</td><td class="arrow">+</td><td>10.0.0</td></tr>
-<tr class="updated"><td class="pkg">@stylistic/eslint-plugin</td><td>2.13.0</td><td class="arrow">&rarr;</td><td>5.4.0</td></tr>
-<tr class="updated"><td class="pkg">@typescript-eslint/eslint-plugin</td><td>8.23.0</td><td class="arrow">&rarr;</td><td>8.52.0</td></tr>
-<tr class="updated"><td class="pkg">@typescript-eslint/parser</td><td>8.23.0</td><td class="arrow">&rarr;</td><td>8.52.0</td></tr>
-</tbody>
-</table>
-</div>
-
-<div>
-<h3><span class="branch-tag tag-251">25_1</span> pnpm-workspace.yaml &mdash; catalog</h3>
-<table>
-<thead><tr><th>Package</th><th>Before (upstream/25_1)</th><th></th><th>After (our branch)</th></tr></thead>
-<tbody>
-<tr class="updated"><td class="pkg">devexpress-diagram</td><td>2.2.24</td><td class="arrow">&rarr;</td><td>2.2.25</td></tr>
-<tr class="updated"><td class="pkg">devextreme-quill</td><td>1.7.8</td><td class="arrow">&rarr;</td><td>1.7.9</td></tr>
-<tr class="added"><td class="pkg">eslint-config-devextreme</td><td>&mdash;</td><td class="arrow">+</td><td>1.1.9</td></tr>
-<tr class="updated"><td class="pkg">eslint-plugin-import</td><td>2.31.0</td><td class="arrow">&rarr;</td><td>2.32.0</td></tr>
-<tr class="added"><td class="pkg">eslint-plugin-jsx-a11y</td><td>&mdash;</td><td class="arrow">+</td><td>6.10.2</td></tr>
-<tr class="updated"><td class="pkg">eslint-plugin-qunit</td><td>8.1.2</td><td class="arrow">&rarr;</td><td>8.2.5</td></tr>
-<tr class="added"><td class="pkg">eslint-plugin-vue</td><td>&mdash;</td><td class="arrow">+</td><td>10.4.0</td></tr>
-<tr class="added"><td class="pkg">vue-eslint-parser</td><td>&mdash;</td><td class="arrow">+</td><td>10.0.0</td></tr>
-<tr class="updated"><td class="pkg">@stylistic/eslint-plugin</td><td>2.13.0</td><td class="arrow">&rarr;</td><td>5.4.0</td></tr>
-<tr class="updated"><td class="pkg">@typescript-eslint/eslint-plugin</td><td>8.23.0</td><td class="arrow">&rarr;</td><td>8.52.0</td></tr>
-<tr class="updated"><td class="pkg">@typescript-eslint/parser</td><td>8.23.0</td><td class="arrow">&rarr;</td><td>8.52.0</td></tr>
-</tbody>
-</table>
+<h4 style="margin-top:20px">25_1 — PR <a href="https://github.com/nicknisi/devextreme/pull/33161">#33161</a></h4>
+<div class="note">Same eslint changes as 25_2, plus:<br>
+- <strong>React wrapper</strong> got new <code>eslint.config.mjs</code> (was <code>.eslintrc</code>)<br>
+- <strong>testcafe</strong> pinned at <code>eslint-config-devextreme@1.1.6</code> (eslint 8 compat)
 </div>
 </div>
-
-<h3>catalogs/tools (25_1 only change)</h3>
-<table>
-<thead><tr><th>Package</th><th>Before (upstream/25_1)</th><th></th><th>After</th><th>Notes</th></tr></thead>
-<tbody>
-<tr class="updated"><td class="pkg">devextreme-internal-tools</td><td>18.2.0</td><td class="arrow">&rarr;</td><td>18.2.0</td><td>Same on 25_1; 25_2 has 20.1.1 (unchanged)</td></tr>
-</tbody>
-</table>
-
-<!-- ==================== SECTION 3: OVERRIDES ==================== -->
-<h2 id="overrides">3. Security Overrides (root package.json &rarr; pnpm.overrides)</h2>
-<p class="note">Overrides force vulnerable transitive dependencies to safe versions. Green = newly added, yellow = version updated, red = removed/replaced.</p>
-
-<div class="section-pair">
-<div>
-<h3><span class="branch-tag tag-252">25_2</span> 16 &rarr; 53 overrides (+37 new)</h3>
-<table>
-<thead><tr><th>Override</th><th>Before</th><th></th><th>After</th></tr></thead>
-<tbody>
-<tr class="added"><td class="pkg">@hono/node-server@&lt;1.19.10</td><td>&mdash;</td><td class="arrow">+</td><td>^1.19.10</td></tr>
-<tr class="added"><td class="pkg">@isaacs/brace-expansion@&lt;=5.0.0</td><td>&mdash;</td><td class="arrow">+</td><td>^5.0.1</td></tr>
-<tr class="updated"><td class="pkg">@devexpress/callsite-record@^4.1.6</td><td>4.1.6</td><td class="arrow">&rarr;</td><td>4.1.7</td></tr>
-<tr class="added"><td class="pkg">@tootallnate/once@&lt;3.0.1</td><td>&mdash;</td><td class="arrow">+</td><td>^3.0.1</td></tr>
-<tr class="added"><td class="pkg">ajv@&gt;=7.0.0-alpha.0 &lt;8.18.0</td><td>&mdash;</td><td class="arrow">+</td><td>^8.18.0</td></tr>
-<tr class="added"><td class="pkg">basic-ftp@&lt;5.2.1</td><td>&mdash;</td><td class="arrow">+</td><td>~5.2.1</td></tr>
-<tr class="added"><td class="pkg">bn.js (2 ranges)</td><td>&mdash;</td><td class="arrow">+</td><td>4.12.3 / 5.2.3</td></tr>
-<tr class="added"><td class="pkg">brace-expansion (2 ranges)</td><td>&mdash;</td><td class="arrow">+</td><td>1.1.13 / 2.0.3</td></tr>
-<tr class="added"><td class="pkg">cookie@&lt;0.7.0</td><td>&mdash;</td><td class="arrow">+</td><td>^0.7.0</td></tr>
-<tr class="added"><td class="pkg">diff (2 ranges)</td><td>&mdash;</td><td class="arrow">+</td><td>4.0.4 / 5.2.2</td></tr>
-<tr class="added"><td class="pkg">dompurify@&lt;=3.3.1</td><td>&mdash;</td><td class="arrow">+</td><td>^3.3.2</td></tr>
-<tr class="added"><td class="pkg">express-rate-limit</td><td>&mdash;</td><td class="arrow">+</td><td>^8.2.2</td></tr>
-<tr class="added"><td class="pkg">flatted@&lt;3.4.0</td><td>&mdash;</td><td class="arrow">+</td><td>^3.4.0</td></tr>
-<tr class="added"><td class="pkg">hono@&lt;4.12.4</td><td>&mdash;</td><td class="arrow">+</td><td>^4.12.4</td></tr>
-<tr class="added"><td class="pkg">immutable (2 ranges)</td><td>&mdash;</td><td class="arrow">+</td><td>^4.3.8 / ^5.1.5</td></tr>
-<tr class="added"><td class="pkg">lodash / lodash.template</td><td>&mdash;</td><td class="arrow">+</td><td>4.18.1</td></tr>
-<tr class="added"><td class="pkg">micromatch@&lt;4.0.8</td><td>&mdash;</td><td class="arrow">+</td><td>^4.0.8</td></tr>
-<tr class="added"><td class="pkg">minimatch (4 ranges)</td><td>&mdash;</td><td class="arrow">+</td><td>3.1.5 / 5.1.8 / 9.0.9 / 10.2.4</td></tr>
-<tr class="updated"><td class="pkg">node-forge</td><td>&lt;1.3.2 &rarr; ^1.3.2</td><td class="arrow">&rarr;</td><td>&lt;1.4.0 &rarr; 1.4.0</td></tr>
-<tr class="added"><td class="pkg">path-to-regexp (2 ranges)</td><td>&mdash;</td><td class="arrow">+</td><td>0.1.13 / 8.4.0</td></tr>
-<tr class="added"><td class="pkg">picomatch (2 ranges)</td><td>&mdash;</td><td class="arrow">+</td><td>2.3.2 / 4.0.4</td></tr>
-<tr class="added"><td class="pkg">rollup@&lt;4.59.0</td><td>&mdash;</td><td class="arrow">+</td><td>^4.59.0</td></tr>
-<tr class="added"><td class="pkg">serialize-javascript@&lt;=7.0.2</td><td>&mdash;</td><td class="arrow">+</td><td>7.0.5</td></tr>
-<tr class="added"><td class="pkg">socket.io-parser</td><td>&mdash;</td><td class="arrow">+</td><td>^4.2.6</td></tr>
-<tr class="updated"><td class="pkg">tar</td><td>&lt;7.5.8 &rarr; ^7.5.8</td><td class="arrow">&rarr;</td><td>&lt;=7.5.9 &rarr; ^7.5.10</td></tr>
-<tr class="added"><td class="pkg">tmp@&lt;=0.2.3</td><td>&mdash;</td><td class="arrow">+</td><td>^0.2.4</td></tr>
-<tr class="added"><td class="pkg">tough-cookie@&lt;4.1.3</td><td>&mdash;</td><td class="arrow">+</td><td>^4.1.3</td></tr>
-<tr class="added"><td class="pkg">underscore@&lt;=1.13.7</td><td>&mdash;</td><td class="arrow">+</td><td>^1.13.8</td></tr>
-<tr class="added"><td class="pkg">undici@&lt;7.24.0</td><td>&mdash;</td><td class="arrow">+</td><td>^7.24.0</td></tr>
-<tr class="updated"><td class="pkg">vite@&gt;=6.0.0 &lt;6.4.1</td><td>^6.4.1</td><td class="arrow">&rarr;</td><td>^7.3.2</td></tr>
-<tr class="added"><td class="pkg">vite@&gt;=7.0.0 &lt;=7.3.1</td><td>&mdash;</td><td class="arrow">+</td><td>^7.3.2</td></tr>
-</tbody>
-</table>
-</div>
-
-<div>
-<h3><span class="branch-tag tag-251">25_1</span> 12 &rarr; 58 overrides (+46 new)</h3>
-<p class="note">Same as 25_2 plus additional overrides for older dependencies:</p>
-<table>
-<thead><tr><th>Override (25_1 extras vs 25_2)</th><th>Before</th><th></th><th>After</th></tr></thead>
-<tbody>
-<tr class="added"><td class="pkg">@angular/common@&gt;=19 &lt;19.2.16</td><td>&mdash;</td><td class="arrow">+</td><td>^19.2.20</td></tr>
-<tr class="added"><td class="pkg">@angular/compiler@&gt;=19-next &lt;19.2.20</td><td>&mdash;</td><td class="arrow">+</td><td>^19.2.20</td></tr>
-<tr class="added"><td class="pkg">@angular/core@&gt;=19-next &lt;19.2.20</td><td>&mdash;</td><td class="arrow">+</td><td>^19.2.20</td></tr>
-<tr class="added"><td class="pkg">@angular/platform-server@&gt;=19-next</td><td>&mdash;</td><td class="arrow">+</td><td>^19.2.20</td></tr>
-<tr class="added"><td class="pkg">@modelcontextprotocol/sdk</td><td>&mdash;</td><td class="arrow">+</td><td>^1.26.0</td></tr>
-<tr class="updated"><td class="pkg">axios</td><td>&lt;1.8.2 &rarr; ^1.13.2</td><td class="arrow">&rarr;</td><td>&lt;=1.13.4 &rarr; ^1.13.5</td></tr>
-<tr class="added"><td class="pkg">qs@&gt;=6.14.1</td><td>&mdash;</td><td class="arrow">+</td><td>&gt;=6.14.1</td></tr>
-<tr class="added"><td class="pkg">vite@&gt;=5.0.0 &lt;=5.4.20</td><td>&mdash;</td><td class="arrow">+</td><td>^5.4.21</td></tr>
-<tr><td colspan="4" class="unchanged">... plus all 37 new overrides from 25_2 above</td></tr>
-</tbody>
-</table>
-</div>
-</div>
-
-<!-- ==================== SECTION 4: PACKAGE.JSON ==================== -->
-<h2 id="pkgjson">4. Package.json Dependency Bumps (packages/devextreme)</h2>
-<p class="note">Both branches have nearly identical bump sets. Showing consolidated view.</p>
-
-<table>
-<thead><tr><th>Package</th><th>Before (both branches)</th><th></th><th>After (both branches)</th><th>Category</th></tr></thead>
-<tbody>
-<tr class="updated"><td class="pkg">@testing-library/dom</td><td>^10.4.0</td><td class="arrow">&rarr;</td><td>10.4.1</td><td>Pin exact</td></tr>
-<tr class="updated"><td class="pkg">@types/enzyme</td><td>3.10.18</td><td class="arrow">&rarr;</td><td>3.10.19</td><td>Patch</td></tr>
-<tr class="updated"><td class="pkg">@types/react</td><td>16.14.34</td><td class="arrow">&rarr;</td><td>16.14.69</td><td>Patch</td></tr>
-<tr class="updated"><td class="pkg">autoprefixer</td><td>10.4.21</td><td class="arrow">&rarr;</td><td>10.4.27</td><td>Patch</td></tr>
-<tr class="updated"><td class="pkg">babel-plugin-inferno</td><td>6.8.3</td><td class="arrow">&rarr;</td><td>6.8.5</td><td>Patch</td></tr>
-<tr class="updated"><td class="pkg">devextreme-exceljs-fork</td><td>^4.4.7</td><td class="arrow">&rarr;</td><td>4.4.7</td><td>Pin exact</td></tr>
-<tr class="updated"><td class="pkg">eslint-config-devextreme</td><td>1.1.6</td><td class="arrow">&rarr;</td><td>catalog:</td><td>Moved to catalog</td></tr>
-<tr class="updated"><td class="pkg">eslint-plugin-jest</td><td>28.14.0 (25_2) / 27.6.0 (25_1)</td><td class="arrow">&rarr;</td><td>29.0.1</td><td>Major</td></tr>
-<tr class="updated"><td class="pkg">eslint-plugin-jsx-a11y</td><td>6.8.0</td><td class="arrow">&rarr;</td><td>catalog:</td><td>Moved to catalog</td></tr>
-<tr class="updated"><td class="pkg">eslint-plugin-n</td><td>^17.0.0</td><td class="arrow">&rarr;</td><td>17.23.1</td><td>Pin exact</td></tr>
-<tr class="updated"><td class="pkg">eslint-plugin-react</td><td>7.33.2</td><td class="arrow">&rarr;</td><td>7.37.5</td><td>Minor</td></tr>
-<tr class="updated"><td class="pkg">eslint-plugin-unicorn</td><td>^60.0.0</td><td class="arrow">&rarr;</td><td>60.0.0</td><td>Pin exact</td></tr>
-<tr class="updated"><td class="pkg">globalize</td><td>1.7.0</td><td class="arrow">&rarr;</td><td>1.7.1</td><td>Patch</td></tr>
-<tr class="updated"><td class="pkg">ignore</td><td>5.3.1</td><td class="arrow">&rarr;</td><td>5.3.2</td><td>Patch</td></tr>
-<tr class="updated"><td class="pkg">jspdf-autotable</td><td>3.8.3</td><td class="arrow">&rarr;</td><td>3.8.4</td><td>Patch</td></tr>
-<tr class="updated"><td class="pkg">knockout</td><td>3.5.1</td><td class="arrow">&rarr;</td><td>3.5.2</td><td>Patch</td></tr>
-<tr class="updated"><td class="pkg">recast</td><td>0.23.4</td><td class="arrow">&rarr;</td><td>0.23.11</td><td>Patch</td></tr>
-<tr class="updated"><td class="pkg">terser-webpack-plugin</td><td>5.3.9</td><td class="arrow">&rarr;</td><td>5.3.17</td><td>Patch</td></tr>
-<tr class="updated"><td class="pkg">tsc-alias</td><td>1.8.10</td><td class="arrow">&rarr;</td><td>1.8.16</td><td>Patch</td></tr>
-</tbody>
-</table>
-
-<!-- ==================== SECTION 5: ESLINT CONFIG ==================== -->
-<h2 id="eslint">5. eslint.config.mjs Changes</h2>
-<p class="note">Identical changes on both 25_2 and 25_1.</p>
-
-<div class="summary-box">
-<h3 style="margin-top:0">Removed (red)</h3>
-<table>
-<thead><tr><th>What</th><th>Before</th><th>After</th><th>Why</th></tr></thead>
-<tbody>
-<tr class="removed"><td class="pkg">import { createRequire }</td><td>Present</td><td>Removed</td><td>No longer needed</td></tr>
-<tr class="removed"><td class="pkg">const require = createRequire(...)</td><td>Present</td><td>Removed</td><td>No longer needed</td></tr>
-<tr class="removed"><td class="pkg">function loadDevExtremeConfig()</td><td>19-line compat shim</td><td>Removed</td><td>eslint-config-devextreme 1.1.9 exports flat config natively</td></tr>
-</tbody>
-</table>
-
-<h3>Added (green)</h3>
-<table>
-<thead><tr><th>What</th><th>Before</th><th>After</th><th>Why</th></tr></thead>
-<tbody>
-<tr class="added"><td class="pkg">Direct ESM imports</td><td>loadDevExtremeConfig() calls</td><td><code>import spellCheckConfig from 'eslint-config-devextreme/spell-check'</code><br><code>import typescriptConfig from 'eslint-config-devextreme/typescript'</code><br><code>import qunitConfig from 'eslint-config-devextreme/qunit'</code></td><td>Clean ESM, no compat shim</td></tr>
-<tr class="added"><td class="pkg">@typescript-eslint/prefer-nullish-coalescing</td><td>&mdash;</td><td>'warn'</td><td>New TS-eslint rule (8.52.0)</td></tr>
-<tr class="added"><td class="pkg">@typescript-eslint/only-throw-error</td><td>&mdash;</td><td>'warn'</td><td>New TS-eslint rule</td></tr>
-<tr class="added"><td class="pkg">@typescript-eslint/prefer-optional-chain</td><td>&mdash;</td><td>'warn'</td><td>New TS-eslint rule</td></tr>
-<tr class="added"><td class="pkg">require-await</td><td>&mdash;</td><td>'warn'</td><td>New rule</td></tr>
-<tr class="added"><td class="pkg">@typescript-eslint/no-unused-vars</td><td>&mdash;</td><td>'off' (in QUnit section)</td><td>Suppress in test files</td></tr>
-</tbody>
-</table>
-</div>
-
-<p style="text-align:center; margin-top:30px; color:#aaa; font-size:0.8em;">
-  Report auto-generated from git diff data. Source worktrees: /tmp/dx-25_2, /tmp/dx-25_1
-</p>
-</body>
-</html>
+</body></html>
