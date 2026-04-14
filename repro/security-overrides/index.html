@@ -1,128 +1,543 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>DevExtreme — dependency dashboard (current green state)</title>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DevExtreme Dependency Version Comparison</title>
 <style>
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:24px;max-width:1300px;margin:0 auto}
-h1{font-size:22px;margin-bottom:4px}.subtitle{color:#888;font-size:13px;margin-bottom:16px}
-.tabs{display:flex;gap:0;margin-bottom:0;flex-wrap:wrap}.tab{padding:10px 20px;cursor:pointer;border:1px solid #d1d5db;border-bottom:none;border-radius:8px 8px 0 0;background:#f9fafb;font-weight:500;font-size:13px}
-.tab.active{background:#fff;border-bottom:1px solid #fff;margin-bottom:-1px;z-index:1}.tab-content{display:none;border:1px solid #d1d5db;border-radius:0 8px 8px 8px;padding:16px}
-.tab-content.active{display:block}.summary{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}.stat{padding:6px 14px;border-radius:6px;font-weight:600;font-size:14px}
-table{border-collapse:collapse;width:100%;font-size:13px}th,td{border:1px solid #d1d5db;padding:5px 8px;text-align:left}
-th{background:#f3f4f6;font-weight:600;position:sticky;top:0}.pkg{font-family:monospace;font-weight:500;white-space:nowrap}
-.note{margin-top:10px;padding:10px;background:#fff7e6;border-left:4px solid #f59e0b;font-size:13px;line-height:1.5}
-.good{margin-top:10px;padding:10px;background:#d1fae5;border-radius:8px;font-weight:500;font-size:13px}
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; padding: 20px; max-width: 1400px; margin: 0 auto; }
+  h1 { text-align: center; margin-bottom: 6px; font-size: 1.6em; }
+  .timestamp { text-align: center; color: #888; font-size: 0.85em; margin-bottom: 24px; }
+  .summary { text-align: center; margin-bottom: 20px; font-size: 0.9em; }
+  .summary span { display: inline-block; margin: 0 12px; padding: 4px 12px; border-radius: 4px; font-weight: 600; }
+  .summary .s-match { background: #d4edda; color: #155724; }
+  .summary .s-partial { background: #fff3cd; color: #856404; }
+  .summary .s-diff { background: #f8d7da; color: #721c24; }
+  .summary .s-missing { background: #e2e3e5; color: #383d41; }
+  h2 { margin: 24px 0 8px; font-size: 1.2em; border-bottom: 2px solid #007bff; padding-bottom: 4px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 16px; background: #fff; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  th { background: #343a40; color: #fff; padding: 8px 10px; text-align: left; font-size: 0.85em; white-space: nowrap; }
+  td { padding: 6px 10px; border-bottom: 1px solid #eee; font-size: 0.82em; font-family: 'SFMono-Regular', Consolas, monospace; }
+  tr:last-child td { border-bottom: none; }
+  .pkg-name { font-weight: 600; color: #222; min-width: 240px; }
+  .match { background: #d4edda; }
+  .partial { background: #fff3cd; }
+  .diff { background: #f8d7da; }
+  .missing { background: #e2e3e5; color: #888; font-style: italic; }
+  .status-badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 0.75em; font-weight: 600; }
+  .status-badge.match { color: #155724; }
+  .status-badge.partial { color: #856404; }
+  .status-badge.diff { color: #721c24; }
+  .status-badge.missing { color: #383d41; }
+  .toc { background: #fff; padding: 16px 20px; border-radius: 6px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .toc a { color: #007bff; text-decoration: none; display: block; padding: 2px 0; font-size: 0.9em; }
+  .toc a:hover { text-decoration: underline; }
+  .filter-bar { text-align: center; margin-bottom: 16px; }
+  .filter-bar button { padding: 6px 14px; margin: 0 4px; border: 1px solid #ccc; border-radius: 4px; background: #fff; cursor: pointer; font-size: 0.82em; }
+  .filter-bar button.active { background: #007bff; color: #fff; border-color: #007bff; }
+  .filter-bar button:hover { opacity: 0.85; }
+  .note { font-size: 0.8em; color: #888; margin-bottom: 8px; }
 </style>
-<script>function showTab(id){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));document.getElementById('tab-'+id).classList.add('active');document.getElementById('content-'+id).classList.add('active');}</script>
-</head><body>
-<h1>Dependency dashboard — current green state</h1>
-<p class="subtitle">25_1 / 25_2 / 26_1 — after overrides sync + patch bumps (CI green on both PRs)</p>
-<div class="tabs">
-<div class="tab active" id="tab-ovr" onclick="showTab('ovr')">📍 Overrides</div>
-<div class="tab" id="tab-deps" onclick="showTab('deps')">📦 Dependencies (diff only)</div>
+</head>
+<body>
+<h1>DevExtreme Dependency Version Comparison</h1>
+<p class="timestamp">Generated: 2026-04-14 | Branches: 26_1 (main) vs 25_2 vs 25_1</p>
+
+<div class="summary">
+  <span class="s-match">All Match</span>
+  <span class="s-partial">26_1 = 25_2</span>
+  <span class="s-diff">Different</span>
+  <span class="s-missing">Missing</span>
 </div>
-<div class="tab-content active" id="content-ovr">
-<h3>pnpm overrides — current green state</h3>
-<div class="good">Cherry-pick readiness: 🟢 100% — zero "Only 26_1", zero "Different"</div>
-<div class="summary"><div class="stat" style="background:#d1fae5">✅ Same: 37</div><div class="stat" style="background:#fef3c7">🟡 Diff: 0</div><div class="stat" style="background:#fee2e2">🔴 Only 26_1: 0</div><div class="stat" style="background:#e0e7ff">🔵 Only 25_x: 21</div><div class="stat" style="background:#f3f4f6">Total: 58</div></div>
-<div class="note">🔵 Only 25_x (21): overrides needed by 25_x for older transitive deps. Don't block 26_1→25_x cherry-picks.</div>
-<table><thead><tr><th>Package</th><th>25_1</th><th>25_2</th><th>26_1</th><th>Status</th></tr></thead><tbody><tr style="background:#e0e7ff"><td class="pkg">@angular/common@>=19.0.0 <19.2.16</td><td>^19.2.20</td><td>—</td><td>—</td><td>🔵 25_x</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">@angular/compiler@>=19.0.0-next.0 <19.2.20</td><td>^19.2.20</td><td>—</td><td>—</td><td>🔵 25_x</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">@angular/core@>=19.0.0-next.0 <19.2.20</td><td>^19.2.20</td><td>—</td><td>—</td><td>🔵 25_x</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">@angular/platform-server@>=19.0.0-next.0 <19.2.20</td><td>^19.2.20</td><td>—</td><td>—</td><td>🔵 25_x</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">@devexpress/callsite-record@^4.1.6</td><td>4.1.7</td><td>4.1.7</td><td>4.1.7</td><td>✅</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">@hono/node-server@<1.19.10</td><td>^1.19.10</td><td>^1.19.10</td><td>^1.19.10</td><td>✅</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">@isaacs/brace-expansion@<=5.0.0</td><td>^5.0.1</td><td>^5.0.1</td><td>^5.0.1</td><td>✅</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">@modelcontextprotocol/sdk@>=1.10.0 <=1.25.3</td><td>^1.26.0</td><td>^1.26.0</td><td>^1.26.0</td><td>✅</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">@tootallnate/once@<3.0.1</td><td>^3.0.1</td><td>^3.0.1</td><td>—</td><td>🔵 25_x</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">ajv@>=7.0.0-alpha.0 <8.18.0</td><td>^8.18.0</td><td>^8.18.0</td><td>—</td><td>🔵 25_x</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">axios@<=1.13.4</td><td>^1.13.5</td><td>^1.13.5</td><td>^1.13.5</td><td>✅</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">basic-ftp@<5.2.1</td><td>~5.2.1</td><td>~5.2.1</td><td>~5.2.1</td><td>✅</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">bn.js@<4.12.3</td><td>4.12.3</td><td>4.12.3</td><td>—</td><td>🔵 25_x</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">bn.js@>=5.0.0 <5.2.3</td><td>5.2.3</td><td>5.2.3</td><td>—</td><td>🔵 25_x</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">brace-expansion@<1.1.13</td><td>1.1.13</td><td>1.1.13</td><td>—</td><td>🔵 25_x</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">brace-expansion@>=2.0.0 <2.0.3</td><td>2.0.3</td><td>2.0.3</td><td>—</td><td>🔵 25_x</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">braces@<3.0.3</td><td>^3.0.3</td><td>^3.0.3</td><td>^3.0.3</td><td>✅</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">cookie@<0.7.0</td><td>^0.7.0</td><td>^0.7.0</td><td>—</td><td>🔵 25_x</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">diff@>=4.0.0 <4.0.4</td><td>4.0.4</td><td>4.0.4</td><td>—</td><td>🔵 25_x</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">diff@>=5.0.0 <5.2.2</td><td>5.2.2</td><td>5.2.2</td><td>—</td><td>🔵 25_x</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">dompurify@<=3.3.1</td><td>^3.3.2</td><td>^3.3.2</td><td>—</td><td>🔵 25_x</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">express-rate-limit@>=8.2.0 <8.2.2</td><td>^8.2.2</td><td>^8.2.2</td><td>^8.2.2</td><td>✅</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">flatted@<3.4.0</td><td>^3.4.0</td><td>^3.4.0</td><td>^3.4.0</td><td>✅</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">form-data@<2.5.4</td><td>2.5.5</td><td>2.5.5</td><td>2.5.5</td><td>✅</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">form-data@>=4.0.0 <4.0.4</td><td>^4.0.5</td><td>^4.0.5</td><td>^4.0.5</td><td>✅</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">glob@>=10.2.0 <10.5.0</td><td>^10.5.0</td><td>^10.5.0</td><td>^10.5.0</td><td>✅</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">hono@<4.12.4</td><td>^4.12.4</td><td>^4.12.4</td><td>^4.12.4</td><td>✅</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">immutable@>=4.0.0-rc.1 <4.3.8</td><td>^4.3.8</td><td>^4.3.8</td><td>—</td><td>🔵 25_x</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">immutable@>=5.0.0 <5.1.5</td><td>^5.1.5</td><td>^5.1.5</td><td>^5.1.5</td><td>✅</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">json5@<1.0.2</td><td>^2.2.3</td><td>^2.2.3</td><td>^2.2.3</td><td>✅</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">lodash.template@<4.18.1</td><td>4.18.1</td><td>4.18.1</td><td>4.18.1</td><td>✅</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">lodash@<4.18.1</td><td>4.18.1</td><td>4.18.1</td><td>4.18.1</td><td>✅</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">micromatch@<4.0.8</td><td>^4.0.8</td><td>^4.0.8</td><td>—</td><td>🔵 25_x</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">minimatch@<3.1.5</td><td>3.1.5</td><td>3.1.5</td><td>3.1.5</td><td>✅</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">minimatch@>=10.0.0 < 10.2.4</td><td>10.2.4</td><td>10.2.4</td><td>10.2.4</td><td>✅</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">minimatch@>=5.0.0 <5.1.8</td><td>5.1.8</td><td>5.1.8</td><td>—</td><td>🔵 25_x</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">minimatch@>=9.0.0 < 9.0.7</td><td>9.0.9</td><td>9.0.9</td><td>9.0.9</td><td>✅</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">node-forge@<1.4.0</td><td>1.4.0</td><td>1.4.0</td><td>1.4.0</td><td>✅</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">path-to-regexp@0.1.12</td><td>0.1.13</td><td>0.1.13</td><td>0.1.13</td><td>✅</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">path-to-regexp@>=8.0.0 <8.4.0</td><td>8.4.0</td><td>8.4.0</td><td>8.4.0</td><td>✅</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">pbkdf2@<=3.1.2</td><td>^3.1.3</td><td>^3.1.3</td><td>^3.1.3</td><td>✅</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">picomatch@>=2.0.0 <2.3.2</td><td>2.3.2</td><td>2.3.2</td><td>2.3.2</td><td>✅</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">picomatch@>=4.0.0 <4.0.4</td><td>4.0.4</td><td>4.0.4</td><td>4.0.4</td><td>✅</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">qs</td><td>>=6.14.1</td><td>>=6.14.1</td><td>>=6.14.1</td><td>✅</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">rollup@< 4.59.0</td><td>^4.59.0</td><td>^4.59.0</td><td>^4.59.0</td><td>✅</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">rollup@<2.79.2</td><td>^4.53.3</td><td>^4.53.3</td><td>—</td><td>🔵 25_x</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">semver@<5.7.2</td><td>^5.7.2</td><td>^5.7.2</td><td>^5.7.2</td><td>✅</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">serialize-javascript@<=7.0.2</td><td>7.0.5</td><td>7.0.5</td><td>7.0.5</td><td>✅</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">sha.js@<=2.4.11</td><td>^2.4.12</td><td>^2.4.12</td><td>^2.4.12</td><td>✅</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">socket.io-parser@>=4.0.0 <4.2.6</td><td>^4.2.6</td><td>^4.2.6</td><td>^4.2.6</td><td>✅</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">tar@<=7.5.9</td><td>^7.5.10</td><td>^7.5.10</td><td>^7.5.10</td><td>✅</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">tmp@<=0.2.3</td><td>^0.2.4</td><td>^0.2.4</td><td>—</td><td>🔵 25_x</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">tough-cookie@<4.1.3</td><td>^4.1.3</td><td>^4.1.3</td><td>—</td><td>🔵 25_x</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">underscore@<=1.13.7</td><td>^1.13.8</td><td>^1.13.8</td><td>^1.13.8</td><td>✅</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">undici@<7.24.0</td><td>^7.24.0</td><td>^7.24.0</td><td>^7.24.0</td><td>✅</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">vite@>=5.0.0 <=5.4.20</td><td>^5.4.21</td><td>—</td><td>—</td><td>🔵 25_x</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">vite@>=6.0.0 <6.4.1</td><td>^7.3.2</td><td>^7.3.2</td><td>^7.3.2</td><td>✅</td></tr>
-<tr style="background:#d1fae5"><td class="pkg">vite@>=7.0.0 <=7.3.1</td><td>^7.3.2</td><td>^7.3.2</td><td>^7.3.2</td><td>✅</td></tr></tbody></table>
+
+<div class="filter-bar">
+  <button class="active" onclick="filterRows('all', this)">Show All</button>
+  <button onclick="filterRows('diff', this)">Differences Only</button>
+  <button onclick="filterRows('missing', this)">Missing Only</button>
 </div>
-<div class="tab-content" id="content-deps">
-<h3>Direct dependencies — packages/devextreme/package.json (diff only)</h3>
-<p class="subtitle">Showing only packages with version differences. 📎 = resolved from pnpm catalog. Total: 162, Identical: 128</p>
-<div class="summary"><div class="stat" style="background:#d1fae5">✅ Same: 128</div><div class="stat" style="background:#fef3c7">🟡 Diff: 30</div><div class="stat" style="background:#fee2e2">🔴 Only 26_1: 1</div><div class="stat" style="background:#e0e7ff">🔵 Only 25_x: 3</div><div class="stat" style="background:#f3f4f6">Total: 162</div></div>
-<div class="note">🟡 Different (30): includes eslint-config-devextreme 1.1.6 vs 1.1.9 (upgrade = separate task), @stylistic 2.13 vs 5.10, eslint-plugin-jest 27 vs 29, gulp-sass 5 vs 6, etc.<br><br>
-Patch bumps already applied. Minor+major bumps require eslint-config-devextreme@1.1.9 upgrade first (separate issue).</div>
-<table><thead><tr><th>Package</th><th>25_1</th><th>25_2</th><th>26_1</th><th>Status</th></tr></thead><tbody><tr style="background:#fef3c7"><td class="pkg">@babel/core</td><td>7.23.9</td><td>7.23.9</td><td>7.29.0</td><td>🟡</td></tr>
-<tr style="background:#fef3c7"><td class="pkg">@babel/eslint-parser</td><td>catalog: 7.26.5</td><td>catalog: 7.26.5</td><td>catalog: 7.28.6</td><td>🟡</td></tr>
-<tr style="background:#fef3c7"><td class="pkg">@babel/parser</td><td>7.23.9</td><td>7.23.9</td><td>7.29.0</td><td>🟡</td></tr>
-<tr style="background:#fef3c7"><td class="pkg">@babel/plugin-transform-modules-commonjs</td><td>7.23.3</td><td>7.23.3</td><td>7.28.6</td><td>🟡</td></tr>
-<tr style="background:#fef3c7"><td class="pkg">@babel/plugin-transform-runtime</td><td>7.23.3</td><td>7.23.3</td><td>7.29.0</td><td>🟡</td></tr>
-<tr style="background:#fef3c7"><td class="pkg">@babel/preset-env</td><td>7.23.9</td><td>7.23.9</td><td>7.29.0</td><td>🟡</td></tr>
-<tr style="background:#fef3c7"><td class="pkg">@eslint/eslintrc</td><td>catalog: 3.2.0</td><td>catalog: 3.2.0</td><td>catalog: 3.3.5</td><td>🟡</td></tr>
-<tr style="background:#fef3c7"><td class="pkg">@stylistic/eslint-plugin</td><td>catalog: 2.13.0</td><td>catalog: 2.13.0</td><td>catalog: 5.10.0</td><td>🟡</td></tr>
-<tr style="background:#fef3c7"><td class="pkg">@testing-library/jest-dom</td><td>^6.6.3</td><td>^6.6.3</td><td>6.9.1</td><td>🟡</td></tr>
-<tr style="background:#fef3c7"><td class="pkg">@testing-library/user-event</td><td>^14.5.2</td><td>^14.5.2</td><td>14.6.1</td><td>🟡</td></tr>
-<tr style="background:#fef3c7"><td class="pkg">@types/jquery</td><td>3.5.29</td><td>catalog: 3.5.29</td><td>catalog: 3.5.34</td><td>🟡</td></tr>
-<tr style="background:#fef3c7"><td class="pkg">@typescript-eslint/eslint-plugin</td><td>catalog: 8.23.0</td><td>catalog: 8.23.0</td><td>catalog: 8.52.0</td><td>🟡</td></tr>
-<tr style="background:#fef3c7"><td class="pkg">@typescript-eslint/parser</td><td>catalog: 8.23.0</td><td>catalog: 8.23.0</td><td>catalog: 8.52.0</td><td>🟡</td></tr>
-<tr style="background:#fef3c7"><td class="pkg">csstype</td><td>3.1.3</td><td>3.1.3</td><td>3.2.3</td><td>🟡</td></tr>
-<tr style="background:#fef3c7"><td class="pkg">devextreme-exceljs-fork</td><td>4.4.7</td><td>4.4.7</td><td>catalog: 4.4.7</td><td>🟡</td></tr>
-<tr style="background:#fef3c7"><td class="pkg">eslint</td><td>catalog: 9.18.0</td><td>catalog: 9.18.0</td><td>catalog: 9.39.4</td><td>🟡</td></tr>
-<tr style="background:#fef3c7"><td class="pkg">eslint-config-devextreme</td><td>1.1.6</td><td>1.1.6</td><td>catalog: 1.1.9</td><td>🟡</td></tr>
-<tr style="background:#fef3c7"><td class="pkg">eslint-plugin-import</td><td>catalog: 2.31.0</td><td>catalog: 2.31.0</td><td>catalog: 2.32.0</td><td>🟡</td></tr>
-<tr style="background:#fef3c7"><td class="pkg">eslint-plugin-jest</td><td>27.6.0</td><td>28.14.0</td><td>29.15.0</td><td>🟡</td></tr>
-<tr style="background:#fef3c7"><td class="pkg">eslint-plugin-jsx-a11y</td><td>6.8.0</td><td>6.8.0</td><td>catalog: 6.10.2</td><td>🟡</td></tr>
-<tr style="background:#fef3c7"><td class="pkg">eslint-plugin-n</td><td>—</td><td>^17.0.0</td><td>17.24.0</td><td>🟡</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">eslint-plugin-node</td><td>11.1.0</td><td>—</td><td>—</td><td>🔵 25_x</td></tr>
-<tr style="background:#fef3c7"><td class="pkg">eslint-plugin-qunit</td><td>catalog: 8.1.2</td><td>catalog: 8.1.2</td><td>catalog: 8.2.5</td><td>🟡</td></tr>
-<tr style="background:#fef3c7"><td class="pkg">eslint-plugin-react</td><td>7.33.2</td><td>7.33.2</td><td>7.37.5</td><td>🟡</td></tr>
-<tr style="background:#fef3c7"><td class="pkg">glob</td><td>10.4.5</td><td>11.1.0</td><td>11.1.0</td><td>🟡</td></tr>
-<tr style="background:#fef3c7"><td class="pkg">gulp-sass</td><td>5.1.0</td><td>5.1.0</td><td>6.0.1</td><td>🟡</td></tr>
-<tr style="background:#fef3c7"><td class="pkg">jquery</td><td>3.7.1</td><td>catalog: 3.7.1</td><td>catalog: 4.0.0</td><td>🟡</td></tr>
-<tr style="background:#fef3c7"><td class="pkg">jspdf</td><td>4.0.0</td><td>4.0.0</td><td>4.2.1</td><td>🟡</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">npm-run-all</td><td>4.1.5</td><td>4.1.5</td><td>—</td><td>🔵 25_x</td></tr>
-<tr style="background:#fee2e2"><td class="pkg">npm-run-all2</td><td>—</td><td>—</td><td>5.0.2</td><td>🔴 26_1</td></tr>
-<tr style="background:#fef3c7"><td class="pkg">sass-embedded</td><td>1.59.2</td><td>1.59.2</td><td>1.93.3</td><td>🟡</td></tr>
-<tr style="background:#e0e7ff"><td class="pkg">unplugin</td><td>—</td><td>^3.0.0</td><td>—</td><td>🔵 25_x</td></tr>
-<tr style="background:#fef3c7"><td class="pkg">webpack</td><td>5.103.0</td><td>5.103.0</td><td>5.105.4</td><td>🟡</td></tr>
-<tr style="background:#fef3c7"><td class="pkg">yaml</td><td>2.5.0</td><td>2.5.0</td><td>2.8.3</td><td>🟡</td></tr></tbody></table>
+
+<div class="toc">
+  <strong>Table of Contents</strong>
+  <a href="#catalog">1. pnpm-workspace.yaml - catalog</a>
+  <a href="#catalogs-angular">2. pnpm-workspace.yaml - catalogs/angular</a>
+  <a href="#catalogs-eslint8">3. pnpm-workspace.yaml - catalogs/eslint8</a>
+  <a href="#catalogs-tools">4. pnpm-workspace.yaml - catalogs/tools</a>
+  <a href="#devextreme">5. packages/devextreme/package.json (devDependencies)</a>
+  <a href="#testcafe">6. e2e/testcafe-devextreme/package.json (devDependencies)</a>
+  <a href="#react">7. packages/devextreme-react/package.json (devDependencies)</a>
+  <a href="#angular">8. packages/devextreme-angular/package.json (devDependencies)</a>
+  <a href="#vue">9. packages/devextreme-vue/package.json (devDependencies)</a>
 </div>
-</body></html>
+
+<script>
+function statusClass(v26, v25_2, v25_1) {
+  var has26 = v26 !== null && v26 !== undefined;
+  var has252 = v25_2 !== null && v25_2 !== undefined;
+  var has251 = v25_1 !== null && v25_1 !== undefined;
+  if (!has26 || !has252 || !has251) return 'missing';
+  if (v26 === v25_2 && v25_2 === v25_1) return 'match';
+  if (v26 === v25_2) return 'partial';
+  return 'diff';
+}
+
+function statusLabel(cls) {
+  if (cls === 'match') return 'All Match';
+  if (cls === 'partial') return '26_1 = 25_2';
+  if (cls === 'diff') return 'Different';
+  return 'Missing';
+}
+
+function renderTable(containerId, data) {
+  var container = document.getElementById(containerId);
+  var html = '<table><thead><tr><th>Package</th><th>26_1</th><th>25_2</th><th>25_1</th><th>Status</th></tr></thead><tbody>';
+  var keys = Object.keys(data).sort(function(a, b) { return a.replace(/^@/, '').localeCompare(b.replace(/^@/, '')); });
+  for (var i = 0; i < keys.length; i++) {
+    var pkg = keys[i];
+    var vals = data[pkg];
+    var v26 = vals[0], v252 = vals[1], v251 = vals[2];
+    var cls = statusClass(v26, v252, v251);
+    html += '<tr class="dep-row ' + cls + '" data-status="' + cls + '">';
+    html += '<td class="pkg-name">' + pkg + '</td>';
+    html += '<td>' + (v26 !== null && v26 !== undefined ? v26 : '<span class="missing">--</span>') + '</td>';
+    html += '<td>' + (v252 !== null && v252 !== undefined ? v252 : '<span class="missing">--</span>') + '</td>';
+    html += '<td>' + (v251 !== null && v251 !== undefined ? v251 : '<span class="missing">--</span>') + '</td>';
+    html += '<td><span class="status-badge ' + cls + '">' + statusLabel(cls) + '</span></td>';
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+function filterRows(mode, btn) {
+  var buttons = document.querySelectorAll('.filter-bar button');
+  for (var i = 0; i < buttons.length; i++) buttons[i].classList.remove('active');
+  btn.classList.add('active');
+  var rows = document.querySelectorAll('.dep-row');
+  for (var j = 0; j < rows.length; j++) {
+    var st = rows[j].getAttribute('data-status');
+    if (mode === 'all') rows[j].style.display = '';
+    else if (mode === 'diff') rows[j].style.display = (st === 'diff' || st === 'partial' || st === 'missing') ? '' : 'none';
+    else if (mode === 'missing') rows[j].style.display = (st === 'missing') ? '' : 'none';
+  }
+}
+
+var catalog = {
+  "axe-core": ["^4.11.1", "^4.11.1", "^4.11.1"],
+  "inferno": ["^8.2.3", "^8.2.3", "^8.2.3"],
+  "inferno-hydrate": ["^8.2.3", "^8.2.3", "^8.2.3"],
+  "inferno-create-element": ["^8.2.3", "^8.2.3", "^8.2.3"],
+  "inferno-server": ["^8.2.3", "^8.2.3", "^8.2.3"],
+  "devexpress-diagram": ["2.2.25", "2.2.29", "2.2.25"],
+  "devexpress-gantt": ["4.1.67", "4.1.68", "4.1.67"],
+  "devextreme-exceljs-fork": ["4.4.7", null, null],
+  "devextreme-quill": ["1.7.9", "1.7.9", "1.7.9"],
+  "eslint": ["9.39.4", "9.18.0", "9.18.0"],
+  "eslint-config-airbnb-typescript": ["18.0.0", "18.0.0", "18.0.0"],
+  "eslint-config-devextreme": ["1.1.9", "1.1.9", "1.1.9"],
+  "eslint-plugin-i18n": ["2.4.0", "2.4.0", "2.4.0"],
+  "eslint-plugin-import": ["2.32.0", "2.32.0", "2.32.0"],
+  "eslint-plugin-jsx-a11y": ["6.10.2", "6.10.2", "6.10.2"],
+  "eslint-plugin-no-only-tests": ["3.3.0", "3.3.0", "3.3.0"],
+  "eslint-plugin-qunit": ["8.2.5", "8.2.5", "8.2.5"],
+  "eslint-plugin-vue": ["10.4.0", "10.4.0", "10.4.0"],
+  "vue-eslint-parser": ["10.0.0", "10.0.0", "10.0.0"],
+  "globals": ["15.14.0", "15.14.0", "15.14.0"],
+  "gulp-eslint-new": ["2.4.0", "2.4.0", "2.4.0"],
+  "jquery": ["4.0.0", "3.7.1", null],
+  "testcafe": [null, "3.7.4", "3.7.4"],
+  "@babel/eslint-parser": ["7.28.6", "7.26.5", "7.26.5"],
+  "@eslint-stylistic/metadata": ["^2.13.0", "^2.13.0", "^2.13.0"],
+  "@eslint/eslintrc": ["3.3.5", "3.2.0", "3.2.0"],
+  "@stylistic/eslint-plugin": ["5.10.0", "5.4.0", "5.4.0"],
+  "@types/jquery": ["3.5.34", "3.5.29", null],
+  "@typescript-eslint/eslint-plugin": ["8.52.0", "8.52.0", "8.52.0"],
+  "@typescript-eslint/parser": ["8.52.0", "8.52.0", "8.52.0"]
+};
+
+var catalogsAngular = {
+  "@angular-devkit/build-angular": ["~20.3.0", "~19.2.19", null],
+  "@angular-devkit/architect": ["~0.2003.15", "~0.1902.19", null],
+  "@angular-devkit/schematics": ["~20.3.0", "~19.2.19", null],
+  "@angular/cli": ["~20.3.0", "~19.2.19", null],
+  "@angular/common": ["~20.3.0", "~19.2.18", null],
+  "@angular/compiler": ["~20.3.0", "~19.2.18", null],
+  "@angular/compiler-cli": ["~20.3.0", "~19.2.18", null],
+  "@angular/core": ["~20.3.0", "~19.2.18", null],
+  "@angular/forms": ["~20.3.0", "~19.2.18", null],
+  "@angular/platform-browser": ["~20.3.0", "~19.2.18", null],
+  "@angular/platform-browser-dynamic": ["~20.3.0", "~19.2.18", null],
+  "@angular/platform-server": ["~20.3.0", "~19.2.18", null],
+  "@angular/router": ["~20.3.0", "~19.2.18", null],
+  "ng-packagr": ["~20.3.0", "~19.2.2", null],
+  "typescript": ["~5.8.0", "5.5.4", null],
+  "zone.js": ["~0.15.1", "0.15.1", null]
+};
+
+var catalogsEslint8 = {
+  "eslint": ["9.39.4", "8.56.0", "8.56.0"],
+  "eslint-config-airbnb-typescript": ["17.1.0", "17.1.0", "17.1.0"],
+  "eslint-plugin-i18n": ["2.4.0", "2.3.0", "2.3.0"],
+  "eslint-plugin-import": ["2.32.0", "2.29.0", "2.29.0"],
+  "eslint-plugin-no-only-tests": ["3.3.0", "3.1.0", "3.1.0"],
+  "eslint-plugin-qunit": ["7.3.4", "7.3.4", "7.3.4"],
+  "gulp-eslint-new": ["1.9.1", "1.9.1", "1.9.1"],
+  "@babel/eslint-parser": ["7.28.6", "7.23.10", "7.23.10"],
+  "@typescript-eslint/eslint-plugin": ["5.62.0", "5.62.0", "5.62.0"],
+  "@typescript-eslint/parser": ["5.62.0", "5.62.0", "5.62.0"]
+};
+
+var catalogsTools = {
+  "devextreme-internal-tools": ["20.3.0", "20.1.1", "18.2.0"],
+  "prettier": ["3.5.3", "3.5.3", "3.5.3"],
+  "ts-node": ["10.9.2", "10.9.2", "10.9.2"],
+  "@types/node": ["20.12.8", "20.12.8", "20.12.8"]
+};
+
+var devextreme = {
+  "@babel/core": ["7.29.0", "7.23.9", "7.23.9"],
+  "@babel/eslint-parser": ["catalog:", "catalog:", "catalog:"],
+  "@babel/parser": ["7.29.0", "7.23.9", "7.23.9"],
+  "@babel/plugin-transform-modules-commonjs": ["7.28.6", "7.23.3", "7.23.3"],
+  "@babel/plugin-transform-runtime": ["7.29.0", "7.23.3", "7.23.3"],
+  "@babel/preset-env": ["7.29.0", "7.23.9", "7.23.9"],
+  "@devextreme-generator/angular": ["3.0.12", "3.0.12", "3.0.12"],
+  "@devextreme-generator/build-helpers": ["3.0.12", "3.0.12", "3.0.12"],
+  "@devextreme-generator/core": ["3.0.12", "3.0.12", "3.0.12"],
+  "@devextreme-generator/declarations": ["3.0.12", "3.0.12", "3.0.12"],
+  "@devextreme-generator/inferno": ["3.0.12", "3.0.12", "3.0.12"],
+  "@devextreme-generator/react": ["3.0.12", "3.0.12", "3.0.12"],
+  "@devextreme-generator/vue": ["3.0.12", "3.0.12", "3.0.12"],
+  "@eslint-stylistic/metadata": ["catalog:", "catalog:", "catalog:"],
+  "@eslint/eslintrc": ["catalog:", "catalog:", "catalog:"],
+  "@jest/globals": ["29.7.0", "29.7.0", "29.7.0"],
+  "@stylistic/eslint-plugin": ["catalog:", "catalog:", "catalog:"],
+  "@testcafe-community/axe": ["3.5.0", "3.5.0", "3.5.0"],
+  "@testing-library/dom": ["10.4.1", "10.4.1", "10.4.1"],
+  "@testing-library/jest-dom": ["6.9.1", "^6.6.3", "^6.6.3"],
+  "@testing-library/user-event": ["14.6.1", "^14.5.2", "^14.5.2"],
+  "@types/enzyme": ["3.10.19", "3.10.19", "3.10.19"],
+  "@types/jquery": ["catalog:", "catalog:", "3.5.29"],
+  "@types/react": ["16.14.69", "16.14.69", "16.14.69"],
+  "@typescript-eslint/eslint-plugin": ["catalog:", "catalog:", "catalog:"],
+  "@typescript-eslint/experimental-utils": ["5.62.0", "5.62.0", "5.62.0"],
+  "@typescript-eslint/parser": ["catalog:", "catalog:", "catalog:"],
+  "ast-types": ["0.14.2", "0.14.2", "0.14.2"],
+  "autoprefixer": ["10.4.27", "10.4.27", "10.4.27"],
+  "axe-core": ["catalog:", "catalog:", "catalog:"],
+  "babel-plugin-add-module-exports": ["1.0.4", "1.0.4", "1.0.4"],
+  "babel-plugin-inferno": ["6.8.5", "6.8.5", "6.8.5"],
+  "cldr-core": ["41.0.0", "41.0.0", "41.0.0"],
+  "cldr-numbers-full": ["41.0.0", "41.0.0", "41.0.0"],
+  "cldrjs": ["0.5.5", "0.5.5", "0.5.5"],
+  "clean-css": ["5.3.3", "5.3.3", "5.3.3"],
+  "cross-env": ["7.0.3", "7.0.3", "7.0.3"],
+  "cssom": ["0.5.0", "0.5.0", "0.5.0"],
+  "csstype": ["3.2.3", "3.1.3", "3.1.3"],
+  "del": ["2.2.2", "2.2.2", "2.2.2"],
+  "devextreme-aspnet-data": ["5.0.0", "5.0.0", "5.0.0"],
+  "devextreme-cldr-data": ["1.0.3", "1.0.3", "1.0.3"],
+  "devextreme-exceljs-fork": ["catalog:", "4.4.7", "4.4.7"],
+  "devextreme-screenshot-comparer": ["2.0.17", "2.0.17", "2.0.17"],
+  "enzyme": ["3.11.0", "3.11.0", "3.11.0"],
+  "enzyme-adapter-react-16": ["1.15.8", "1.15.8", "1.15.8"],
+  "eslint": ["catalog:", "catalog:", "catalog:"],
+  "eslint-config-airbnb-base": ["15.0.0", "15.0.0", "15.0.0"],
+  "eslint-config-airbnb-typescript": ["catalog:", "catalog:", "catalog:"],
+  "eslint-config-devextreme": ["catalog:", "catalog:", "catalog:"],
+  "eslint-migration-utils": ["workspace:*", "workspace:*", "workspace:*"],
+  "eslint-plugin-i18n": ["catalog:", "catalog:", "catalog:"],
+  "eslint-plugin-import": ["catalog:", "catalog:", "catalog:"],
+  "eslint-plugin-jest": ["29.15.0", "29.0.1", "29.0.1"],
+  "eslint-plugin-jest-formatting": ["3.1.0", "3.1.0", "3.1.0"],
+  "eslint-plugin-jsx-a11y": ["catalog:", "catalog:", "catalog:"],
+  "eslint-plugin-n": ["17.24.0", "17.23.1", null],
+  "eslint-plugin-node": [null, null, "11.1.0"],
+  "eslint-plugin-no-only-tests": ["catalog:", "catalog:", "catalog:"],
+  "eslint-plugin-qunit": ["catalog:", "catalog:", "catalog:"],
+  "eslint-plugin-react": ["7.37.5", "7.37.5", "7.37.5"],
+  "eslint-plugin-rulesdir": ["0.2.2", "0.2.2", "0.2.2"],
+  "eslint-plugin-simple-import-sort": ["10.0.0", "10.0.0", "10.0.0"],
+  "eslint-plugin-spellcheck": ["0.0.20", "0.0.20", "0.0.20"],
+  "eslint-plugin-testcafe": ["0.2.1", "0.2.1", "0.2.1"],
+  "eslint-plugin-unicorn": ["60.0.0", "60.0.0", "60.0.0"],
+  "fancy-log": ["2.0.0", "2.0.0", "2.0.0"],
+  "file-saver": ["2.0.5", "2.0.5", "2.0.5"],
+  "glob": ["11.1.0", "11.1.0", "10.4.5"],
+  "globalize": ["1.7.1", "1.7.1", "1.7.1"],
+  "globals": ["catalog:", "catalog:", "catalog:"],
+  "gulp": ["4.0.2", "4.0.2", "4.0.2"],
+  "gulp-autoprefixer": ["10.0.0", "10.0.0", "10.0.0"],
+  "gulp-babel": ["8.0.0", "8.0.0", "8.0.0"],
+  "gulp-cache": ["1.1.3", "1.1.3", "1.1.3"],
+  "gulp-cached": ["1.1.1", "1.1.1", "1.1.1"],
+  "gulp-concat": ["2.6.1", "2.6.1", "2.6.1"],
+  "gulp-each": ["0.5.0", "0.5.0", "0.5.0"],
+  "gulp-eol": ["0.2.0", "0.2.0", "0.2.0"],
+  "gulp-eslint-new": ["catalog:", "catalog:", "catalog:"],
+  "gulp-file": ["0.4.0", "0.4.0", "0.4.0"],
+  "gulp-filter": ["7.0.0", "7.0.0", "7.0.0"],
+  "gulp-flatmap": ["1.0.2", "1.0.2", "1.0.2"],
+  "gulp-footer": ["2.1.0", "2.1.0", "2.1.0"],
+  "gulp-header": ["2.0.9", "2.0.9", "2.0.9"],
+  "gulp-if": ["3.0.0", "3.0.0", "3.0.0"],
+  "gulp-jsbeautifier": ["2.1.2", "2.1.2", "2.1.2"],
+  "gulp-json-editor": ["2.6.0", "2.6.0", "2.6.0"],
+  "gulp-multi-process": ["1.4.0", "1.4.0", "1.4.0"],
+  "gulp-notify": ["4.0.0", "4.0.0", "4.0.0"],
+  "gulp-plumber": ["1.2.1", "1.2.1", "1.2.1"],
+  "gulp-remote-src": ["0.4.4", "0.4.4", "0.4.4"],
+  "gulp-rename": ["1.4.0", "1.4.0", "1.4.0"],
+  "gulp-replace": ["0.6.1", "0.6.1", "0.6.1"],
+  "gulp-sass": ["6.0.1", "5.1.0", "5.1.0"],
+  "gulp-shell": ["0.8.0", "0.8.0", "0.8.0"],
+  "gulp-tap": ["1.0.1", "1.0.1", "1.0.1"],
+  "gulp-template": ["5.0.0", "5.0.0", "5.0.0"],
+  "gulp-typescript": ["5.0.1", "5.0.1", "5.0.1"],
+  "gulp-uglify-es": ["3.0.0", "3.0.0", "3.0.0"],
+  "gulp-watch": ["5.0.1", "5.0.1", "5.0.1"],
+  "ignore": ["5.3.2", "5.3.2", "5.3.2"],
+  "intl": ["1.2.5", "1.2.5", "1.2.5"],
+  "jest-each": ["29.7.0", "29.7.0", "29.7.0"],
+  "jest-environment-jsdom": ["29.7.0", "29.7.0", "29.7.0"],
+  "jest-environment-node": ["29.7.0", "29.7.0", "29.7.0"],
+  "jquery": ["catalog:", "catalog:", "3.7.1"],
+  "jquery.tmpl": ["0.0.2", "0.0.2", "0.0.2"],
+  "jspdf": ["4.2.1", "4.0.0", "4.0.0"],
+  "jspdf-autotable": ["3.8.4", "3.8.4", "3.8.4"],
+  "knockout": ["3.5.2", "3.5.2", "3.5.2"],
+  "lazypipe": ["1.0.2", "1.0.2", "1.0.2"],
+  "looks-same": ["7.3.0", "7.3.0", "7.3.0"],
+  "map-stream": ["0.0.7", "0.0.7", "0.0.7"],
+  "merge-stream": ["2.0.0", "2.0.0", "2.0.0"],
+  "minimist": ["1.2.8", "1.2.8", "1.2.8"],
+  "nconf": ["0.12.1", "0.12.1", "0.12.1"],
+  "normalize-path": ["3.0.0", "3.0.0", "3.0.0"],
+  "npm-run-all2": ["5.0.2", null, null],
+  "npm-run-all": [null, "4.1.5", "4.1.5"],
+  "opentype.js": ["1.3.4", "1.3.4", "1.3.4"],
+  "plugin-error": ["2.0.1", "2.0.1", "2.0.1"],
+  "qunit": ["2.24.1", "2.24.1", "2.24.1"],
+  "react": ["16.14.0", "16.14.0", "16.14.0"],
+  "react-dom": ["16.14.0", "16.14.0", "16.14.0"],
+  "react-test-renderer": ["16.14.0", "16.14.0", "16.14.0"],
+  "recast": ["0.23.11", "0.23.11", "0.23.11"],
+  "sass-embedded": ["1.93.3", "1.59.2", "1.59.2"],
+  "shelljs": ["0.8.5", "0.8.5", "0.8.5"],
+  "sinon": ["18.0.1", "18.0.1", "18.0.1"],
+  "staged-git-files": ["1.3.0", "1.3.0", "1.3.0"],
+  "string-replace-loader": ["3.1.0", "3.1.0", "3.1.0"],
+  "stylelint": ["15.11.0", "15.11.0", "15.11.0"],
+  "systemjs": ["0.19.41", "0.19.41", "0.19.41"],
+  "systemjs-plugin-babel": ["0.0.25", "0.0.25", "0.0.25"],
+  "systemjs-plugin-css": ["0.1.37", "0.1.37", "0.1.37"],
+  "systemjs-plugin-json": ["0.3.0", "0.3.0", "0.3.0"],
+  "systemjs-plugin-text": ["0.0.11", "0.0.11", "0.0.11"],
+  "terser-webpack-plugin": ["5.3.17", "5.3.17", "5.3.17"],
+  "through2": ["2.0.5", "2.0.5", "2.0.5"],
+  "ts-jest": ["29.1.2", "29.1.2", "29.1.2"],
+  "tsc-alias": ["1.8.16", "1.8.16", "1.8.16"],
+  "typescript": ["4.9.5", "4.9.5", "4.9.5"],
+  "typescript-min": ["npm:typescript@4.9.5", "npm:typescript@4.9.5", "npm:typescript@4.9.5"],
+  "uuid": ["9.0.1", "9.0.1", "9.0.1"],
+  "vinyl": ["2.2.1", "2.2.1", "2.2.1"],
+  "vinyl-named": ["1.1.0", "1.1.0", "1.1.0"],
+  "webpack": ["5.105.4", "5.103.0", "5.103.0"],
+  "webpack-stream": ["7.0.0", "7.0.0", "7.0.0"],
+  "yaml": ["2.8.3", "2.5.0", "2.5.0"],
+  "yargs": ["17.7.2", "17.7.2", "17.7.2"]
+};
+
+var testcafe = {
+  "@babel/eslint-parser": ["catalog:eslint8", "catalog:eslint8", "catalog:eslint8"],
+  "@babel/plugin-transform-runtime": ["7.29.0", "7.19.6", "7.19.6"],
+  "@testcafe-community/axe": ["3.5.0", "3.5.0", "3.5.0"],
+  "@types/jquery": ["catalog:", "catalog:", "3.5.29"],
+  "axe-core": ["catalog:", "catalog:", "catalog:"],
+  "devextreme": ["workspace:*", "workspace:*", "workspace:*"],
+  "devextreme-screenshot-comparer": ["2.0.17", "2.0.17", "2.0.17"],
+  "devextreme-testcafe-models": ["workspace:*", "workspace:*", "workspace:*"],
+  "glob": ["11.1.0", "11.1.0", "10.4.5"],
+  "minimist": ["1.2.8", "1.2.8", "1.2.8"],
+  "mockdate": ["3.0.5", "3.0.5", "3.0.5"],
+  "nconf": ["0.12.1", "0.12.1", "0.12.1"],
+  "testcafe": ["3.7.4", "catalog:", "catalog:"],
+  "testcafe-reporter-spec-time": ["4.0.0", "4.0.0", "4.0.0"],
+  "ts-node": ["10.9.2", "10.9.2", "10.9.2"],
+  "eslint": ["catalog:", "catalog:", "catalog:eslint8"],
+  "@eslint/eslintrc": ["catalog:", "catalog:", null],
+  "@stylistic/eslint-plugin": ["catalog:", "catalog:", null],
+  "@typescript-eslint/eslint-plugin": ["catalog:", "catalog:", "catalog:eslint8"],
+  "@typescript-eslint/parser": ["catalog:", "catalog:", "catalog:eslint8"],
+  "eslint-config-devextreme": ["catalog:", "catalog:", "1.1.6"],
+  "eslint-migration-utils": ["workspace:*", "workspace:*", null],
+  "eslint-plugin-i18n": ["catalog:", "catalog:", "catalog:eslint8"],
+  "eslint-plugin-import": ["catalog:", "catalog:", "catalog:eslint8"],
+  "eslint-plugin-no-only-tests": ["catalog:", "catalog:", "catalog:eslint8"],
+  "eslint-config-airbnb-typescript": [null, null, "catalog:eslint8"],
+  "eslint-plugin-qunit": [null, null, "catalog:eslint8"]
+};
+
+var react = {
+  "@testing-library/react": ["14.3.1", "14.3.1", "14.3.1"],
+  "@testing-library/user-event": ["14.6.1", "14.5.2", "14.5.2"],
+  "@types/react": ["18.3.28", "~18.0.38", "~18.0.38"],
+  "@types/react-dom": ["18.3.7", "~18.0.11", "~18.0.11"],
+  "@typescript-eslint/eslint-plugin": ["catalog:", "catalog:", "catalog:"],
+  "@typescript-eslint/parser": ["catalog:", "catalog:", "catalog:"],
+  "devextreme-metadata": ["workspace:*", "workspace:*", "workspace:*"],
+  "devextreme-nx-infra-plugin": ["workspace:*", "workspace:*", null],
+  "eslint": ["catalog:", "catalog:", "catalog:"],
+  "eslint-config-airbnb-base": ["15.0.0", "15.0.0", "15.0.0"],
+  "eslint-config-airbnb-typescript": ["catalog:", "catalog:", "catalog:"],
+  "eslint-config-devextreme": ["catalog:", "catalog:", "catalog:"],
+  "eslint-plugin-import": ["catalog:", "catalog:", "catalog:"],
+  "jest-environment-jsdom": ["29.7.0", "29.7.0", "29.7.0"],
+  "react": ["18.3.1", "18.0.0", "18.0.0"],
+  "react-dom": ["18.3.1", "18.0.0", "18.0.0"],
+  "ts-jest": ["29.1.3", "29.1.3", "29.1.3"],
+  "typescript": ["4.9.5", "4.9.5", "4.9.5"],
+  "del": [null, null, "3.0.0"],
+  "gulp": [null, null, "4.0.2"],
+  "gulp-header": [null, null, "2.0.9"],
+  "gulp-shell": [null, null, "0.8.0"],
+  "gulp-typescript": [null, null, "5.0.1"]
+};
+
+var angular = {
+  "@angular-devkit/architect": ["catalog:angular", "catalog:angular", "0.1900.2"],
+  "@angular/cli": ["catalog:angular", "catalog:angular", "17.3.11"],
+  "@angular/common": ["catalog:angular", "catalog:angular", "17.3.12"],
+  "@angular/compiler": ["catalog:angular", "catalog:angular", "17.3.12"],
+  "@angular/compiler-cli": ["catalog:angular", "catalog:angular", "17.3.12"],
+  "@angular/core": ["catalog:angular", "catalog:angular", "17.3.12"],
+  "@angular/forms": ["catalog:angular", "catalog:angular", "17.3.12"],
+  "@angular/platform-browser": ["catalog:angular", "catalog:angular", "17.3.12"],
+  "@angular/platform-browser-dynamic": ["catalog:angular", "catalog:angular", "17.3.12"],
+  "@angular/platform-server": ["catalog:angular", "catalog:angular", "17.3.12"],
+  "@angular/animations": [null, null, "17.3.12"],
+  "@angular-devkit/schematics": [null, null, "17.3.11"],
+  "@babel/eslint-parser": ["catalog:", "catalog:", "catalog:"],
+  "@eslint/eslintrc": ["catalog:", "catalog:", "catalog:"],
+  "@eslint-stylistic/metadata": ["catalog:", "catalog:", "catalog:"],
+  "@stylistic/eslint-plugin": ["catalog:", "catalog:", "catalog:"],
+  "@types/jasmine": ["~6.0.0", "2.8.23", "2.8.23"],
+  "@types/node": ["~20.19.0", "20.11.17", "20.11.17"],
+  "@typescript-eslint/eslint-plugin": ["catalog:", "catalog:", "catalog:"],
+  "@typescript-eslint/parser": ["catalog:", "catalog:", "catalog:"],
+  "@webcomponents/custom-elements": ["1.6.0", "1.6.0", "1.6.0"],
+  "codelyzer": ["6.0.2", "6.0.2", "6.0.2"],
+  "core-js": ["2.6.12", "2.6.12", "2.6.12"],
+  "cross-env": [null, null, "7.0.3"],
+  "css-loader": ["6.11.0", "6.10.0", "6.10.0"],
+  "del": [null, null, "2.2.2"],
+  "devextreme-metadata": ["workspace:*", "workspace:*", "workspace:*"],
+  "eslint": ["catalog:", "catalog:", "catalog:"],
+  "eslint-config-devextreme": ["catalog:", "catalog:", "catalog:"],
+  "eslint-plugin-import": ["catalog:", "catalog:", "catalog:"],
+  "eslint-migration-utils": ["workspace:*", "workspace:*", "workspace:*"],
+  "gulp": [null, null, "4.0.2"],
+  "gulp-header": [null, null, "2.0.9"],
+  "gulp-replace": [null, null, "0.6.1"],
+  "gulp-sourcemaps": [null, null, "2.6.5"],
+  "gulp-typescript": [null, null, "4.0.2"],
+  "jasmine": ["5.12.0", "5.12.0", "5.4.0"],
+  "karma": ["6.4.4", "6.4.4", "6.4.4"],
+  "karma-chrome-launcher": ["3.2.0", "3.2.0", "3.2.0"],
+  "karma-jasmine": ["5.1.0", "5.1.0", "5.1.0"],
+  "karma-junit-reporter": ["2.0.1", "2.0.1", "2.0.1"],
+  "karma-webpack": ["5.0.1", "5.0.1", "5.0.1"],
+  "ng-packagr": ["catalog:angular", "catalog:angular", "17.3.0"],
+  "puppeteer": ["23.6.1", "23.6.1", "23.6.1"],
+  "rxjs": ["7.8.2", "7.8.2", "7.8.1"],
+  "reflect-metadata": ["0.1.13", "0.1.13", "0.1.13"],
+  "stream-browserify": ["3.0.0", "3.0.0", "3.0.0"],
+  "style-loader": ["3.3.4", "3.3.4", "3.3.4"],
+  "tslib": ["2.8.1", "2.6.3", "2.6.3"],
+  "typescript": ["catalog:angular", "catalog:angular", "5.4.5"],
+  "webpack": ["5.105.4", "5.96.1", "5.96.1"],
+  "yargs": ["17.7.2", "17.7.2", "17.7.2"],
+  "zone.js": ["catalog:angular", "catalog:angular", "0.14.10"]
+};
+
+var vue = {
+  "@vue/compiler-sfc": ["3.3.4", "3.3.4", "3.3.4"],
+  "@vue/test-utils": ["2.0.0-beta.7", "2.0.0-beta.7", "2.0.0-beta.7"],
+  "devextreme-metadata": ["workspace:*", "workspace:*", "workspace:*"],
+  "eslint-config-airbnb-base": ["15.0.0", "15.0.0", "15.0.0"],
+  "eslint-config-devextreme": ["catalog:", "catalog:", "catalog:"],
+  "eslint-plugin-spellcheck": ["0.0.20", "0.0.20", "0.0.20"],
+  "jest-environment-jsdom": ["29.7.0", "29.7.0", "29.7.0"],
+  "ts-jest": ["29.1.3", "29.1.3", "29.1.3"],
+  "typescript": ["4.9.5", "4.9.5", "4.9.5"],
+  "vue": ["3.2.47", "3.2.47", "3.2.47"],
+  "@vue/shared": ["3.4.26", "3.4.26", "3.4.26"],
+  "vue-router": ["4.2.5", "4.2.5", "4.2.5"],
+  "eslint": ["catalog:", "catalog:", "catalog:"],
+  "eslint-config-airbnb-typescript": ["catalog:", "catalog:", "catalog:"],
+  "eslint-plugin-i18n": ["catalog:", "catalog:", "catalog:"],
+  "eslint-plugin-import": ["catalog:", "catalog:", "catalog:"],
+  "eslint-plugin-no-only-tests": ["catalog:", "catalog:", "catalog:"],
+  "eslint-plugin-vue": ["catalog:", "catalog:", "catalog:"],
+  "@babel/eslint-parser": ["catalog:", "catalog:", "catalog:"],
+  "@typescript-eslint/eslint-plugin": ["catalog:", "catalog:", "catalog:"],
+  "@typescript-eslint/parser": ["catalog:", "catalog:", "catalog:"],
+  "vue-eslint-parser": ["catalog:", "catalog:", "catalog:"],
+  "del": [null, null, "3.0.0"],
+  "gulp": [null, null, "4.0.2"],
+  "gulp-header": [null, null, "2.0.9"],
+  "gulp-shell": [null, null, "0.6.5"],
+  "gulp-typescript": [null, null, "5.0.1"]
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+  renderTable('catalog-table', catalog);
+  renderTable('angular-table', catalogsAngular);
+  renderTable('eslint8-table', catalogsEslint8);
+  renderTable('tools-table', catalogsTools);
+  renderTable('devextreme-table', devextreme);
+  renderTable('testcafe-table', testcafe);
+  renderTable('react-table', react);
+  renderTable('angular-pkg-table', angular);
+  renderTable('vue-table', vue);
+});
+</script>
+
+<h2 id="catalog">1. pnpm-workspace.yaml - catalog (main)</h2>
+<p class="note">Shared dependency versions used across the monorepo via "catalog:" references</p>
+<div id="catalog-table"></div>
+
+<h2 id="catalogs-angular">2. pnpm-workspace.yaml - catalogs/angular</h2>
+<p class="note">Angular-specific catalog versions (25_1 does not have an angular catalog section)</p>
+<div id="angular-table"></div>
+
+<h2 id="catalogs-eslint8">3. pnpm-workspace.yaml - catalogs/eslint8</h2>
+<p class="note">Legacy ESLint 8 catalog for packages not yet migrated</p>
+<div id="eslint8-table"></div>
+
+<h2 id="catalogs-tools">4. pnpm-workspace.yaml - catalogs/tools</h2>
+<p class="note">Internal tooling versions</p>
+<div id="tools-table"></div>
+
+<h2 id="devextreme">5. packages/devextreme/package.json (devDependencies)</h2>
+<p class="note">Core library dev dependencies</p>
+<div id="devextreme-table"></div>
+
+<h2 id="testcafe">6. e2e/testcafe-devextreme/package.json (devDependencies)</h2>
+<p class="note">E2E test suite dependencies</p>
+<div id="testcafe-table"></div>
+
+<h2 id="react">7. packages/devextreme-react/package.json (devDependencies)</h2>
+<p class="note">React wrapper dev dependencies</p>
+<div id="react-table"></div>
+
+<h2 id="angular">8. packages/devextreme-angular/package.json (devDependencies)</h2>
+<p class="note">Angular wrapper dev dependencies</p>
+<div id="angular-pkg-table"></div>
+
+<h2 id="vue">9. packages/devextreme-vue/package.json (devDependencies)</h2>
+<p class="note">Vue wrapper dev dependencies</p>
+<div id="vue-table"></div>
+
+</body>
+</html>
