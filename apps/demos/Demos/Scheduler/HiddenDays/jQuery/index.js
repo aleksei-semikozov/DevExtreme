@@ -75,8 +75,7 @@ $(() => {
           visibleSet.delete(idx);
         }
         refreshValidity();
-        const hidden = visibleSet.size === 0 ? [] : computeHiddenWeekDays();
-        scheduler.option('views', buildViews(hidden));
+        scheduler.option('views', buildViews(computeHiddenWeekDays()));
       },
     }).dxCheckBox('instance');
     checkboxInstances.push(cbInstance);
