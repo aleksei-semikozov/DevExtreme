@@ -23,6 +23,7 @@ $(() => {
   }
 
   const scheduler = $('#scheduler').dxScheduler({
+    timeZone: 'America/Los_Angeles',
     dataSource: {
       store: { type: 'array', key: 'id', data },
     },
