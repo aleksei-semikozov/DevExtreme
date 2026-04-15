@@ -71,6 +71,15 @@ $(() => {
     setTimeout(() => $toast.fadeOut(200, () => $toast.remove()), 4000);
   }
 
+  const checkboxInstances = [];
+  let suppressCheckboxHandler = false;
+
+  function syncVisibleSetToCheckboxes() {
+    suppressCheckboxHandler = true;
+    checkboxInstances.forEach((cb, idx) => cb.option('value', visibleSet.has(idx)));
+    suppressCheckboxHandler = false;
+  }
+
   const scheduler = $('#scheduler').dxScheduler({
     timeZone: 'America/Los_Angeles',
     dataSource: data,
@@ -86,15 +95,26 @@ $(() => {
       allowResizing: true,
       allowDragging: true,
     },
+    onOptionChanged(e) {
+      if (e.name === 'currentView' && e.value === 'workWeek') {
+        visibleSet.clear();
+        [1, 2, 3, 4, 5].forEach((d) => visibleSet.add(d));
+        syncVisibleSetToCheckboxes();
+        scheduler.option('views', buildViews(computeHiddenWeekDays()));
+      }
+    },
   }).dxScheduler('instance');
 
   const $optionsPanel = $('.options');
   dayLabels.forEach((label, idx) => {
     const $cb = $('<div class="option"></div>').appendTo($optionsPanel);
-    $cb.dxCheckBox({
+    const cbInstance = $cb.dxCheckBox({
       text: label,
       value: visibleSet.has(idx),
       onValueChanged(e) {
+        if (suppressCheckboxHandler) {
+          return;
+        }
         if (e.value) {
           visibleSet.add(idx);
         } else {
@@ -106,6 +126,7 @@ $(() => {
         }
         scheduler.option('views', buildViews(hidden));
       },
-    });
+    }).dxCheckBox('instance');
+    checkboxInstances.push(cbInstance);
   });
 });
