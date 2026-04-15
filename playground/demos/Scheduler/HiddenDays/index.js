@@ -1,6 +1,6 @@
 $(() => {
   const dayLabels = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const defaultVisible = [0, 1, 2, 4, 6];
+  const defaultVisible = [0, 1, 2, 3, 4, 5, 6];
   const visibleSet = new Set(defaultVisible);
   const VALIDATION_MESSAGE = 'The hiddenWeekDays option cannot hide all days of the week. At least one day must remain visible.';
 
@@ -74,10 +74,9 @@ $(() => {
         } else {
           visibleSet.delete(idx);
         }
-        if (!refreshValidity()) {
-          return;
-        }
-        scheduler.option('views', buildViews(computeHiddenWeekDays()));
+        refreshValidity();
+        const hidden = visibleSet.size === 0 ? [] : computeHiddenWeekDays();
+        scheduler.option('views', buildViews(hidden));
       },
     }).dxCheckBox('instance');
     checkboxInstances.push(cbInstance);
