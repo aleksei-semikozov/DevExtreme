@@ -16257,7 +16257,7 @@ function toMilliseconds(value) {
 }
 
 // TODO refactoring: Review all date utils functions and move useful to __internal/core/utils/date.ts
-const DAYS_IN_WEEK$3 = 7;
+const DAYS_IN_WEEK$2 = 7;
 const THURSDAY_WEEK_NUMBER = 4;
 const SUNDAY_WEEK_NUMBER = 7;
 const USUAL_WEEK_COUNT_IN_YEAR = 52;
@@ -16710,7 +16710,7 @@ const getLastMonthDate = function (date, offset = 0) {
   return createDateWithFullYear(currentDate.getFullYear(), month + 1, 0);
 };
 function getFirstWeekDate(date, firstDayOfWeek) {
-  const delta = (date.getDay() - firstDayOfWeek + DAYS_IN_WEEK$3) % DAYS_IN_WEEK$3;
+  const delta = (date.getDay() - firstDayOfWeek + DAYS_IN_WEEK$2) % DAYS_IN_WEEK$2;
   const result = new Date(date);
   result.setDate(date.getDate() - delta);
   return result;
@@ -16731,19 +16731,19 @@ function getLastDateInYear(year) {
 function getDayWeekNumber(date, firstDayOfWeek) {
   let day = date.getDay() - firstDayOfWeek + 1;
   if (day <= 0) {
-    day += DAYS_IN_WEEK$3;
+    day += DAYS_IN_WEEK$2;
   }
   return day;
 }
 function getWeekNumber(date, firstDayOfWeek, rule) {
   const firstWeekDayInYear = getDayWeekNumber(getFirstDateInYear(date.getFullYear()), firstDayOfWeek);
   const lastWeekDayInYear = getDayWeekNumber(getLastDateInYear(date.getFullYear()), firstDayOfWeek);
-  const daysInFirstWeek = DAYS_IN_WEEK$3 - firstWeekDayInYear + 1;
+  const daysInFirstWeek = DAYS_IN_WEEK$2 - firstWeekDayInYear + 1;
   let weekNumber = Math.ceil((getDayNumber(date) - daysInFirstWeek) / 7);
   switch (rule) {
     case 'fullWeek':
       {
-        if (daysInFirstWeek === DAYS_IN_WEEK$3) {
+        if (daysInFirstWeek === DAYS_IN_WEEK$2) {
           weekNumber += 1;
         }
         if (weekNumber === 0) {
@@ -21306,7 +21306,7 @@ const errors$1 = error(errors$2.ERROR_MESSAGES, {
   /**
    * @name ErrorsUIWidgets.W1029
    */
-  W1029: 'The "hiddenWeekDays" option cannot hide all days of the week. At least one day must remain visible. The option is ignored.'
+  W1029: '\'hiddenWeekDays\' must leave at least one weekday visible.'
 });
 
 const window$G = getWindow();
@@ -72517,7 +72517,7 @@ const columnHeadersView$8 = Base => class ColumnHeadersViewHeaderFilterExtender 
     }
   }
 };
-const headerPanel$6 = Base => class HeaderPanelHeaderFilterExtender extends headerFilterMixin(Base) {
+const headerPanel$5 = Base => class HeaderPanelHeaderFilterExtender extends headerFilterMixin(Base) {
   _createGroupPanelItem($rootElement, groupColumn) {
     const that = this;
     const $item = super._createGroupPanelItem.apply(that, arguments);
@@ -72621,7 +72621,7 @@ const headerFilterModule = {
     },
     views: {
       columnHeadersView: columnHeadersView$8,
-      headerPanel: headerPanel$6
+      headerPanel: headerPanel$5
     }
   }
 };
@@ -114187,7 +114187,7 @@ const columnHeadersView$7 = Base => class ColumnHeadersViewSortingExtender exten
     super._columnOptionChanged(e);
   }
 };
-const headerPanel$5 = Base => class HeaderPanelSortingExtender extends sortingMixin(Base) {
+const headerPanel$4 = Base => class HeaderPanelSortingExtender extends sortingMixin(Base) {
   optionChanged(args) {
     const that = this;
     switch (args.name) {
@@ -114237,7 +114237,7 @@ const sortingModule = {
   extenders: {
     views: {
       columnHeadersView: columnHeadersView$7,
-      headerPanel: headerPanel$5
+      headerPanel: headerPanel$4
     }
   }
 };
@@ -116583,6 +116583,7 @@ const TOOLBAR_BUTTON_CLASS = 'toolbar-button';
 const TOOLBAR_ARIA_LABEL = '-ariaToolbar';
 const DEFAULT_TOOLBAR_ITEM_NAMES = ['addRowButton', 'applyFilterButton', 'columnChooserButton', 'exportButton', 'groupPanel', 'revertButton', 'saveButton', 'searchPanel'];
 let HeaderPanel$1 = class HeaderPanel extends ColumnsView {
+  registeredToolbarItems = new Map();
   init() {
     super.init();
     this._editingController = this.getController('editing');
@@ -116593,10 +116594,69 @@ let HeaderPanel$1 = class HeaderPanel extends ColumnsView {
   }
 
   /**
-   * @extended: column_chooser, editing, filter_row, search
+   * Registers a toolbar item without triggering a render.
+   * Use during initialization (before the first render).
+   */
+  registerToolbarItem(name, item) {
+    this.registeredToolbarItems.set(name, {
+      ...item,
+      name
+    });
+  }
+
+  /**
+   * Registers a toolbar item and immediately renders the change:
+   * updates the existing item in-place, or invalidates the entire header panel to add a new one.
+   * Use after the initial render (not during init).
+   */
+  applyToolbarItem(name, item) {
+    const isExisting = this.registeredToolbarItems.has(name);
+    const itemIndex = isExisting ? this.findToolbarItemIndex(name) : -1;
+    this.registeredToolbarItems.set(name, {
+      ...item,
+      name
+    });
+    if (itemIndex >= 0) {
+      const normalizedItem = this.getNormalizedRegisteredItem(name);
+      this._toolbar?.option(`items[${itemIndex}]`, normalizedItem);
+    } else {
+      this._invalidate();
+    }
+  }
+  findToolbarItemIndex(name) {
+    const items = this._toolbar?.option('items') ?? [];
+    return items.findIndex(i => i.name === name);
+  }
+  getNormalizedRegisteredItem(name) {
+    const registeredItem = this.registeredToolbarItems.get(name);
+    const userToolbarOptions = this.option('toolbar');
+    const userItem = userToolbarOptions?.items?.find(ui => typeof ui === 'string' ? ui === name : ui?.name === name);
+    if (!userItem) {
+      return registeredItem;
+    }
+    return normalizeToolbarItems([registeredItem], [userItem], DEFAULT_TOOLBAR_ITEM_NAMES)[0];
+  }
+
+  /**
+   * Unregisters a toolbar item and invalidates the header panel to re-render without it.
+   */
+  removeToolbarItem(name) {
+    if (this.registeredToolbarItems.has(name)) {
+      this.registeredToolbarItems.delete(name);
+      this._invalidate();
+    }
+  }
+
+  /**
+   * @extended: column_chooser, editing, filter_row
    */
   _getToolbarItems() {
-    return [];
+    return Array.from(this.registeredToolbarItems.values());
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  sortToolbarItems(items) {
+    return [...items].sort((a, b) => (a.sortIndex ?? 0) - (b.sortIndex ?? 0));
   }
   _getButtonContainer() {
     return renderer('<div>').addClass(this.addWidgetPrefix(TOOLBAR_BUTTON_CLASS));
@@ -116606,14 +116666,17 @@ let HeaderPanel$1 = class HeaderPanel extends ColumnsView {
     return this.addWidgetPrefix(TOOLBAR_BUTTON_CLASS) + secondClass;
   }
   _getToolbarOptions() {
-    const userToolbarOptions = this.option('toolbar');
+    const {
+      toolbar: userToolbarOptions
+    } = this.option();
+    const sortedToolbarItems = this.sortToolbarItems(this._getToolbarItems());
     const options = {
       toolbarOptions: {
-        items: this._getToolbarItems(),
+        items: sortedToolbarItems,
         visible: userToolbarOptions?.visible,
         disabled: userToolbarOptions?.disabled,
         onItemRendered(e) {
-          const itemRenderedCallback = e.itemData.onItemRendered;
+          const itemRenderedCallback = e.itemData?.onItemRendered;
           if (itemRenderedCallback) {
             itemRenderedCallback(e);
           }
@@ -116621,7 +116684,7 @@ let HeaderPanel$1 = class HeaderPanel extends ColumnsView {
       }
     };
     const userItems = userToolbarOptions?.items;
-    options.toolbarOptions.items = normalizeToolbarItems(options.toolbarOptions.items, userItems, DEFAULT_TOOLBAR_ITEM_NAMES);
+    options.toolbarOptions.items = normalizeToolbarItems(sortedToolbarItems, userItems, DEFAULT_TOOLBAR_ITEM_NAMES);
     this.executeAction('onToolbarPreparing', options);
     if (options.toolbarOptions && !isDefined(options.toolbarOptions.visible)) {
       const toolbarItems = options.toolbarOptions.items;
@@ -120442,7 +120505,7 @@ class ColumnChooserView extends ColumnsView {
     return isEnabled && hiddenColumns.length;
   }
 }
-const headerPanel$4 = Base => class ColumnChooserHeaderPanelExtender extends Base {
+const headerPanel$3 = Base => class ColumnChooserHeaderPanelExtender extends Base {
   _getToolbarItems() {
     const items = super._getToolbarItems();
     return this._appendColumnChooserItem(items);
@@ -120518,7 +120581,7 @@ const columnChooserModule = {
   },
   extenders: {
     views: {
-      headerPanel: headerPanel$4,
+      headerPanel: headerPanel$3,
       columnHeadersView: columnHeadersView$6
     },
     controllers: {
@@ -125564,7 +125627,7 @@ const rowsView$g = Base => class RowsViewEditingExtender extends Base {
   _editCellPrepared() {}
   _formItemPrepared() {}
 };
-const headerPanel$3 = Base => class HeaderPanelEditingExtender extends Base {
+const headerPanel$2 = Base => class HeaderPanelEditingExtender extends Base {
   optionChanged(args) {
     const {
       fullName
@@ -125638,7 +125701,7 @@ const editingModule = {
     },
     views: {
       rowsView: rowsView$g,
-      headerPanel: headerPanel$3
+      headerPanel: headerPanel$2
     }
   }
 };
@@ -132501,7 +132564,7 @@ const editing$5 = Base => class FilterRowEditingController extends Base {
     return super._afterCancelEditData.apply(this, arguments);
   }
 };
-const headerPanel$2 = Base => class FilterRowHeaderPanel extends Base {
+const headerPanel$1 = Base => class FilterRowHeaderPanel extends Base {
   init() {
     super.init();
     this._dataController = this.getController('data');
@@ -132603,7 +132666,7 @@ const filterRowModule = {
     },
     views: {
       columnHeadersView: columnHeadersView$5,
-      headerPanel: headerPanel$2
+      headerPanel: headerPanel$1
     }
   }
 };
@@ -133102,6 +133165,7 @@ const SEARCH_PANEL_CLASS = 'search-panel';
 const SEARCH_TEXT_CLASS = 'search-text';
 const HEADER_PANEL_CLASS$1 = 'header-panel';
 const FILTERING_TIMEOUT = 700;
+const SEARCH_PANEL_ITEM_NAME = 'searchPanel';
 function allowSearch(column) {
   return !!(column.allowSearch ?? column.allowFiltering);
 }
@@ -133187,7 +133251,16 @@ const dataController = base => class SearchDataControllerExtender extends base {
     return gridCoreUtils.combineFilters(filters, 'or');
   }
 };
-const headerPanel$1 = Base => class SearchHeaderPanelExtender extends Base {
+class SearchPanelViewController extends modules.ViewController {
+  init() {
+    this.headerPanel = this.getView('headerPanel');
+    this.dataController = this.getController('data');
+    const isSearchPanelVisible = this.option('searchPanel.visible');
+    if (isSearchPanelVisible) {
+      const searchPanelToolbarItem = this.getSearchPanelToolbarItem();
+      this.headerPanel?.registerToolbarItem(SEARCH_PANEL_ITEM_NAME, searchPanelToolbarItem);
+    }
+  }
   optionChanged(args) {
     if (args.name === 'searchPanel') {
       if (args.fullName === 'searchPanel.text') {
@@ -133196,64 +133269,66 @@ const headerPanel$1 = Base => class SearchHeaderPanelExtender extends Base {
           editor.option('value', args.value);
         }
       } else {
-        this._invalidate();
+        this.syncSearchPanelItem();
       }
       args.handled = true;
     } else {
       super.optionChanged(args);
     }
   }
-  _getToolbarItems() {
-    const items = super._getToolbarItems();
-    return this._prepareSearchItem(items);
+  syncSearchPanelItem() {
+    const isSearchPanelVisible = this.option('searchPanel.visible');
+    if (isSearchPanelVisible) {
+      const searchPanelToolbarItem = this.getSearchPanelToolbarItem();
+      this.headerPanel?.applyToolbarItem(SEARCH_PANEL_ITEM_NAME, searchPanelToolbarItem);
+    } else {
+      this.headerPanel?.removeToolbarItem(SEARCH_PANEL_ITEM_NAME);
+    }
   }
-  _prepareSearchItem(items) {
-    const that = this;
-    const dataController = this._dataController;
+  getSearchPanelToolbarItem() {
     const searchPanelOptions = this.option('searchPanel');
-    if (searchPanelOptions && searchPanelOptions.visible) {
-      const toolbarItem = {
-        template(data, index, container) {
-          const $search = renderer('<div>').addClass(that.addWidgetPrefix(SEARCH_PANEL_CLASS)).appendTo(container);
-          that._editorFactoryController.createEditor($search, {
-            width: searchPanelOptions.width,
-            placeholder: searchPanelOptions.placeholder,
+    return {
+      template: (_data, _index, container) => {
+        if (this.headerPanel) {
+          const $search = renderer('<div>').addClass(this.headerPanel.addWidgetPrefix(SEARCH_PANEL_CLASS)).appendTo(container);
+          this.getController('editorFactory').createEditor($search, {
+            width: searchPanelOptions?.width,
+            placeholder: searchPanelOptions?.placeholder,
             parentType: 'searchPanel',
-            value: that.option('searchPanel.text'),
+            value: this.option('searchPanel.text'),
             updateValueTimeout: FILTERING_TIMEOUT,
-            setValue(value) {
-              // @ts-expect-error
-              dataController.searchByText(value);
+            setValue: value => {
+              this.dataController?.searchByText(value);
             },
             editorOptions: {
               inputAttr: {
-                'aria-label': messageLocalization.format(`${that.component.NAME}-ariaSearchInGrid`)
+                'aria-label': messageLocalization.format(`${this.component.NAME}-ariaSearchInGrid`)
               }
             }
           });
-          that.resize();
-        },
-        name: 'searchPanel',
-        location: 'after',
-        locateInMenu: 'never',
-        sortIndex: 40
-      };
-      items.push(toolbarItem);
-    }
-    return items;
+          this.headerPanel.resize();
+        }
+      },
+      name: SEARCH_PANEL_ITEM_NAME,
+      location: 'after',
+      locateInMenu: 'never',
+      sortIndex: 50
+    };
   }
   getSearchTextEditor() {
-    const that = this;
-    const $element = that.element();
-    const $searchPanel = $element.find(`.${that.addWidgetPrefix(SEARCH_PANEL_CLASS)}`).filter(function () {
-      return renderer(this).closest(`.${that.addWidgetPrefix(HEADER_PANEL_CLASS$1)}`).is($element);
-    });
+    const $element = this.headerPanel?.element();
+    if (!this.headerPanel || !$element) {
+      return null;
+    }
+    const headerPanelClass = this.headerPanel.addWidgetPrefix(HEADER_PANEL_CLASS$1);
+    const $searchPanel = $element.find(`.${this.headerPanel.addWidgetPrefix(SEARCH_PANEL_CLASS)}`).filter((_, el) => renderer(el).closest(`.${headerPanelClass}`).is($element));
     if ($searchPanel.length) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return $searchPanel.dxTextBox('instance');
     }
     return null;
   }
-};
+}
 const rowsView$b = Base => class SearchRowsViewExtender extends Base {
   init() {
     super.init.apply(this, arguments);
@@ -133400,12 +133475,14 @@ const searchModule = {
       }
     };
   },
+  controllers: {
+    searchPanel: SearchPanelViewController
+  },
   extenders: {
     controllers: {
       data: dataController
     },
     views: {
-      headerPanel: headerPanel$1,
       rowsView: rowsView$b
     }
   }
@@ -135228,14 +135305,14 @@ const keyboardNavigationScrollableA11yExtender = Base => class ScrollableA11yExt
     super._focus($cell, disableFocus, skipFocusEvent);
     this.makeScrollableFocusableIfNeed();
   }
-  _tabKeyHandler(event) {
+  tabKeyHandler(event) {
     const isCellPositionDefined = isDefined(this._focusedCellPosition) && !isEmptyObject(this._focusedCellPosition);
-    const isOriginalHandlerRequired = !isCellPositionDefined || !event.shift && this._isLastValidCell(this._focusedCellPosition) || event.shift && this._isFirstValidCell(this._focusedCellPosition);
+    const isOriginalHandlerRequired = !isCellPositionDefined || !event.shift && this.isLastValidCell(this._focusedCellPosition) || event.shift && this.isFirstValidCell(this._focusedCellPosition);
     const isNeedFocusable = this.isScrollableNeedFocusable();
     if (isOriginalHandlerRequired && isNeedFocusable) {
       this._$firstNotFixedCell?.removeAttr('tabIndex');
     }
-    super._tabKeyHandler(event);
+    super.tabKeyHandler(event);
   }
   getFirstNotFixedCell() {
     const columns = this._columnsController.getVisibleColumns();
@@ -135270,12 +135347,12 @@ class KeyboardNavigationController extends KeyboardNavigationController$1 {
     this._dataController = this.getController('data');
     this._selectionController = this.getController('selection');
     this._editingController = this.getController('editing');
-    this._headerPanel = this.getView('headerPanel');
     this._editorFactory = this.getController('editorFactory');
     this._focusController = this.getController('focus');
     this._adaptiveColumnsController = this.getController('adaptiveColumns');
     this._columnResizerController = this.getController('columnsResizer');
     this._rowsView = this.getView('rowsView');
+    this.searchPanel = this.getController('searchPanel');
     super.init();
     this._memoFireFocusedCellChanged = memoize(this._memoFireFocusedCellChanged.bind(this), {
       compareType: 'value'
@@ -135481,39 +135558,63 @@ class KeyboardNavigationController extends KeyboardNavigationController$1 {
 
   // #region Key_Handlers
 
+  /**
+   * Executes tab key navigation logic.
+   * In editing mode — moves editing to the next/previous cell.
+   * In normal mode — moves focus to the next/previous cell.
+   * Falls back to browser's native tab behavior when focus should leave the grid.
+   */
   executeTabKey(event, options) {
     const isEditing = this._editingController.isEditing();
     const direction = event.shift ? 'previous' : 'next';
     const eventTarget = event.originalEvent.target;
     const {
-      editingOptions,
+      hasEditingOptions,
       isLastValidCell
     } = options;
     let originalHandlerRequired = options.isOriginalHandlerRequired;
-    if (editingOptions && eventTarget && !originalHandlerRequired) {
+
+    // Try to handle tab navigation within the grid
+    if (hasEditingOptions && eventTarget && !originalHandlerRequired) {
       if (isEditing) {
-        if (!this._editingCellTabHandler(event, direction)) {
+        // In editing mode: navigate to the next editable cell.
+        // If the handler returns false, stop grid handling and fall back to native Tab behavior.
+        if (!this.editingCellTabHandler(event, direction)) {
           return;
         }
-      } else if (this._targetCellTabHandler(event, direction)) {
+      } else if (this.targetCellTabHandler(event, direction)) {
+        // In normal mode: if handler signals that native tab is required,
+        // let the browser handle focus transition out of the grid.
         originalHandlerRequired = true;
       }
     }
+
+    // Let the browser handle tab natively — focus leaves the grid
     if (originalHandlerRequired) {
-      const $cell = this._getFocusedCell();
-      const isCommandCell = $cell.is(COMMAND_CELL_SELECTOR);
-      if (isLastValidCell && !isCommandCell) {
-        this._toggleInertAttr(true);
-      }
-      this._editorFactory.loseFocus();
-      if (this._editingController.isEditing() && !this._isRowEditMode()) {
-        this._resetFocusedCell(true);
-        this._resetFocusedView();
-        this._closeEditCell();
-      }
+      this.handleNativeTabOut(isLastValidCell);
       return;
     }
+
+    // Tab was handled by grid navigation — suppress browser default
     event.originalEvent.preventDefault();
+  }
+
+  /**
+   * Handles the case when Tab should leave the grid to the next/previous focusable element.
+   * Cleans up editing state if the grid is in cell/batch editing mode.
+   */
+  handleNativeTabOut(isLastValidCell) {
+    const $cell = this._getFocusedCell();
+    const isCommandCell = $cell.is(COMMAND_CELL_SELECTOR);
+    if (isLastValidCell && !isCommandCell) {
+      this._toggleInertAttr(true);
+    }
+    this._editorFactory.loseFocus();
+    if (this._editingController.isEditing() && !this._isRowEditMode()) {
+      this._resetFocusedCell(true);
+      this._resetFocusedView();
+      this._closeEditCell();
+    }
   }
   keyDownHandler(e) {
     let needStopPropagation = true;
@@ -135564,7 +135665,7 @@ class KeyboardNavigationController extends KeyboardNavigationController$1 {
           }
           break;
         case 'tab':
-          this._tabKeyHandler(e);
+          this.tabKeyHandler(e);
           isHandled = true;
           break;
         case 'enter':
@@ -135720,38 +135821,58 @@ class KeyboardNavigationController extends KeyboardNavigationController$1 {
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _toggleInertAttr(value) {}
-  _tabKeyHandler(event) {
+
+  /**
+   * Handles Tab / Shift+Tab key press.
+   * Determines navigation direction, checks boundary conditions,
+   * and delegates to `executeTabKey` for the actual focus transition.
+   */
+  tabKeyHandler(event) {
     const direction = event.shift ? 'previous' : 'next';
     const eventTarget = event.originalEvent.target;
-    const focusedViewElement = this._focusedView && this._focusedView.element();
-    const editingOptions = this.option('editing');
-    const hasFocusedCellPosition = isDefined(this._focusedCellPosition) && !isEmptyObject(this._focusedCellPosition);
-    const isFirstValidCell = event.shift && hasFocusedCellPosition ? this._isFirstValidCell(this._focusedCellPosition) : false;
-    const isLastValidCell = !event.shift && hasFocusedCellPosition ? this._isLastValidCell(this._focusedCellPosition) : false;
-    const isRowsViewElement = renderer(eventTarget).hasClass(this.addWidgetPrefix(ROWS_VIEW_CLASS$1));
-    const isOriginalHandlerRequired = !hasFocusedCellPosition || isFirstValidCell || isLastValidCell;
-    const canHandleEditing = editingOptions && eventTarget && !isOriginalHandlerRequired;
-    const shouldResetFocusedCell = canHandleEditing && isRowsViewElement;
-    const shouldProcessVirtualPosition = canHandleEditing && this._isVirtualColumnRender();
-    const options = {
-      editingOptions,
+
+    // Master-detail cells use their own tab navigation logic
+    if (this.handleTabKeyOnMasterDetailCell(eventTarget, direction)) {
+      return;
+    }
+    renderer(this._focusedView?.element()).addClass(FOCUS_STATE_CLASS);
+    const {
+      isLastValidCell,
+      isOriginalHandlerRequired
+    } = this.getTabBoundaryInfo(event);
+    const hasEditingOptions = !!this.option('editing');
+    const canHandleNavigation = hasEditingOptions && !!eventTarget && !isOriginalHandlerRequired;
+
+    // Reset focused cell when the rows view container itself is focused (not a specific cell)
+    if (canHandleNavigation && renderer(eventTarget).hasClass(this.addWidgetPrefix(ROWS_VIEW_CLASS$1))) {
+      this._resetFocusedCell();
+    }
+    const tabOptions = {
+      hasEditingOptions,
       isLastValidCell,
       isOriginalHandlerRequired
     };
-    if (this._handleTabKeyOnMasterDetailCell(eventTarget, direction)) {
+
+    // Virtual columns require horizontal scrolling before executing tab navigation
+    if (canHandleNavigation && this._isVirtualColumnRender()) {
+      this._processVirtualHorizontalPosition(direction, event).done(() => this.executeTabKey(event, tabOptions));
       return;
     }
-    renderer(focusedViewElement).addClass(FOCUS_STATE_CLASS);
-    if (shouldResetFocusedCell) {
-      this._resetFocusedCell();
-    }
-    if (shouldProcessVirtualPosition) {
-      this._processVirtualHorizontalPosition(direction, event).done(() => {
-        this.executeTabKey(event, options);
-      });
-      return;
-    }
-    this.executeTabKey(event, options);
+    this.executeTabKey(event, tabOptions);
+  }
+
+  /**
+   * Determines whether the focused cell is at the boundary of the grid.
+   * When at the boundary, Tab/Shift+Tab should let focus leave the grid.
+   */
+  getTabBoundaryInfo(event) {
+    const hasFocusedCellPosition = isDefined(this._focusedCellPosition) && !isEmptyObject(this._focusedCellPosition);
+    const isLastValidCell = !event.shift && hasFocusedCellPosition && this.isLastValidCell(this._focusedCellPosition);
+    const isOriginalHandlerRequired = !hasFocusedCellPosition || event.shift && this.isFirstValidCell(this._focusedCellPosition) || isLastValidCell;
+    return {
+      isLastValidCell,
+      isOriginalHandlerRequired
+    };
   }
   _getMaxVerticalOffset() {
     const scrollable = this.component.getScrollable();
@@ -135830,105 +135951,176 @@ class KeyboardNavigationController extends KeyboardNavigationController$1 {
     // @ts-expect-error
     return Deferred().resolve().promise();
   }
-  _editingCellTabHandler(eventArgs, direction) {
+
+  /**
+   * Handles Tab key when a cell is being edited.
+   * Moves focus and editing to the next/previous editable cell.
+   * Returns true if tab was handled and further processing may be needed,
+   * false if tab is fully handled or should fall through to native behavior.
+   */
+  editingCellTabHandler(eventArgs, direction) {
     const eventTarget = eventArgs.originalEvent.target;
-    const $targetCell = this._getCellElementFromTarget(eventTarget);
-    const isCommandCell = $targetCell.is(COMMAND_CELL_SELECTOR);
+    const $targetCell = this.getCellElementFromTarget(eventTarget);
+
+    // If focus is on an intermediate interactive element inside the cell,
+    // let the browser cycle through elements within the cell first
     if (this.isOriginalTabHandlerRequired($targetCell, eventArgs)) {
       return false;
     }
-    if (isCommandCell) {
-      return !this._targetCellTabHandler(eventArgs, direction);
+
+    // Command cells (e.g. edit/delete buttons) delegate to non-editing tab handler
+    if ($targetCell.is(COMMAND_CELL_SELECTOR)) {
+      return !this.targetCellTabHandler(eventArgs, direction);
     }
     this._updateFocusedCellPosition($targetCell);
     const elementType = this._getElementType(eventTarget);
-    const nextCellInfo = this._getNextCellByTabKey(eventArgs.originalEvent, direction, elementType);
+    const nextCellInfo = this.getNextCellByTabKey(eventArgs.originalEvent, direction, elementType);
     const $nextCell = nextCellInfo.$cell;
-    if (!$nextCell || this._handleTabKeyOnMasterDetailCell($nextCell, direction)) {
+    if (!$nextCell || this.handleTabKeyOnMasterDetailCell($nextCell, direction)) {
       return false;
     }
-    let isEditingAllowed = false;
-    const column = this._getColumnByCellElement($nextCell);
-    if (column?.allowEditing) {
-      const $row = $nextCell.parent();
-      const rowIndex = this._getLocalRowIndex($row);
-      const row = this._dataController.items()[rowIndex];
-      const isDataRow = !row || row.rowType === 'data';
-      isEditingAllowed = this._editingController.allowUpdating({
-        row
-      }) ? isDataRow : row?.isNewRow;
-    }
+    this.focusAndEditNextCell($nextCell, nextCellInfo.isHighlighted, eventArgs.shift);
+    return true;
+  }
+
+  /**
+   * Focuses the next cell and starts editing if allowed.
+   * Closes the current editor if the next cell is not editable.
+   */
+  focusAndEditNextCell($nextCell, isHighlighted, isShift) {
+    const isEditingAllowed = this.canEditNextCell($nextCell);
     if (!isEditingAllowed) {
       this._closeEditCell();
     }
-    const nextCellFocused = this._focusCell($nextCell, !nextCellInfo.isHighlighted);
+    const nextCellFocused = this._focusCell($nextCell, !isHighlighted);
     if (nextCellFocused) {
-      const isRowMode = this._isRowEditMode();
-      if (!isRowMode && isEditingAllowed) {
+      if (!this._isRowEditMode() && isEditingAllowed) {
         this._editFocusedCell();
       } else {
-        this._focusInteractiveElement($nextCell, eventArgs.shift);
+        this._focusInteractiveElement($nextCell, isShift);
       }
     }
-    return true;
   }
+
+  /**
+   * Checks whether editing is allowed in the given cell
+   * based on the column's `allowEditing` flag and the row's editing permissions.
+   */
+  canEditNextCell($cell) {
+    const column = this._getColumnByCellElement($cell);
+    if (!column?.allowEditing) {
+      return false;
+    }
+    const $row = $cell.parent();
+    const rowIndex = this._getLocalRowIndex($row);
+    const row = this._dataController.items()[rowIndex];
+    const isRowData = !row || row.rowType === 'data';
+    return this._editingController.allowUpdating({
+      row
+    }) ? isRowData : !!row?.isNewRow;
+  }
+
+  /**
+   * Checks whether native browser tab behavior should be used.
+   * Returns true when focus is on an interactive element inside a cell
+   * that is not the boundary (last for Tab, first for Shift+Tab) interactive element,
+   * meaning tab should cycle through elements within the cell first.
+   */
   isOriginalTabHandlerRequired($cell, event) {
     const eventTarget = event.originalEvent.target;
     const elementType = this._getElementType(eventTarget);
-    const $lastInteractiveElement = getInteractiveElement($cell, !event.shift);
-    if (elementType !== 'cell' || $lastInteractiveElement.length === 0) {
+    const $boundaryInteractiveElement = getInteractiveElement($cell, !event.shift);
+    if (elementType !== 'cell' || $boundaryInteractiveElement.length === 0) {
       return false;
     }
-    return eventTarget !== $lastInteractiveElement.get(0);
+    return eventTarget !== $boundaryInteractiveElement.get(0);
   }
-  _targetCellTabHandler(eventArgs, direction) {
+
+  /**
+   * Handles Tab key on a cell that is not being edited.
+   * Moves focus to the next/previous cell and focuses its interactive elements.
+   * Returns true if original (browser) tab behavior is required,
+   * false if navigation was handled within the grid.
+   */
+  targetCellTabHandler(eventArgs, direction) {
     const $event = eventArgs.originalEvent;
     let eventTarget = $event.target;
     let elementType = this._getElementType(eventTarget);
-    let $cell = this._getCellElementFromTarget(eventTarget);
+    const $cell = this.getCellElementFromTarget(eventTarget);
+
+    // Non-editor cells with intermediate interactive elements use native tab
     if (!isEditorCell(this, $cell) && this.isOriginalTabHandlerRequired($cell, eventArgs)) {
       return true;
     }
+
+    // Initialize focused position when it hasn't been set yet
     if (this._focusedCellPosition.rowIndex === undefined && renderer(eventTarget).hasClass(ROW_CLASS)) {
       this._updateFocusedCellPosition($cell);
     }
     if (this.isRowFocusType()) {
       this.setCellFocusType();
-      if (elementType === 'row' && isDataRow(renderer(eventTarget))) {
-        eventTarget = this.getFirstValidCellInRow(renderer(eventTarget));
-        elementType = this._getElementType(eventTarget);
-      }
+      ({
+        target: eventTarget,
+        elementType
+      } = this.getCellFocusInfo(eventTarget, elementType));
     }
-    const nextCellInfo = this._getNextCellByTabKey($event, direction, elementType);
-    $cell = nextCellInfo.$cell;
-    if (!$cell) {
+    const nextCellInfo = this.getNextCellByTabKey($event, direction, elementType);
+    if (!nextCellInfo.$cell) {
       return false;
     }
-    $cell = this._checkNewLineTransition($event, $cell);
-    if (!$cell) {
+
+    // Handle row transition — fires focusedRowChanging event
+    const $newFocusedCell = this.checkNewLineTransition($event, nextCellInfo.$cell);
+    if (!$newFocusedCell) {
       return false;
     }
-    this._focusCell($cell, !nextCellInfo.isHighlighted);
-    if (!isEditorCell(this, $cell)) {
-      this._focusInteractiveElement($cell, eventArgs.shift);
+    this._focusCell($newFocusedCell, !nextCellInfo.isHighlighted);
+    if (!isEditorCell(this, $newFocusedCell)) {
+      this._focusInteractiveElement($newFocusedCell, eventArgs.shift);
     }
     return false;
   }
-  _getNextCellByTabKey($event, direction, elementType) {
-    let $cell = this._getNextCell(direction, elementType);
+
+  /**
+   * Switches from row focus mode to cell focus mode when needed.
+   * If the current target is a data row, resolves the first valid cell as the new target.
+   */
+  getCellFocusInfo(target, elementType) {
+    if (elementType === 'row' && isDataRow(renderer(target))) {
+      const cellTarget = this.getFirstValidCellInRow(renderer(target));
+      return {
+        target: cellTarget,
+        elementType: this._getElementType(cellTarget)
+      };
+    }
+    return {
+      target,
+      elementType
+    };
+  }
+
+  /**
+   * Finds the next cell for tab navigation and fires the `onFocusedCellChanging` event.
+   * Returns `{ $cell, isHighlighted }` or an empty object if navigation was canceled.
+   */
+  getNextCellByTabKey($event, direction, elementType) {
+    const $cell = this._getNextCell(direction, elementType);
     const args = $cell && this._fireFocusedCellChanging($event, $cell, true);
     if (!args || args.cancel) {
       return {};
     }
-    if (args.$newCellElement) {
-      $cell = args.$newCellElement;
-    }
     return {
-      $cell,
+      $cell: args.$newCellElement ?? $cell,
       isHighlighted: args.isHighlighted
     };
   }
-  _checkNewLineTransition($event, $cell) {
+
+  /**
+   * Handles the row transition during tab navigation.
+   * When the next cell belongs to a different row, fires the `onFocusedRowChanging` event.
+   * Returns the target cell element, or undefined if the transition was canceled.
+   */
+  checkNewLineTransition($event, $cell) {
     const rowIndex = this.getVisibleRowIndex();
     const $row = $cell.parent();
     if (rowIndex !== this._getRowIndex($row)) {
@@ -135939,7 +136131,7 @@ class KeyboardNavigationController extends KeyboardNavigationController$1 {
       }
       if (args.rowIndexChanged && cellPosition) {
         this.setFocusedColumnIndex(cellPosition.columnIndex);
-        $cell = this._getFocusedCell();
+        return this._getFocusedCell();
       }
     }
     return $cell;
@@ -135978,7 +136170,7 @@ class KeyboardNavigationController extends KeyboardNavigationController$1 {
     if (isEditing || !allowEditingOnEnterKey && direction) {
       this._handleEnterKeyEditingCell(eventArgs.originalEvent).done(() => {
         if (direction === 'next' || direction === 'previous') {
-          this._targetCellTabHandler(eventArgs, direction);
+          this.targetCellTabHandler(eventArgs, direction);
         } else if (direction === 'upArrow' || direction === 'downArrow') {
           this._navigateNextCell(eventArgs.originalEvent, direction);
         }
@@ -136003,7 +136195,7 @@ class KeyboardNavigationController extends KeyboardNavigationController$1 {
     const {
       target
     } = event;
-    const $cell = this._getCellElementFromTarget(target);
+    const $cell = this.getCellElementFromTarget(target);
     const isRowEditMode = this._isRowEditMode();
     this._updateFocusedCellPosition($cell);
     if (isRowEditMode) {
@@ -136024,7 +136216,7 @@ class KeyboardNavigationController extends KeyboardNavigationController$1 {
    * @extended
    */
   _escapeKeyHandler(eventArgs, isEditing) {
-    const $cell = this._getCellElementFromTarget(eventArgs.originalEvent.target);
+    const $cell = this.getCellElementFromTarget(eventArgs.originalEvent.target);
     if (isEditing) {
       this._updateFocusedCellPosition($cell);
       if (!this._isRowEditMode()) {
@@ -136053,8 +136245,7 @@ class KeyboardNavigationController extends KeyboardNavigationController$1 {
   }
   _ctrlFKeyHandler(eventArgs) {
     if (this.option('searchPanel.visible')) {
-      // @ts-expect-error
-      const searchTextEditor = this._headerPanel.getSearchTextEditor();
+      const searchTextEditor = this.searchPanel.getSearchTextEditor();
       if (searchTextEditor) {
         searchTextEditor.focus();
         eventArgs.originalEvent.preventDefault();
@@ -136452,7 +136643,7 @@ class KeyboardNavigationController extends KeyboardNavigationController$1 {
       const $row = renderer(target);
       this._focusedView && isGroupRow($row) && this.setFocusedRowIndex(this._getRowIndex($row));
     } else {
-      this._updateFocusedCellPosition(this._getCellElementFromTarget(target));
+      this._updateFocusedCellPosition(this.getCellElementFromTarget(target));
     }
   }
   _focusCell($cell, isDisabled) {
@@ -136547,7 +136738,7 @@ class KeyboardNavigationController extends KeyboardNavigationController$1 {
         break;
       case 'previousInRow':
       case 'previous':
-        if (columnIndex > 0 && elementType !== 'row' && this._hasValidCellBeforePosition({
+        if (columnIndex > 0 && elementType !== 'row' && this.hasValidCellBeforePosition({
           columnIndex,
           rowIndex
         })) {
@@ -136600,14 +136791,16 @@ class KeyboardNavigationController extends KeyboardNavigationController$1 {
     const lastVisibleIndex = Math.max(...dataController.items().map((item, index) => item.visible !== false ? index : -1));
     return rowIndex === lastVisibleIndex;
   }
-  _isFirstValidCell(cellPosition) {
-    let isFirstValidCell = false;
-    if (cellPosition.rowIndex === 0 && cellPosition.columnIndex >= 0) {
-      isFirstValidCell = isFirstValidCell || !this._hasValidCellBeforePosition(cellPosition);
+  isFirstValidCell(cellPosition) {
+    if (cellPosition.rowIndex !== 0) {
+      return false;
     }
-    return isFirstValidCell;
+    if (this.isFullRowFocusType(cellPosition.rowIndex) && cellPosition.columnIndex > 0) {
+      return true;
+    }
+    return cellPosition.columnIndex >= 0 && !this.hasValidCellBeforePosition(cellPosition);
   }
-  _hasValidCellBeforePosition(cellPosition) {
+  hasValidCellBeforePosition(cellPosition) {
     let {
       columnIndex
     } = cellPosition;
@@ -136636,32 +136829,33 @@ class KeyboardNavigationController extends KeyboardNavigationController$1 {
     }
     return hasValidCells;
   }
-  _isLastValidCell(cellPosition) {
-    const nextColumnIndex = cellPosition.columnIndex >= 0 ? cellPosition.columnIndex + 1 : 0;
+  isLastValidCell(cellPosition) {
     const {
       rowIndex
     } = cellPosition;
-    const checkingPosition = {
-      columnIndex: nextColumnIndex,
-      rowIndex
-    };
-    const visibleRows = this._dataController.getVisibleRows();
-    const row = visibleRows && visibleRows[rowIndex];
-    const isLastRow = this._isLastRow(rowIndex);
-    if (!isLastRow) {
+    if (!this._isLastRow(rowIndex)) {
       return false;
     }
-    const isFullRowFocus = row?.rowType === 'group' || row?.rowType === 'groupFooter';
-    if (isFullRowFocus && cellPosition.columnIndex > 0) {
+    if (this.isFullRowFocusType(rowIndex) && cellPosition.columnIndex > 0) {
       return true;
     }
     if (cellPosition.columnIndex === this._getVisibleColumnCount() - 1) {
       return true;
     }
+    const nextColumnIndex = cellPosition.columnIndex >= 0 ? cellPosition.columnIndex + 1 : 0;
+    const checkingPosition = {
+      columnIndex: nextColumnIndex,
+      rowIndex
+    };
     if (this._isCellByPositionValid(checkingPosition)) {
       return false;
     }
-    return this._isLastValidCell(checkingPosition);
+    return this.isLastValidCell(checkingPosition);
+  }
+  isFullRowFocusType(rowIndex) {
+    const visibleRows = this._dataController.getVisibleRows();
+    const row = visibleRows && visibleRows[rowIndex];
+    return row?.rowType === 'group' || row?.rowType === 'groupFooter';
   }
 
   // #endregion Cell_Position
@@ -136763,7 +136957,7 @@ class KeyboardNavigationController extends KeyboardNavigationController$1 {
     }
     const isRowFocus = this.isRowFocusType();
     const includeCommandCells = isRowFocus || keyCode === 'next' || keyCode === 'previous';
-    const isBoundaryCell = keyCode === 'previous' ? this._isFirstValidCell(position) : this._isLastValidCell(position);
+    const isBoundaryCell = keyCode === 'previous' ? this.isFirstValidCell(position) : this.isLastValidCell(position);
     if (!this._isCellInRow(position, includeCommandCells) || isBoundaryCell) {
       return $cell;
     }
@@ -137147,7 +137341,12 @@ class KeyboardNavigationController extends KeyboardNavigationController$1 {
       this._applyTabIndexToElement($nextCell);
     }
   }
-  _handleTabKeyOnMasterDetailCell(target, direction) {
+
+  /**
+   * Handles tab navigation when focus is on or entering a master-detail cell.
+   * Returns true if the master-detail handling was applied.
+   */
+  handleTabKeyOnMasterDetailCell(target, direction) {
     if (this.getMasterDetailCell(target)) {
       this._updateFocusedCellPosition(renderer(target), direction);
       const $nextCell = this._getNextCell(direction, 'row');
@@ -137179,16 +137378,13 @@ class KeyboardNavigationController extends KeyboardNavigationController$1 {
   _isCellElement($element) {
     return $element.length && $element[0].tagName === 'TD';
   }
-  _getCellElementFromTarget(target) {
+  getCellElementFromTarget(target) {
     const elementType = this._getElementType(target);
     const $targetElement = renderer(target);
-    let $cell;
     if (elementType === 'cell') {
-      $cell = $targetElement.closest(`.${ROW_CLASS} > td`);
-    } else {
-      $cell = $targetElement.children().not(`.${COMMAND_EXPAND_CLASS}`).first();
+      return $targetElement.closest(`.${ROW_CLASS} > td`);
     }
-    return $cell;
+    return $targetElement.children().not(`.${COMMAND_EXPAND_CLASS}`).first();
   }
   _getRowsViewElement() {
     return this._rowsView?.element();
@@ -143073,7 +143269,6 @@ const headerPanel = Base => class ExportHeaderPanelExtender extends Base {
     const exportButton = this._getExportToolbarButton();
     if (exportButton) {
       items.push(exportButton);
-      this._correctItemsPosition(items);
     }
     return items;
   }
@@ -143165,9 +143360,6 @@ const headerPanel = Base => class ExportHeaderPanelExtender extends Base {
       }
     });
     return items;
-  }
-  _correctItemsPosition(items) {
-    items.sort((itemA, itemB) => itemA.sortIndex - itemB.sortIndex);
   }
   _isExportButtonVisible() {
     return this.option('export.enabled');
@@ -143646,7 +143838,7 @@ const keyboardNavigation$1 = Base => class FocusKeyboardNavigationExtender exten
     }
     if (this.isCellFocusType()) {
       this.setRowFocusType();
-      this._focus(this._getCellElementFromTarget(eventArgs.originalEvent.target), true);
+      this._focus(this.getCellElementFromTarget(eventArgs.originalEvent.target), true);
       return true;
     }
     return false;
@@ -213899,7 +214091,6 @@ const DEFAULT_SCHEDULER_OPTIONS = {
   maxAppointmentsPerCell: 'auto',
   selectedCellData: [],
   groupByDate: false,
-  // @ts-expect-error new public option not yet in upstream Properties type
   hiddenWeekDays: undefined,
   onAppointmentRendered: undefined,
   onAppointmentClick: undefined,
@@ -218845,8 +219036,45 @@ const getDateNavigator = (header, item) => {
   return config;
 };
 
+const isValidWeekday = value => typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 6;
+const isDateSkipped = (date, skippedDays) => skippedDays.includes(date.getDay());
+const getVisibleDaysOfWeek = (firstDayOfWeek, skippedDays) => {
+  const result = [];
+  for (let count = 0; count < 7; count += 1) {
+    const raw = firstDayOfWeek + count;
+    const dayOfWeek = (raw % 7 + 7) % 7;
+    if (!skippedDays.includes(dayOfWeek)) {
+      result.push(dayOfWeek);
+    }
+  }
+  return result;
+};
+const getFirstVisibleDate = (start, skippedDays, nextDate) => {
+  if (skippedDays.length >= 7) {
+    return new Date(start);
+  }
+  let date = new Date(start);
+  while (isDateSkipped(date, skippedDays)) {
+    date = nextDate(date);
+  }
+  return date;
+};
+const getSkippedDaysCount = (start, dayCount, skippedDays) => {
+  if (dayCount <= 0 || !skippedDays || skippedDays.length === 0) {
+    return 0;
+  }
+  const date = new Date(start);
+  let skippedCount = 0;
+  for (let i = 0; i < dayCount; i += 1) {
+    if (isDateSkipped(date, skippedDays)) {
+      skippedCount += 1;
+    }
+    date.setDate(date.getDate() + 1);
+  }
+  return skippedCount;
+};
+
 const DAY_FORMAT = 'd';
-const DAYS_IN_WORK_WEEK = 5;
 const {
   correctDateWithUnitBeginning: getPeriodStart,
   getFirstWeekDate: getWeekStart,
@@ -218865,8 +219093,6 @@ const DAY_DURATION = {
 const WEEK_DURATION = {
   days: 7
 };
-const SATURDAY_INDEX$1 = 6;
-const SUNDAY_INDEX$1 = 0;
 const subMS = date => addDateInterval(date, MS_DURATION, -1);
 const addMS = date => addDateInterval(date, MS_DURATION, 1);
 const nextDay = date => addDateInterval(date, DAY_DURATION, 1);
@@ -218877,47 +219103,22 @@ const nextMonth = date => {
     days
   }, 1);
 };
-const isWeekend = date => [SATURDAY_INDEX$1, SUNDAY_INDEX$1].includes(date.getDay());
-const isSkippedDay = (date, skippedDays) => skippedDays.includes(date.getDay());
-const getWorkWeekStart = firstDayOfWeek => {
-  let date = new Date(firstDayOfWeek);
-  while (isWeekend(date)) {
-    date = nextDay(date);
+const getWorkWeekStart = (date, firstDayOfWeek, skippedDays) => getFirstVisibleDate(getWeekStart(date, firstDayOfWeek), skippedDays, nextDay);
+const getDateAfterWorkWeek = (workWeekStart, firstDayOfWeek, skippedDays) => {
+  const weekStart = getWeekStart(workWeekStart, firstDayOfWeek);
+  let lastVisibleDate = addDateInterval(weekStart, {
+    days: 6
+  }, 1);
+  while (isDateSkipped(lastVisibleDate, skippedDays)) {
+    lastVisibleDate = addDateInterval(lastVisibleDate, DAY_DURATION, -1);
   }
-  return date;
+  return nextDay(lastVisibleDate);
 };
-const getFirstVisibleDay = (start, skippedDays) => {
-  let date = new Date(start);
-  while (isSkippedDay(date, skippedDays)) {
-    date = nextDay(date);
+const getDateAfterWeek = (weekStartDate, firstDayOfWeek, skippedDays) => {
+  if (skippedDays.length === 0) {
+    return nextWeek(weekStartDate);
   }
-  return date;
-};
-const getDateAfterWorkWeek = workWeekStart => {
-  let date = new Date(workWeekStart);
-  let workDaysCount = 0;
-  while (workDaysCount < DAYS_IN_WORK_WEEK) {
-    if (!isWeekend(date)) {
-      workDaysCount += 1;
-    }
-    date = nextDay(date);
-  }
-  return date;
-};
-const getDateAfterVisibleWeek = (start, skippedDays) => {
-  const visibleCount = 7 - skippedDays.length;
-  if (visibleCount <= 0) {
-    return new Date(start);
-  }
-  let date = new Date(start);
-  let visited = 0;
-  while (visited < visibleCount) {
-    if (!isSkippedDay(date, skippedDays)) {
-      visited += 1;
-    }
-    date = nextDay(date);
-  }
-  return date;
+  return getDateAfterWorkWeek(weekStartDate, firstDayOfWeek, skippedDays);
 };
 const nextAgendaStart = (date, agendaDuration) => addDateInterval(date, {
   days: agendaDuration
@@ -218936,25 +219137,25 @@ const getIntervalStartDate = options => {
     case 'week':
       {
         const weekStart = getPeriodStart(date, step, false, firstDayOfWeek);
-        if (skippedDays && skippedDays.length > 0) {
-          return getFirstVisibleDay(weekStart, skippedDays);
+        if (skippedDays.length > 0) {
+          return getFirstVisibleDate(weekStart, skippedDays, nextDay);
         }
         return weekStart;
       }
     case 'workWeek':
-      return getWorkWeekStart(getWeekStart(date, firstDayOfWeek));
+      return getWorkWeekStart(date, firstDayOfWeek, skippedDays);
     case 'agenda':
       return new Date(date);
     default:
       return new Date(date);
   }
 };
-const getPeriodEndDate = (currentPeriodStartDate, step, agendaDuration, skippedDays) => {
+const getPeriodEndDate = (currentPeriodStartDate, step, agendaDuration, skippedDays, firstDayOfWeek) => {
   const calculators = {
     day: () => nextDay(currentPeriodStartDate),
-    week: () => skippedDays && skippedDays.length > 0 ? getDateAfterVisibleWeek(currentPeriodStartDate, skippedDays) : nextWeek(currentPeriodStartDate),
+    week: () => getDateAfterWeek(currentPeriodStartDate, firstDayOfWeek, skippedDays),
     month: () => nextMonth(currentPeriodStartDate),
-    workWeek: () => getDateAfterWorkWeek(currentPeriodStartDate),
+    workWeek: () => getDateAfterWorkWeek(currentPeriodStartDate, firstDayOfWeek, skippedDays),
     agenda: () => nextAgendaStart(currentPeriodStartDate, agendaDuration)
   };
   return subMS(calculators[step]());
@@ -218962,13 +219163,9 @@ const getPeriodEndDate = (currentPeriodStartDate, step, agendaDuration, skippedD
 const getNextPeriodStartDate = (currentPeriodEndDate, step, skippedDays) => {
   let date = addMS(currentPeriodEndDate);
   if (step === 'workWeek') {
-    while (isWeekend(date)) {
-      date = nextDay(date);
-    }
-  } else if (step === 'week' && skippedDays && skippedDays.length > 0) {
-    while (isSkippedDay(date, skippedDays)) {
-      date = nextDay(date);
-    }
+    date = getFirstVisibleDate(date, skippedDays, nextDay);
+  } else if (step === 'week' && skippedDays.length > 0) {
+    date = getFirstVisibleDate(date, skippedDays, nextDay);
   }
   return date;
 };
@@ -218977,14 +219174,15 @@ const getIntervalEndDate = (startDate, options) => {
     intervalCount,
     step,
     agendaDuration,
-    skippedDays
+    skippedDays,
+    firstDayOfWeek
   } = options;
   let periodStartDate = new Date(startDate);
   let periodEndDate = new Date(startDate);
   let nextPeriodStartDate = new Date(startDate);
   for (let i = 0; i < intervalCount; i += 1) {
     periodStartDate = nextPeriodStartDate;
-    periodEndDate = getPeriodEndDate(periodStartDate, step, agendaDuration ?? 0, skippedDays);
+    periodEndDate = getPeriodEndDate(periodStartDate, step, agendaDuration ?? 0, skippedDays, firstDayOfWeek);
     nextPeriodStartDate = getNextPeriodStartDate(periodEndDate, step, skippedDays);
   }
   return periodEndDate;
@@ -219726,8 +219924,6 @@ const DEFAULT_VIEW_OPTIONS = {
 
 const toMs$f = dateUtils$1.dateToMilliseconds;
 const DAY_HOURS = 24;
-const SATURDAY_INDEX = 6;
-const SUNDAY_INDEX = 0;
 const getDurationInHours = (startDate, endDate) => Math.floor((endDate.getTime() - startDate.getTime()) / toMs$f('hour'));
 const getDatesWithoutTime = (min, max) => {
   const newMin = dateUtils$1.trimTime(new Date(min));
@@ -219884,11 +220080,6 @@ const isGroupingByDate = (groupCount, groupOrientation, groupByDate) => {
   const isHorizontalGrouping = isHorizontalGroupingApplied(groupCount, groupOrientation);
   return groupByDate && isHorizontalGrouping;
 };
-const isDataOnWeekend = date => {
-  const day = date.getDay();
-  return day === SATURDAY_INDEX || day === SUNDAY_INDEX;
-};
-const getWeekendsCount = days => 2 * Math.floor(days / 7);
 const extendGroupItemsForGroupingByDate = (groupRenderItems, columnCountPerGroup) => [...new Array(columnCountPerGroup)].reduce((currentGroupItems, _, index) => groupRenderItems.map((groupsRow, rowIndex) => {
   const currentRow = currentGroupItems[rowIndex] || [];
   return [...currentRow, ...groupsRow.map((item, columnIndex) => ({
@@ -220193,15 +220384,25 @@ const calculateStartViewDate$5 = (currentDate, startDayHour) => {
   return setOptionHour(validCurrentDate, startDayHour);
 };
 const getDayStart$1 = date => new Date(date).setUTCHours(0, 0, 0, 0);
-const calculateRows = (appointments, agendaDuration, currentDate, groupCount) => {
-  const dayMs = getDayStart$1(utils$2.createUTCDateWithLocalOffset(currentDate));
+const getDateByIndex = (startViewDate, index) => {
+  const date = new Date(startViewDate);
+  date.setDate(date.getDate() + index);
+  return date;
+};
+const calculateEndViewDate = (startViewDate, endDayHour, agendaDuration) => {
+  const lastVisibleDate = getDateByIndex(startViewDate, Math.max(agendaDuration - 1, 0));
+  const endViewDate = setOptionHour(lastVisibleDate, endDayHour);
+  return new Date(endViewDate.getTime() - 60000);
+};
+const calculateRows = (appointments, agendaDuration, startViewDate, groupCount) => {
   const intervalsStartMap = new Map();
   const result = Array.from({
     length: groupCount || 1
   }, () => new Array(agendaDuration).fill(0));
   for (let i = 0; i < agendaDuration; i += 1) {
-    const day = new Date(dayMs);
-    intervalsStartMap.set(day.setUTCDate(day.getUTCDate() + i), i);
+    const date = getDateByIndex(startViewDate, i);
+    const dayStart = getDayStart$1(utils$2.createUTCDateWithLocalOffset(date));
+    intervalsStartMap.set(dayStart, i);
   }
   appointments.forEach(appointment => {
     const appointmentStart = getDayStart$1(appointment.startDateUTC);
@@ -220344,16 +220545,9 @@ const calculateViewStartDate = (startDateOption, firstDayOfWeek) => {
   return dateUtils$1.getFirstWeekDate(startDateOption, validFirstDayOfWeek);
 };
 
-const MONDAY_INDEX = 1;
-const DAYS_IN_WEEK$2 = 7;
-const calculateStartViewDate = (currentDate, startDayHour, startDate, intervalDuration, firstDayOfWeek) => {
+const calculateStartViewDate = (currentDate, startDayHour, startDate, intervalDuration, firstDayOfWeek, skippedDays = [0, 6]) => {
   const viewStart = getViewStartByOptions$1(startDate, currentDate, intervalDuration, getValidStartDate(startDate, firstDayOfWeek));
-  const firstViewDate = dateUtils$1.getFirstWeekDate(viewStart, firstDayOfWeek);
-  if (isDataOnWeekend(firstViewDate)) {
-    const currentDay = firstViewDate.getDay();
-    const distance = (MONDAY_INDEX + DAYS_IN_WEEK$2 - currentDay) % 7;
-    firstViewDate.setDate(firstViewDate.getDate() + distance);
-  }
+  const firstViewDate = getFirstVisibleDate(dateUtils$1.getFirstWeekDate(viewStart, firstDayOfWeek), skippedDays, date => new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1));
   return setOptionHour(firstViewDate, startDayHour);
 };
 
@@ -220385,8 +220579,10 @@ const formatWeekday = date => dateLocalization.getDayNames('abbreviated')[date.g
 const formatWeekdayAndDay = date => `${formatWeekday(date)} ${dateLocalization.format(date, 'day')}`;
 
 const agendaUtils = {
+  calculateEndViewDate,
   calculateStartViewDate: calculateStartViewDate$5,
-  calculateRows
+  calculateRows,
+  getDateByIndex
 };
 const dayUtils = {
   calculateStartViewDate: calculateStartViewDate$4
@@ -220587,35 +220783,31 @@ const createTimeZoneCalculator = currentTimeZone => new TimeZoneCalculator({
   tryGetAppointmentOffset: (date, appointmentTimezone) => utils$2.calculateTimezoneByValue(appointmentTimezone, date)
 });
 
-const VIEWS_SUPPORTING_HIDDEN_DAYS = new Set(['week', 'month', 'timelineWeek', 'timelineMonth']);
-const VIEWS_WITH_BUILTIN_SKIPPED = new Set(['workWeek', 'timelineWorkWeek']);
-const normalizeHiddenDays = days => {
+const VIEWS_SUPPORTING_HIDDEN_DAYS = new Set(['week', 'workWeek', 'month', 'timelineWeek', 'timelineWorkWeek', 'timelineMonth', 'agenda']);
+const normalizeHiddenWeekDays = days => {
   if (!Array.isArray(days)) {
     return undefined;
   }
-  const valid = [...new Set(days)].filter(d => typeof d === 'number' && Number.isInteger(d) && d >= 0 && d <= 6).sort((a, b) => a - b);
+  const valid = [...new Set(days)].filter(isValidWeekday).sort((a, b) => a - b);
   if (valid.length >= 7) {
     errors$1.log('W1029');
     return [];
   }
   return valid;
 };
-const resolveSkippedDays = (viewType, perViewHiddenDays, globalHiddenDays, viewDefault) => {
-  const perView = normalizeHiddenDays(perViewHiddenDays);
+const resolveSkippedDays = (viewType, perViewHiddenWeekDays, globalHiddenWeekDays, viewDefault) => {
+  const perView = normalizeHiddenWeekDays(perViewHiddenWeekDays);
   if (perView !== undefined) {
     return perView;
   }
-  if (VIEWS_WITH_BUILTIN_SKIPPED.has(viewType)) {
-    return viewDefault;
-  }
-  if (globalHiddenDays !== undefined && VIEWS_SUPPORTING_HIDDEN_DAYS.has(viewType)) {
-    return normalizeHiddenDays(globalHiddenDays) ?? [];
+  if (globalHiddenWeekDays !== undefined && VIEWS_SUPPORTING_HIDDEN_DAYS.has(viewType)) {
+    return normalizeHiddenWeekDays(globalHiddenWeekDays) ?? [];
   }
   return viewDefault;
 };
 const isKnownView = view => VIEW_TYPES.includes(isObject(view) ? view.type : view);
 const isExistedView = view => Boolean(view);
-const normalizeView = (view, globalHiddenDays) => {
+const normalizeView = (view, globalHiddenWeekDays) => {
   if (isObject(view)) {
     const viewType = view.type;
     const viewDefault = DEFAULT_VIEW_OPTIONS[viewType];
@@ -220623,14 +220815,14 @@ const normalizeView = (view, globalHiddenDays) => {
       return undefined;
     }
     const merged = extend$1({}, viewDefault, view);
-    merged.skippedDays = resolveSkippedDays(viewType, view.hiddenWeekDays, globalHiddenDays, viewDefault.skippedDays);
+    merged.skippedDays = resolveSkippedDays(viewType, view.hiddenWeekDays, globalHiddenWeekDays, viewDefault.skippedDays);
     return merged;
   }
   const defaultView = DEFAULT_VIEW_OPTIONS[view];
   if (!defaultView) {
     return undefined;
   }
-  const skippedDays = resolveSkippedDays(view, undefined, globalHiddenDays, defaultView.skippedDays);
+  const skippedDays = resolveSkippedDays(view, undefined, globalHiddenWeekDays, defaultView.skippedDays);
   if (skippedDays === defaultView.skippedDays) {
     return defaultView;
   }
@@ -220639,9 +220831,9 @@ const normalizeView = (view, globalHiddenDays) => {
     skippedDays
   };
 };
-const getViews = (views, globalHiddenDays) => views.filter(isKnownView).map(v => normalizeView(v, globalHiddenDays)).filter(isExistedView);
-function getCurrentView(currentView, views, globalHiddenDays) {
-  const viewsProps = getViews(views, globalHiddenDays);
+const getViews = (views, globalHiddenWeekDays) => views.filter(isKnownView).map(v => normalizeView(v, globalHiddenWeekDays)).filter(isExistedView);
+function getCurrentView(currentView, views, globalHiddenWeekDays) {
+  const viewsProps = getViews(views, globalHiddenWeekDays);
   const currentViewProps = viewsProps.find(view => [view.name, view.type].includes(currentView));
   return currentViewProps ?? DEFAULT_VIEW_OPTIONS[currentView] ?? viewsProps[0] ?? DEFAULT_VIEW_OPTIONS[VIEW_TYPES[0]];
 }
@@ -220875,9 +221067,8 @@ class SchedulerOptionsBaseWidget extends Widget$1 {
   }
   updateViews() {
     const views = this.option('views') ?? [];
-    const hiddenWeekDays = this.option('hiddenWeekDays');
-    this.views = getViews(views, hiddenWeekDays);
-    this.currentView = getCurrentView(this.option('currentView') ?? '', views, hiddenWeekDays);
+    this.views = getViews(views, this.option('hiddenWeekDays'));
+    this.currentView = getCurrentView(this.option('currentView') ?? '', views, this.option('hiddenWeekDays'));
   }
   _initMarkup() {
     // @ts-expect-error
@@ -225447,9 +225638,6 @@ const splitByRecurrence = (entities, {
   regularIntervals
 }) => entities.reduce((acc, appointment) => {
   const intervals = appointment.allDay || appointment.isAllDayPanelOccupied ? allDayIntervals : regularIntervals;
-  if (intervals.length === 0) {
-    return acc;
-  }
   const recurrenceInterval = {
     min: intervals[0].min,
     max: intervals[intervals.length - 1].max
@@ -226726,7 +226914,10 @@ const getViewModelOptions = schedulerStore => {
   };
 };
 
-const filterBySkippedDays = (intervals, skippedDays) => intervals.filter(item => !skippedDays.includes(new Date(item.min).getUTCDay()));
+const filterBySkippedDays = (intervals, skippedDays) => intervals.filter(item => {
+  const weekday = new Date(item.min).getUTCDay();
+  return !skippedDays.includes(weekday);
+});
 const getMinutesCellIntervals = ({
   intervals,
   startDayHour,
@@ -231635,30 +231826,18 @@ class ViewDataGenerator {
   isWorkWeekView() {
     return [VIEWS.WORK_WEEK, VIEWS.TIMELINE_WORK_WEEK].includes(this.viewType);
   }
-  shouldApplyWeekendSkipOffset() {
-    if (this.isWorkWeekView()) {
-      return true;
-    }
-    return this.skippedDays.length === 2 && this.skippedDays[0] === 0 && this.skippedDays[1] === 6;
-  }
-  usesWeeklyDayLayout() {
-    return this.baseDaysInInterval >= 7;
-  }
   usesMonthDayLayout() {
     return false;
   }
   getVisibleDaysOfWeek(firstDayOfWeek) {
-    const rotated = [];
-    for (let count = 0; count < 7; count += 1) {
-      const dow = (firstDayOfWeek + count) % 7;
-      if (!this.skippedDays.includes(dow)) {
-        rotated.push(dow);
-      }
-    }
-    return rotated;
+    return getVisibleDaysOfWeek(firstDayOfWeek, this.skippedDays);
   }
-  getVisibleDayOffset(rowIndex, columnIndex, firstDayOfWeek) {
-    const rotated = this.getVisibleDaysOfWeek(firstDayOfWeek);
+  getSkippedDaysAnchorDay(firstDayOfWeekOption, startViewDate // eslint-disable-line @typescript-eslint/no-unused-vars
+  ) {
+    return this.getFirstDayOfWeek(firstDayOfWeekOption) ?? 0;
+  }
+  getVisibleDayOffset(rowIndex, columnIndex, anchorDay, cellCountInDay) {
+    const rotated = this.getVisibleDaysOfWeek(anchorDay);
     const visibleCount = rotated.length;
     if (visibleCount === 0) {
       return 0;
@@ -231666,18 +231845,19 @@ class ViewDataGenerator {
     if (this.usesMonthDayLayout()) {
       const targetDayOfWeek = rotated[columnIndex];
       const naiveDayOffset = rowIndex * visibleCount + columnIndex;
-      const actualDayOffset = rowIndex * 7 + (targetDayOfWeek - firstDayOfWeek + 7) % 7;
+      const actualDayOffset = rowIndex * 7 + (targetDayOfWeek - anchorDay + 7) % 7;
       return actualDayOffset - naiveDayOffset;
     }
-    const week = Math.floor(columnIndex / visibleCount);
-    const idxInWeek = columnIndex % visibleCount;
+    const dayIndex = isHorizontalView(this.viewType) ? Math.floor(columnIndex / cellCountInDay) : columnIndex;
+    const week = Math.floor(dayIndex / visibleCount);
+    const idxInWeek = dayIndex % visibleCount;
     const targetDayOfWeek = rotated[idxInWeek];
-    const naiveDayOffset = columnIndex;
-    const actualDayOffset = week * 7 + (targetDayOfWeek - firstDayOfWeek + 7) % 7;
+    const naiveDayOffset = dayIndex;
+    const actualDayOffset = week * 7 + (targetDayOfWeek - anchorDay + 7) % 7;
     return actualDayOffset - naiveDayOffset;
   }
   isSkippedDate(date) {
-    return this.skippedDays.includes(date.getDay());
+    return isDateSkipped(date, this.skippedDays);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -231702,7 +231882,7 @@ class ViewDataGenerator {
       endDayHour,
       hoursInterval
     } = options;
-    this.skippedDays = options?.skippedDays ?? [];
+    this.skippedDays = options.skippedDays ?? this.skippedDays;
     this.setVisibilityDates(options);
     this.setHiddenInterval(startDayHour, endDayHour, hoursInterval);
     const groupsList = getAllGroupValues(getResourceManager().groupsLeafs);
@@ -232014,7 +232194,6 @@ class ViewDataGenerator {
       hoursInterval,
       interval,
       firstDayOfWeek,
-      intervalCount,
       viewOffset
     } = options;
     const cellCountInDay = this.getCellCountInDay(startDayHour, endDayHour, hoursInterval);
@@ -232023,10 +232202,8 @@ class ViewDataGenerator {
     const cellIndex = this.calculateCellIndex(rowIndex, columnIndex, rowCountBase, columnCountBase);
     const millisecondsOffset = this.getMillisecondsOffset(cellIndex, interval, cellCountInDay);
     let offsetByCount;
-    if (this.isWorkWeekView()) {
-      offsetByCount = this.getTimeOffsetByColumnIndex(columnIndex, this.getFirstDayOfWeek(firstDayOfWeek), columnCountBase, intervalCount);
-    } else if (this.skippedDays.length > 0 && (this.usesWeeklyDayLayout() || this.usesMonthDayLayout())) {
-      offsetByCount = this.getVisibleDayOffset(rowIndex, columnIndex, this.getFirstDayOfWeek(firstDayOfWeek) ?? 0) * toMs$7('day');
+    if (this.skippedDays.length > 0) {
+      offsetByCount = this.getVisibleDayOffset(rowIndex, columnIndex, this.getSkippedDaysAnchorDay(firstDayOfWeek, startViewDate), cellCountInDay) * toMs$7('day');
     } else {
       offsetByCount = 0;
     }
@@ -232053,12 +232230,6 @@ class ViewDataGenerator {
     const dayIndex = Math.floor(cellIndex / cellCountInDay);
     const realHiddenInterval = dayIndex * this.hiddenInterval;
     return interval * cellIndex + realHiddenInterval;
-  }
-  getTimeOffsetByColumnIndex(columnIndex, firstDayOfWeek, columnCount, intervalCount) {
-    const firstDayOfWeekDiff = Math.max(0, firstDayOfWeek - 1);
-    const columnsInWeek = columnCount / intervalCount;
-    const weekendCount = Math.floor((columnIndex + firstDayOfWeekDiff) / columnsInWeek);
-    return weekendCount * 2 * toMs$7('day');
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -232372,11 +232543,17 @@ class ViewDataGeneratorMonth extends ViewDataGenerator {
 
 const toMs$5 = dateUtils$1.dateToMilliseconds;
 class ViewDataGeneratorTimelineMonth extends ViewDataGenerator {
+  getSkippedDaysAnchorDay(firstDayOfWeekOption, startViewDate) {
+    return startViewDate.getDay();
+  }
   calculateEndDate(startDate, interval, endDayHour) {
     return setOptionHour(startDate, endDayHour);
   }
   getInterval() {
     return toMs$5('day');
+  }
+  getCellCountInDay() {
+    return 1;
   }
   calculateStartViewDate(options) {
     return timelineMonthUtils.calculateStartViewDate(options.currentDate, options.startDayHour, options.startDate, options.intervalCount);
@@ -232387,8 +232564,15 @@ class ViewDataGeneratorTimelineMonth extends ViewDataGenerator {
     } = options;
     const currentDate = new Date(options.currentDate);
     let cellCount = 0;
-    for (let i = 1; i <= intervalCount; i++) {
-      cellCount += new Date(currentDate.getFullYear(), currentDate.getMonth() + i, 0).getDate();
+    for (let i = 1; i <= intervalCount; i += 1) {
+      const monthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + i, 0);
+      const daysInMonth = monthDate.getDate();
+      for (let day = 1; day <= daysInMonth; day += 1) {
+        const date = new Date(monthDate.getFullYear(), monthDate.getMonth(), day);
+        if (!this.isSkippedDate(date)) {
+          cellCount += 1;
+        }
+      }
     }
     return cellCount;
   }
@@ -232416,12 +232600,18 @@ class ViewDataGeneratorWeek extends ViewDataGenerator {
 }
 
 class ViewDataGeneratorWorkWeek extends ViewDataGeneratorWeek {
-  baseDaysInInterval = 5;
+  baseDaysInInterval = 7;
+  skippedDays = [0, 6];
   calculateStartViewDate(options) {
-    return workWeekUtils.calculateStartViewDate(options.currentDate, options.startDayHour, options.startDate, this._getIntervalDuration(options.intervalCount), this.getFirstDayOfWeek(options.firstDayOfWeek));
+    return workWeekUtils.calculateStartViewDate(options.currentDate, options.startDayHour, options.startDate, this._getIntervalDuration(options.intervalCount), this.getFirstDayOfWeek(options.firstDayOfWeek), options.skippedDays ?? this.skippedDays);
   }
+
+  // eslint-disable-next-line class-methods-use-this
   getFirstDayOfWeek(firstDayOfWeekOption) {
-    return firstDayOfWeekOption || 0;
+    return firstDayOfWeekOption ?? 0;
+  }
+  getSkippedDaysAnchorDay(firstDayOfWeekOption, startViewDate) {
+    return this.skippedDays.length > 0 ? startViewDate.getDay() : this.getFirstDayOfWeek(firstDayOfWeekOption);
   }
 }
 
@@ -233405,7 +233595,7 @@ class SchedulerWorkSpace extends Widget$1 {
       startDate: this.option('startDate'),
       firstDayOfWeek: this.option('firstDayOfWeek'),
       showCurrentTimeIndicator: this.option('showCurrentTimeIndicator'),
-      skippedDays: this.option('skippedDays') ?? [],
+      skippedDays: this.option('skippedDays'),
       ...this.virtualScrollingDispatcher.getRenderState()
     };
     return options;
@@ -233722,9 +233912,14 @@ class SchedulerWorkSpace extends Widget$1 {
     return {
       startDayHour: this.option('startDayHour'),
       endDayHour: this.option('endDayHour'),
+      hoursInterval: this.option('hoursInterval'),
       interval: this.viewDataProvider.viewDataGenerator?.getInterval(this.option('hoursInterval')),
+      intervalCount: this.option('intervalCount'),
       startViewDate: this.getStartViewDate(),
-      firstDayOfWeek: this.firstDayOfWeek()
+      firstDayOfWeek: this.firstDayOfWeek(),
+      skippedDays: this.option('skippedDays'),
+      viewOffset: 0,
+      viewType: this.type
     };
   }
 
@@ -233735,21 +233930,19 @@ class SchedulerWorkSpace extends Widget$1 {
     const timeZoneOffset = dateUtils$1.getTimezonesDifference(firstViewDate, currentDate);
     const fullInterval = currentDate.getTime() - firstViewDate.getTime() - timeZoneOffset;
     const days = this.getDaysOfInterval(fullInterval, startDayTime);
-    const weekendsCount = this.getWeekendsCount(days);
-    let result = (days - weekendsCount) * DAY_MS;
+    const skippedDaysCount = this.getSkippedDaysCount(days, firstViewDate);
+    let result = (days - skippedDaysCount) * DAY_MS;
     if (!allDay) {
       const {
         hiddenInterval
       } = this.viewDataProvider;
       const visibleDayDuration = this.getVisibleDayDuration();
-      result = fullInterval - days * hiddenInterval - weekendsCount * visibleDayDuration;
+      result = fullInterval - days * hiddenInterval - skippedDaysCount * visibleDayDuration;
     }
     return result;
   }
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  getWeekendsCount(argument) {
-    return 0;
+  getSkippedDaysCount(days, startDate = this.getStartViewDate()) {
+    return getSkippedDaysCount(startDate, days, this.option('skippedDays'));
   }
   getDaysOfInterval(fullInterval, startDayTime) {
     return Math.floor((fullInterval + startDayTime) / DAY_MS);
@@ -234466,6 +234659,7 @@ class SchedulerWorkSpace extends Widget$1 {
       groupOrientation: 'horizontal',
       selectedCellData: [],
       groupByDate: false,
+      skippedDays: undefined,
       scrolling: {
         mode: 'standard'
       },
@@ -235704,9 +235898,7 @@ class SchedulerAgenda extends SchedulerWorkSpace {
     });
   }
   getTimePanelStartDate(rowIndex) {
-    const current = new Date(this.option('currentDate'));
-    const cellDate = new Date(current.setDate(current.getDate() + rowIndex));
-    return cellDate;
+    return agendaUtils.getDateByIndex(this.getStartViewDate(), rowIndex);
   }
   getRowHeight(rowSize) {
     const baseHeight = this.option('rowHeight');
@@ -235732,11 +235924,7 @@ class SchedulerAgenda extends SchedulerWorkSpace {
     return this.option('rowHeight');
   }
   getEndViewDate() {
-    const currentDate = new Date(this.option('currentDate'));
-    const agendaDuration = this.option('agendaDuration');
-    currentDate.setHours(this.option('endDayHour'));
-    const result = currentDate.setDate(currentDate.getDate() + agendaDuration - 1) - 60000;
-    return new Date(result);
+    return agendaUtils.calculateEndViewDate(this.getStartViewDate(), this.option('endDayHour'), this.option('agendaDuration'));
   }
   getEndViewDateByEndDayHour() {
     return this.getEndViewDate();
@@ -235924,9 +236112,9 @@ class SchedulerWorkSpaceIndicator extends SchedulerWorkSpace {
     const today = this.getToday();
     const viewStartTime = this.getStartViewDate().getTime();
     let timeDiff = today.getTime() - viewStartTime;
-    if (this.option('type') === 'workWeek') {
-      const weekendDays = this.getWeekendsCount(Math.round(timeDiff / toMs$3('day'))) * toMs$3('day');
-      timeDiff -= weekendDays;
+    if ((this.option('skippedDays') ?? []).length > 0) {
+      const skippedDaysDuration = this.getSkippedDaysCount(Math.round(timeDiff / toMs$3('day'))) * toMs$3('day');
+      timeDiff -= skippedDaysDuration;
     }
     return Math.ceil((timeDiff + 1) / toMs$3('day'));
   }
@@ -236147,7 +236335,14 @@ class SchedulerTimeline extends SchedulerWorkSpaceIndicator {
     return false;
   }
   incrementDate(date) {
+    const skippedDays = this.option('skippedDays') ?? [];
+    if (skippedDays.length >= 7) {
+      return;
+    }
     date.setDate(date.getDate() + 1);
+    while (skippedDays.includes(date.getDay())) {
+      date.setDate(date.getDate() + 1);
+    }
   }
   getIndicationCellCount() {
     const timeDiff = this.getTimeDiff();
@@ -236166,6 +236361,7 @@ class SchedulerTimeline extends SchedulerWorkSpaceIndicator {
   calculateDurationInCells(timeDiff) {
     const today = this.getToday();
     const differenceInDays = Math.floor(timeDiff / toMs$2('day'));
+    const skippedDaysCount = this.getSkippedDaysCount(differenceInDays, this.getIndicationFirstViewDate());
     let duration = (timeDiff - differenceInDays * toMs$2('day') - this.option('startDayHour') * toMs$2('hour')) / this.getCellDuration();
     if (today.getHours() > this.option('endDayHour')) {
       duration = this.getCellCountInDay();
@@ -236173,7 +236369,7 @@ class SchedulerTimeline extends SchedulerWorkSpaceIndicator {
     if (duration < 0) {
       duration = 0;
     }
-    return differenceInDays * this.getCellCountInDay() + duration;
+    return (differenceInDays - skippedDaysCount) * this.getCellCountInDay() + duration;
   }
   getIndicationWidth() {
     if (this.isGroupedByDate()) {
@@ -236233,7 +236429,8 @@ class SchedulerTimeline extends SchedulerWorkSpaceIndicator {
     const fullDays = Math.floor(fullInterval / toMs$2('day'));
     const tailDuration = fullInterval - fullDays * toMs$2('day');
     let tailDelta = 0;
-    const cellCount = this.getCellCountInDay() * (fullDays - this.getWeekendsCount(fullDays));
+    const skippedDaysCount = this.getSkippedDaysCount(fullDays, firstViewDate);
+    const cellCount = this.getCellCountInDay() * (fullDays - skippedDaysCount);
     const gapBeforeAppt = apptStart - dateUtils$1.trimTime(new Date(currentDate)).getTime();
     let result = cellCount * this.option('hoursInterval') * toMs$2('hour');
     if (!allDay) {
@@ -236255,11 +236452,6 @@ class SchedulerTimeline extends SchedulerWorkSpaceIndicator {
       result += tailDelta;
     }
     return result;
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  getWeekendsCount(argument) {
-    return 0;
   }
   getAllDayContainer() {
     return null;
@@ -236526,32 +236718,21 @@ class SchedulerTimelineWeek extends SchedulerTimeline {
   needRenderWeekHeader() {
     return true;
   }
-  incrementDate(date) {
-    date.setDate(date.getDate() + 1);
-  }
 }
 registerComponent('dxSchedulerTimelineWeek', SchedulerTimelineWeek);
 
 const TIMELINE_CLASS = 'dx-scheduler-timeline-work-week';
-const LAST_DAY_WEEK_INDEX = 5;
 class SchedulerTimelineWorkWeek extends SchedulerTimelineWeek {
   get type() {
     return VIEWS.TIMELINE_WORK_WEEK;
   }
-  constructor(...args) {
-    // @ts-expect-error
-    super(...args);
-    this.getWeekendsCount = getWeekendsCount;
+  _getDefaultOptions() {
+    return extend$1(super._getDefaultOptions(), {
+      skippedDays: [0, 6]
+    });
   }
   getElementClass() {
     return TIMELINE_CLASS;
-  }
-  incrementDate(date) {
-    const day = date.getDay();
-    if (day === LAST_DAY_WEEK_INDEX) {
-      date.setDate(date.getDate() + 2);
-    }
-    super.incrementDate(date);
   }
 }
 registerComponent('dxSchedulerTimelineWorkWeek', SchedulerTimelineWorkWeek);
@@ -236748,10 +236929,10 @@ class SchedulerWorkSpaceWorkWeek extends SchedulerWorkSpaceWeek {
   get type() {
     return VIEWS.WORK_WEEK;
   }
-  constructor(...args) {
-    // @ts-expect-error
-    super(...args);
-    this.getWeekendsCount = getWeekendsCount;
+  _getDefaultOptions() {
+    return extend$1(super._getDefaultOptions(), {
+      skippedDays: [0, 6]
+    });
   }
   getElementClass() {
     return WORK_WEEK_CLASS;
