@@ -29,7 +29,7 @@ $(() => {
 
   function refreshValidity() {
     const isInvalid = visibleSet.size === 0;
-    $('.options').toggleClass('is-invalid', isInvalid);
+    $('.hidden-days-demo').toggleClass('is-invalid', isInvalid);
     return !isInvalid;
   }
 

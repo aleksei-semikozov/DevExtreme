@@ -41,10 +41,15 @@
   line-height: 1.4;
 }
 
-.options.is-invalid .validation-message {
+.hidden-days-demo.is-invalid .validation-message {
   display: block;
 }
 
-.options.is-invalid .option .dx-checkbox-icon {
+.hidden-days-demo.is-invalid .option .dx-checkbox-icon {
   border-color: #c50f1f;
+}
+
+.hidden-days-demo.is-invalid .dx-scheduler-work-space {
+  opacity: 0.4;
+  pointer-events: none;
 }
