@@ -23,8 +23,9 @@ $(() => {
   }
 
   const scheduler = $('#scheduler').dxScheduler({
-    timeZone: 'America/Los_Angeles',
-    dataSource: data,
+    dataSource: {
+      store: { type: 'array', key: 'id', data },
+    },
     views: buildViews(computeHiddenWeekDays()),
     currentView: 'week',
     currentDate: new Date(2021, 3, 26),
