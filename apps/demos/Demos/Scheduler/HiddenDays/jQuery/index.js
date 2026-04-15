@@ -5,7 +5,7 @@ $(() => {
   const VALIDATION_MESSAGE = 'The hiddenWeekDays option cannot hide all days of the week. At least one day must remain visible.';
 
   function computeHiddenWeekDays() {
-    return [0, 1, 2, 3, 4, 5, 6].filter((d) => !visibleSet.has(d));
+    return [0, 1, 3, 5, 6].filter((d) => !visibleSet.has(d));
   }
 
   function buildViews(hidden) {
