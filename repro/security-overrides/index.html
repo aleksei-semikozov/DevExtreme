@@ -14,8 +14,8 @@ th{background:#f3f4f6;font-weight:600;position:sticky;top:0}.pkg{font-family:mon
 </style>
 <script>function showTab(id){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));document.getElementById('tab-'+id).classList.add('active');document.getElementById('content-'+id).classList.add('active');}</script>
 </head><body>
-<h1>Dependency dashboard — current green state</h1>
-<p class="subtitle">25_1 / 25_2 / 26_1 — updated 2026-04-14: bumped csstype, jspdf, @testing-library/jest-dom, @testing-library/user-event, eslint-plugin-n, eslint-plugin-jest, @babel/core, @babel/parser, @babel/plugin-transform-modules-commonjs, @babel/plugin-transform-runtime, @babel/preset-env, sass-embedded to match 26_1</p>
+<h1>Dependency dashboard — final state</h1>
+<p class="subtitle">25_1 / 25_2 / 26_1 — after overrides sync + all safe dependency bumps (2026-04-15)</p>
 <div class="tabs">
 <div class="tab active" id="tab-ovr" onclick="showTab('ovr')">📍 Overrides</div>
 <div class="tab" id="tab-deps" onclick="showTab('deps')">📦 Dependencies (diff only)</div>
@@ -88,17 +88,23 @@ th{background:#f3f4f6;font-weight:600;position:sticky;top:0}.pkg{font-family:mon
 <div class="tab-content" id="content-deps">
 <h3>Direct dependencies — packages/devextreme/package.json (diff only)</h3>
 <p class="subtitle">Showing only packages with version differences. 📎 = resolved from pnpm catalog. Total: 162, Identical: 142</p>
-<div class="summary"><div class="stat" style="background:#d1fae5">✅ Same: 142</div><div class="stat" style="background:#fef3c7">🟡 Diff: 16</div><div class="stat" style="background:#fee2e2">🔴 Only 26_1: 1</div><div class="stat" style="background:#e0e7ff">🔵 Only 25_x: 3</div><div class="stat" style="background:#f3f4f6">Total: 162</div></div>
-<div class="note">🟡 Different (16): remaining diffs are eslint-config-devextreme 1.1.6 vs 1.1.9, @stylistic 2.13 vs 5.10, eslint 9.18 vs 9.39, gulp-sass 5 vs 6, jquery 3.7 vs 4.0, etc.<br><br>
+<div class="summary"><div class="stat" style="background:#d1fae5">✅ Same: 147</div><div class="stat" style="background:#fef3c7">🟡 Diff: 11</div><div class="stat" style="background:#fee2e2">🔴 Only 26_1: 1</div><div class="stat" style="background:#e0e7ff">🔵 Only 25_x: 3</div><div class="stat" style="background:#f3f4f6">Total: 162</div></div>
+<div class="note">🟡 Different (11): remaining diffs are eslint-config-devextreme 1.1.6 vs 1.1.9, @typescript-eslint/* 8.23 vs 8.52, eslint 9.18 vs 9.39, jquery 3.7 vs 4.0, etc.<br><br>
 All safe patch/minor bumps aligned. Remaining diffs require eslint-config-devextreme@1.1.9 upgrade or are intentional major version splits.</div>
+<div class="note" style="margin-top:10px;background:#fee2e2;border-left-color:#ef4444"><strong>Remaining catalog differences (all MAJOR — not safe to bump):</strong><br>
+- <code>jquery</code>: 3.7.1 → 4.0.0<br>
+- <code>@types/jquery</code>: 3.5.29 → 4.0.0<br>
+- <code>eslint</code>: 9.18.0 → 9.39.4<br>
+- <code>devextreme-exceljs-fork</code>: only in 26_1 catalog<br>
+- <code>testcafe</code>: removed from 26_1 catalog</div>
 <table><thead><tr><th>Package</th><th>25_1</th><th>25_2</th><th>26_1</th><th>Status</th></tr></thead><tbody><tr style="background:#d1fae5"><td class="pkg">@babel/core</td><td>7.29.0</td><td>7.29.0</td><td>7.29.0</td><td>✅</td></tr>
-<tr style="background:#fef3c7"><td class="pkg">@babel/eslint-parser</td><td>catalog: 7.26.5</td><td>catalog: 7.26.5</td><td>catalog: 7.28.6</td><td>🟡</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">@babel/eslint-parser</td><td>7.28.6</td><td>7.28.6</td><td>7.28.6</td><td>✅</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">@babel/parser</td><td>7.29.0</td><td>7.29.0</td><td>7.29.0</td><td>✅</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">@babel/plugin-transform-modules-commonjs</td><td>7.28.6</td><td>7.28.6</td><td>7.28.6</td><td>✅</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">@babel/plugin-transform-runtime</td><td>7.29.0</td><td>7.29.0</td><td>7.29.0</td><td>✅</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">@babel/preset-env</td><td>7.29.0</td><td>7.29.0</td><td>7.29.0</td><td>✅</td></tr>
-<tr style="background:#fef3c7"><td class="pkg">@eslint/eslintrc</td><td>catalog: 3.2.0</td><td>catalog: 3.2.0</td><td>catalog: 3.3.5</td><td>🟡</td></tr>
-<tr style="background:#fef3c7"><td class="pkg">@stylistic/eslint-plugin</td><td>catalog: 2.13.0</td><td>catalog: 2.13.0</td><td>catalog: 5.10.0</td><td>🟡</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">@eslint/eslintrc</td><td>3.3.5</td><td>3.3.5</td><td>3.3.5</td><td>✅</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">@stylistic/eslint-plugin</td><td>5.10.0</td><td>5.10.0</td><td>5.10.0</td><td>✅</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">@testing-library/jest-dom</td><td>6.9.1</td><td>6.9.1</td><td>6.9.1</td><td>✅</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">@testing-library/user-event</td><td>14.6.1</td><td>14.6.1</td><td>14.6.1</td><td>✅</td></tr>
 <tr style="background:#fef3c7"><td class="pkg">@types/jquery</td><td>3.5.29</td><td>catalog: 3.5.29</td><td>catalog: 3.5.34</td><td>🟡</td></tr>
@@ -115,8 +121,8 @@ All safe patch/minor bumps aligned. Remaining diffs require eslint-config-devext
 <tr style="background:#e0e7ff"><td class="pkg">eslint-plugin-node</td><td>11.1.0</td><td>—</td><td>—</td><td>🔵 25_x</td></tr>
 <tr style="background:#fef3c7"><td class="pkg">eslint-plugin-qunit</td><td>catalog: 8.1.2</td><td>catalog: 8.1.2</td><td>catalog: 8.2.5</td><td>🟡</td></tr>
 <tr style="background:#fef3c7"><td class="pkg">eslint-plugin-react</td><td>7.33.2</td><td>7.33.2</td><td>7.37.5</td><td>🟡</td></tr>
-<tr style="background:#fef3c7"><td class="pkg">glob</td><td>10.4.5</td><td>11.1.0</td><td>11.1.0</td><td>🟡</td></tr>
-<tr style="background:#fef3c7"><td class="pkg">gulp-sass</td><td>5.1.0</td><td>5.1.0</td><td>6.0.1</td><td>🟡</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">glob</td><td>11.1.0</td><td>11.1.0</td><td>11.1.0</td><td>✅</td></tr>
+<tr style="background:#d1fae5"><td class="pkg">gulp-sass</td><td>6.0.1</td><td>6.0.1</td><td>6.0.1</td><td>✅</td></tr>
 <tr style="background:#fef3c7"><td class="pkg">jquery</td><td>3.7.1</td><td>catalog: 3.7.1</td><td>catalog: 4.0.0</td><td>🟡</td></tr>
 <tr style="background:#d1fae5"><td class="pkg">jspdf</td><td>4.2.1</td><td>4.2.1</td><td>4.2.1</td><td>✅</td></tr>
 <tr style="background:#e0e7ff"><td class="pkg">npm-run-all</td><td>4.1.5</td><td>4.1.5</td><td>—</td><td>🔵 25_x</td></tr>
@@ -133,7 +139,7 @@ All safe patch/minor bumps aligned. Remaining diffs require eslint-config-devext
 <h4 style="margin-top:16px">25_2 — PR <a href="https://github.com/nicknisi/devextreme/pull/33160">#33160</a></h4>
 <table><thead><tr><th>Package</th><th>Before</th><th>After</th><th>Notes</th></tr></thead><tbody>
 <tr><td class="pkg">eslint-config-devextreme</td><td>1.1.6</td><td>1.1.9 (catalog:)</td><td>Main upgrade</td></tr>
-<tr><td class="pkg">@stylistic/eslint-plugin</td><td>2.13.0</td><td>5.4.0</td><td>Major bump</td></tr>
+<tr><td class="pkg">@stylistic/eslint-plugin</td><td>2.13.0</td><td>5.10.0</td><td>Major bump (was 5.4.0 in earlier commits, now 5.10.0)</td></tr>
 <tr><td class="pkg">@typescript-eslint/*</td><td>8.23.0</td><td>8.52.0</td><td>Minor bump</td></tr>
 <tr><td class="pkg">eslint-plugin-import</td><td>2.31.0</td><td>2.32.0</td><td>Patch bump</td></tr>
 <tr><td class="pkg">eslint-plugin-qunit</td><td>8.1.2</td><td>8.2.5</td><td>Minor bump</td></tr>
