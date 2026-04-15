@@ -2,6 +2,7 @@ $(() => {
   const dayLabels = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const defaultVisible = [0, 1, 2, 4, 6];
   const visibleSet = new Set(defaultVisible);
+  const VALIDATION_MESSAGE = 'The hiddenWeekDays option cannot hide all days of the week. At least one day must remain visible.';
 
   function computeHiddenWeekDays() {
     return [0, 1, 2, 3, 4, 5, 6].filter((d) => !visibleSet.has(d));
@@ -17,60 +18,6 @@ $(() => {
     ];
   }
 
-  $('<style>').text(`
-    .scheduler-container { position: relative; }
-    .all-hidden-toast {
-      position: absolute;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      padding: 18px 22px;
-      max-width: 460px;
-      background: #ffffff;
-      border-radius: 8px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.16);
-      z-index: 1000;
-    }
-    .all-hidden-toast-icon {
-      flex-shrink: 0;
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      background: #c50f1f;
-      color: #ffffff;
-      font-weight: 700;
-      font-size: 14px;
-      line-height: 1;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      margin-top: 2px;
-    }
-    .all-hidden-toast-text {
-      color: #242424;
-      font-size: 15px;
-      line-height: 1.45;
-    }
-  `).appendTo('head');
-
-  function showAllHiddenToast() {
-    $('.scheduler-container .all-hidden-toast').remove();
-    const $toast = $(
-      '<div class="all-hidden-toast">'
-      + '<span class="all-hidden-toast-icon">!</span>'
-      + '<div class="all-hidden-toast-text"></div>'
-      + '</div>',
-    );
-    $toast.find('.all-hidden-toast-text').text(
-      'The hiddenWeekDays option cannot hide all days of the week. At least one day must remain visible.',
-    );
-    $toast.appendTo('.scheduler-container');
-    setTimeout(() => $toast.fadeOut(200, () => $toast.remove()), 4000);
-  }
-
   const checkboxInstances = [];
   let suppressCheckboxHandler = false;
 
@@ -78,6 +25,12 @@ $(() => {
     suppressCheckboxHandler = true;
     checkboxInstances.forEach((cb, idx) => cb.option('value', visibleSet.has(idx)));
     suppressCheckboxHandler = false;
+  }
+
+  function refreshValidity() {
+    const isInvalid = visibleSet.size === 0;
+    $('.options').toggleClass('is-invalid', isInvalid);
+    return !isInvalid;
   }
 
   const scheduler = $('#scheduler').dxScheduler({
@@ -100,6 +53,7 @@ $(() => {
         visibleSet.clear();
         [1, 2, 3, 4, 5].forEach((d) => visibleSet.add(d));
         syncVisibleSetToCheckboxes();
+        refreshValidity();
         scheduler.option('views', buildViews(computeHiddenWeekDays()));
       }
     },
@@ -120,13 +74,15 @@ $(() => {
         } else {
           visibleSet.delete(idx);
         }
-        const hidden = computeHiddenWeekDays();
-        if (hidden.length === 7) {
-          showAllHiddenToast();
+        if (!refreshValidity()) {
+          return;
         }
-        scheduler.option('views', buildViews(hidden));
+        scheduler.option('views', buildViews(computeHiddenWeekDays()));
       },
     }).dxCheckBox('instance');
     checkboxInstances.push(cbInstance);
   });
+
+  $('<div class="validation-message"></div>').text(VALIDATION_MESSAGE).appendTo($optionsPanel);
+  refreshValidity();
 });
