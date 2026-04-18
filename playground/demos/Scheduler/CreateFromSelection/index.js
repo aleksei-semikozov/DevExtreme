@@ -1,47 +1,33 @@
 $(() => {
   let selectionData = null;
-  let savedCellRects = [];
-
-  function saveCellPositions(schedulerElement) {
-    savedCellRects = [];
-    schedulerElement
-      .find('.dx-scheduler-date-table-cell.dx-state-focused, .dx-scheduler-date-table-cell.dx-scheduler-focused-cell')
-      .each(function () {
-        savedCellRects.push(this.getBoundingClientRect());
-      });
-  }
-
-  function highlightSavedCells(schedulerElement) {
-    clearSelectedCells(schedulerElement);
-    if (!savedCellRects.length) return 0;
-
-    const allCells = schedulerElement.find('.dx-scheduler-date-table-cell');
-    let found = 0;
-
-    allCells.each(function () {
-      const rect = this.getBoundingClientRect();
-      for (const saved of savedCellRects) {
-        if (Math.abs(rect.x - saved.x) < 2
-          && Math.abs(rect.y - saved.y) < 2
-          && Math.abs(rect.width - saved.width) < 2) {
-          $(this).addClass('selection-highlighted');
-          found++;
-          break;
-        }
-      }
-    });
-
-    if (found > 0) {
-      schedulerElement.addClass('selection-active');
-    }
-    return found;
-  }
+  let lastSelectedCellRects = [];
 
   function clearSelectedCells(schedulerElement) {
     schedulerElement
       .find('.selection-highlighted')
       .removeClass('selection-highlighted');
     schedulerElement.removeClass('selection-active');
+  }
+
+  function highlightCellsByRects(schedulerElement, rects) {
+    clearSelectedCells(schedulerElement);
+    if (!rects.length) return;
+
+    const allCells = schedulerElement.find('.dx-scheduler-date-table-cell');
+
+    allCells.each(function () {
+      const rect = this.getBoundingClientRect();
+      for (const saved of rects) {
+        if (Math.abs(rect.x - saved.x) < 2
+          && Math.abs(rect.y - saved.y) < 2
+          && Math.abs(rect.width - saved.width) < 2) {
+          $(this).addClass('selection-highlighted');
+          break;
+        }
+      }
+    });
+
+    schedulerElement.addClass('selection-active');
   }
 
   function getMiddleHighlighted(schedulerElement) {
@@ -133,6 +119,18 @@ $(() => {
     }],
     showCurrentTimeIndicator: false,
     showAllDayPanel: false,
+    onOptionChanged(e) {
+      if (e.name === 'selectedCellData' && e.value && e.value.length > 0) {
+        const $el = e.component.$element();
+        const focused = $el.find('.dx-scheduler-date-table-cell.dx-state-focused, .dx-scheduler-date-table-cell.dx-scheduler-focused-cell');
+        if (focused.length > 0) {
+          lastSelectedCellRects = [];
+          focused.each(function () {
+            lastSelectedCellRects.push(this.getBoundingClientRect());
+          });
+        }
+      }
+    },
     onSelectionEnd(e) {
       const cells = e.selectedCellData;
       if (cells.length <= 1) {
@@ -150,10 +148,8 @@ $(() => {
 
       const $schedulerElement = e.component.$element();
 
-      saveCellPositions($schedulerElement);
-
       setTimeout(() => {
-        highlightSavedCells($schedulerElement);
+        highlightCellsByRects($schedulerElement, lastSelectedCellRects);
 
         const middleCell = getMiddleHighlighted($schedulerElement);
         if (middleCell && middleCell.length) {
