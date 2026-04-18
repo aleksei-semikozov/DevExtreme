@@ -154,6 +154,12 @@ $(() => {
     onAppointmentFormOpening() {
       popover.hide();
     },
+    onAppointmentClick() {
+      popover.hide();
+    },
+    onCellClick() {
+      popover.hide();
+    },
     onOptionChanged(e) {
       if (e.name === 'selectedCellData' && e.value && e.value.length > 0) {
         const $el = e.component.$element();
