@@ -148,7 +148,7 @@ $(() => {
       label: 'Priority',
     }],
     showCurrentTimeIndicator: false,
-    showAllDayPanel: false,
+    allDayPanelMode: 'allDay',
     onOptionChanged(e) {
       if (e.name === 'selectedCellData' && e.value && e.value.length > 0) {
         const $el = e.component.$element();
