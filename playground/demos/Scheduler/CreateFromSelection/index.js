@@ -1,6 +1,41 @@
 $(() => {
-  console.log('CreateFromSelection demo v3.0.0');
+  console.log('CreateFromSelection demo v2.0.0');
   let selectionData = null;
+  let $overlay = null;
+
+  function showSelectionOverlay($cells) {
+    removeOverlay();
+    if (!$cells.length) return;
+
+    const rects = [];
+    $cells.each(function () {
+      rects.push(this.getBoundingClientRect());
+    });
+
+    const minX = Math.min(...rects.map((r) => r.x));
+    const minY = Math.min(...rects.map((r) => r.y));
+    const maxX = Math.max(...rects.map((r) => r.x + r.width));
+    const maxY = Math.max(...rects.map((r) => r.y + r.height));
+
+    $overlay = $('<div>').css({
+      position: 'fixed',
+      left: `${minX}px`,
+      top: `${minY}px`,
+      width: `${maxX - minX}px`,
+      height: `${maxY - minY}px`,
+      backgroundColor: 'rgba(0, 120, 215, 0.2)',
+      borderRadius: '2px',
+      pointerEvents: 'none',
+      zIndex: 100,
+    }).appendTo('body');
+  }
+
+  function removeOverlay() {
+    if ($overlay) {
+      $overlay.remove();
+      $overlay = null;
+    }
+  }
 
   const tooltip = $('#creation-tooltip').dxTooltip({
     width: 260,
@@ -8,6 +43,7 @@ $(() => {
     shading: false,
     position: 'right',
     hideOnOutsideClick: true,
+    hideOnParentScroll: false,
     contentTemplate() {
       const $content = $('<div>').addClass('popover-content');
 
@@ -54,6 +90,7 @@ $(() => {
       });
     },
     onHidden() {
+      removeOverlay();
       const subjectBox = $('#appointment-subject').data('dxTextBox');
       if (subjectBox) {
         subjectBox.option('value', '');
@@ -98,10 +135,14 @@ $(() => {
       };
 
       const $focused = e.component.$element().find('.dx-scheduler-date-table-cell.dx-state-focused');
-      const middleCell = $focused.eq(Math.floor($focused.length / 2));
+      showSelectionOverlay($focused);
 
-      tooltip.option('target', middleCell);
-      tooltip.show();
+      setTimeout(() => {
+        if ($overlay) {
+          tooltip.option('target', $overlay);
+          tooltip.show();
+        }
+      }, 50);
     },
   }).dxScheduler('instance');
 });
