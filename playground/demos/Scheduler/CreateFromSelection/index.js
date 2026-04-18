@@ -1,20 +1,58 @@
 $(() => {
   let selectionData = null;
-  let $selectedCells = $();
 
-  function markSelectedCells(schedulerElement) {
-    $selectedCells = schedulerElement
-      .find('.dx-scheduler-date-table-cell.dx-state-focused, .dx-scheduler-date-table-cell.dx-scheduler-focused-cell')
-      .clone(false);
+  function getCellElements(schedulerElement, cellDataArray) {
+    const allCells = schedulerElement.find('.dx-scheduler-date-table-cell');
+    const result = [];
 
-    const originals = schedulerElement
-      .find('.dx-scheduler-date-table-cell.dx-state-focused, .dx-scheduler-date-table-cell.dx-scheduler-focused-cell');
+    cellDataArray.forEach((cellData) => {
+      allCells.each(function () {
+        const $cell = $(this);
+        const data = scheduler.getWorkSpace
+          ? null
+          : scheduler.$element().dxScheduler('instance');
 
-    originals.each(function () {
-      $(this).addClass('selection-highlighted');
+        if ($cell.data('dxCellData')) {
+          const d = $cell.data('dxCellData');
+          if (d.startDate?.getTime() === cellData.startDate?.getTime()
+            && d.groupIndex === cellData.groupIndex) {
+            result.push(this);
+          }
+        }
+      });
     });
 
-    schedulerElement.addClass('selection-active');
+    return $(result);
+  }
+
+  function markCellsByData(schedulerElement, cellDataArray) {
+    clearSelectedCells(schedulerElement);
+
+    const rows = schedulerElement.find('.dx-scheduler-date-table-row');
+    const allCells = schedulerElement.find('.dx-scheduler-date-table-cell');
+    let found = 0;
+
+    allCells.each(function () {
+      const cellRect = this.getBoundingClientRect();
+      const $cell = $(this);
+
+      for (const cd of cellDataArray) {
+        const cellEl = this;
+        const cellData = $(cellEl).data('dxCellData');
+        if (cellData
+          && cellData.startDate?.getTime() === cd.startDate?.getTime()
+          && cellData.groupIndex === cd.groupIndex) {
+          $cell.addClass('selection-highlighted');
+          found++;
+          break;
+        }
+      }
+    });
+
+    if (found > 0) {
+      schedulerElement.addClass('selection-active');
+    }
+    return found;
   }
 
   function clearSelectedCells(schedulerElement) {
@@ -22,10 +60,9 @@ $(() => {
       .find('.selection-highlighted')
       .removeClass('selection-highlighted');
     schedulerElement.removeClass('selection-active');
-    $selectedCells = $();
   }
 
-  function getMiddleCell(schedulerElement) {
+  function getMiddleHighlighted(schedulerElement) {
     const highlighted = schedulerElement.find('.selection-highlighted');
     if (!highlighted.length) return null;
     const midIndex = Math.floor(highlighted.length / 2);
@@ -132,16 +169,15 @@ $(() => {
 
       const $schedulerElement = e.component.$element();
 
-      markSelectedCells($schedulerElement);
-
       setTimeout(() => {
-        const middleCell = getMiddleCell($schedulerElement);
+        const found = markCellsByData($schedulerElement, cells);
 
+        const middleCell = getMiddleHighlighted($schedulerElement);
         if (middleCell && middleCell.length) {
           popover.option('target', middleCell);
           popover.show();
         }
-      }, 0);
+      }, 50);
     },
   }).dxScheduler('instance');
 });
