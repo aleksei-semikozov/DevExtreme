@@ -1,48 +1,30 @@
 $(() => {
   let selectionData = null;
+  let savedCellRects = [];
 
-  function getCellElements(schedulerElement, cellDataArray) {
-    const allCells = schedulerElement.find('.dx-scheduler-date-table-cell');
-    const result = [];
-
-    cellDataArray.forEach((cellData) => {
-      allCells.each(function () {
-        const $cell = $(this);
-        const data = scheduler.getWorkSpace
-          ? null
-          : scheduler.$element().dxScheduler('instance');
-
-        if ($cell.data('dxCellData')) {
-          const d = $cell.data('dxCellData');
-          if (d.startDate?.getTime() === cellData.startDate?.getTime()
-            && d.groupIndex === cellData.groupIndex) {
-            result.push(this);
-          }
-        }
+  function saveCellPositions(schedulerElement) {
+    savedCellRects = [];
+    schedulerElement
+      .find('.dx-scheduler-date-table-cell.dx-state-focused, .dx-scheduler-date-table-cell.dx-scheduler-focused-cell')
+      .each(function () {
+        savedCellRects.push(this.getBoundingClientRect());
       });
-    });
-
-    return $(result);
   }
 
-  function markCellsByData(schedulerElement, cellDataArray) {
+  function highlightSavedCells(schedulerElement) {
     clearSelectedCells(schedulerElement);
+    if (!savedCellRects.length) return 0;
 
-    const rows = schedulerElement.find('.dx-scheduler-date-table-row');
     const allCells = schedulerElement.find('.dx-scheduler-date-table-cell');
     let found = 0;
 
     allCells.each(function () {
-      const cellRect = this.getBoundingClientRect();
-      const $cell = $(this);
-
-      for (const cd of cellDataArray) {
-        const cellEl = this;
-        const cellData = $(cellEl).data('dxCellData');
-        if (cellData
-          && cellData.startDate?.getTime() === cd.startDate?.getTime()
-          && cellData.groupIndex === cd.groupIndex) {
-          $cell.addClass('selection-highlighted');
+      const rect = this.getBoundingClientRect();
+      for (const saved of savedCellRects) {
+        if (Math.abs(rect.x - saved.x) < 2
+          && Math.abs(rect.y - saved.y) < 2
+          && Math.abs(rect.width - saved.width) < 2) {
+          $(this).addClass('selection-highlighted');
           found++;
           break;
         }
@@ -65,8 +47,7 @@ $(() => {
   function getMiddleHighlighted(schedulerElement) {
     const highlighted = schedulerElement.find('.selection-highlighted');
     if (!highlighted.length) return null;
-    const midIndex = Math.floor(highlighted.length / 2);
-    return highlighted.eq(midIndex);
+    return highlighted.eq(Math.floor(highlighted.length / 2));
   }
 
   const popover = $('#creation-popover').dxPopover({
@@ -169,8 +150,10 @@ $(() => {
 
       const $schedulerElement = e.component.$element();
 
+      saveCellPositions($schedulerElement);
+
       setTimeout(() => {
-        const found = markCellsByData($schedulerElement, cells);
+        highlightSavedCells($schedulerElement);
 
         const middleCell = getMiddleHighlighted($schedulerElement);
         if (middleCell && middleCell.length) {
