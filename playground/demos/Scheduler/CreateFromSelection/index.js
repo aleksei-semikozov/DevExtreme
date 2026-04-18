@@ -27,8 +27,7 @@ $(() => {
         width: `${col.width}px`,
         height: `${col.maxY - col.minY}px`,
         backgroundColor: 'rgba(0, 120, 215, 0.2)',
-        border: '2px solid rgba(0, 120, 215, 0.5)',
-        borderRadius: '3px',
+        borderRadius: '2px',
         pointerEvents: 'none',
         zIndex: 100,
       }).appendTo('body');
