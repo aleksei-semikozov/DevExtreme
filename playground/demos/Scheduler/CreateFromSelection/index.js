@@ -2,6 +2,7 @@ $(() => {
   let selectionData = null;
   let lastSelectedCellRects = [];
   let $overlays = [];
+  let $anchor = null;
   let popoverVisible = false;
 
   function createOverlay(schedulerElement, rects) {
@@ -19,7 +20,8 @@ $(() => {
       }
     });
 
-    Object.values(columns).forEach((col) => {
+    const cols = Object.values(columns);
+    cols.forEach((col) => {
       const $el = $('<div>').css({
         position: 'fixed',
         left: `${col.x}px`,
@@ -33,16 +35,26 @@ $(() => {
       }).appendTo('body');
       $overlays.push($el);
     });
+
+    const lastCol = cols[cols.length - 1];
+    const midY = (lastCol.minY + lastCol.maxY) / 2;
+    $anchor = $('<div>').css({
+      position: 'fixed',
+      left: `${lastCol.x + lastCol.width}px`,
+      top: `${midY}px`,
+      width: '1px',
+      height: '1px',
+      pointerEvents: 'none',
+    }).appendTo('body');
   }
 
   function removeOverlay() {
     $overlays.forEach(($el) => $el.remove());
     $overlays = [];
-  }
-
-  function getMiddleOverlay() {
-    if (!$overlays.length) return null;
-    return $overlays[Math.floor($overlays.length / 2)];
+    if ($anchor) {
+      $anchor.remove();
+      $anchor = null;
+    }
   }
 
   const popover = $('#creation-popover').dxPopover({
@@ -84,6 +96,13 @@ $(() => {
 
           const subject = $('#appointment-subject').dxTextBox('instance').option('value');
           if (!subject) return;
+
+          console.log('Creating appointment:', JSON.stringify({
+            text: subject,
+            startDate: selectionData.startDate,
+            endDate: selectionData.endDate,
+            ...selectionData.groups,
+          }));
 
           scheduler.addAppointment({
             text: subject,
@@ -160,9 +179,8 @@ $(() => {
       createOverlay(e.component.$element(), lastSelectedCellRects);
 
       setTimeout(() => {
-        const target = getMiddleOverlay();
-        if (target) {
-          popover.option('target', target);
+        if ($anchor) {
+          popover.option('target', $anchor);
           popover.show();
         }
       }, 50);
