@@ -1,39 +1,43 @@
 $(() => {
   let selectionData = null;
   let lastSelectedCellRects = [];
+  let $overlay = null;
 
-  function clearSelectedCells(schedulerElement) {
-    schedulerElement
-      .find('.selection-highlighted')
-      .removeClass('selection-highlighted');
-    schedulerElement.removeClass('selection-active');
-  }
-
-  function highlightCellsByRects(schedulerElement, rects) {
-    clearSelectedCells(schedulerElement);
+  function createOverlay(schedulerElement, rects) {
+    removeOverlay();
     if (!rects.length) return;
 
-    const allCells = schedulerElement.find('.dx-scheduler-date-table-cell');
+    const containerRect = schedulerElement.find('.dx-scheduler-date-table')[0].getBoundingClientRect();
 
-    allCells.each(function () {
-      const rect = this.getBoundingClientRect();
-      for (const saved of rects) {
-        if (Math.abs(rect.x - saved.x) < 2
-          && Math.abs(rect.y - saved.y) < 2
-          && Math.abs(rect.width - saved.width) < 2) {
-          $(this).addClass('selection-highlighted');
-          break;
-        }
-      }
-    });
+    const minX = Math.min(...rects.map((r) => r.x));
+    const minY = Math.min(...rects.map((r) => r.y));
+    const maxX = Math.max(...rects.map((r) => r.x + r.width));
+    const maxY = Math.max(...rects.map((r) => r.y + r.height));
 
-    schedulerElement.addClass('selection-active');
+    $overlay = $('<div>').css({
+      position: 'fixed',
+      left: minX,
+      top: minY,
+      width: maxX - minX,
+      height: maxY - minY,
+      backgroundColor: 'rgba(0, 120, 215, 0.2)',
+      border: '1px solid rgba(0, 120, 215, 0.4)',
+      borderRadius: '2px',
+      pointerEvents: 'none',
+      zIndex: 1,
+    }).appendTo('body');
   }
 
-  function getMiddleHighlighted(schedulerElement) {
-    const highlighted = schedulerElement.find('.selection-highlighted');
-    if (!highlighted.length) return null;
-    return highlighted.eq(Math.floor(highlighted.length / 2));
+  function removeOverlay() {
+    if ($overlay) {
+      $overlay.remove();
+      $overlay = null;
+    }
+  }
+
+  function getOverlayCenter() {
+    if (!$overlay) return null;
+    return $overlay;
   }
 
   const popover = $('#creation-popover').dxPopover({
@@ -94,7 +98,7 @@ $(() => {
       });
     },
     onHidden() {
-      clearSelectedCells($('#scheduler'));
+      removeOverlay();
     },
   }).dxPopover('instance');
 
@@ -146,14 +150,12 @@ $(() => {
         groups: cells[0].groups || {},
       };
 
-      const $schedulerElement = e.component.$element();
-
       setTimeout(() => {
-        highlightCellsByRects($schedulerElement, lastSelectedCellRects);
+        createOverlay(e.component.$element(), lastSelectedCellRects);
 
-        const middleCell = getMiddleHighlighted($schedulerElement);
-        if (middleCell && middleCell.length) {
-          popover.option('target', middleCell);
+        const target = getOverlayCenter();
+        if (target) {
+          popover.option('target', target);
           popover.show();
         }
       }, 50);
