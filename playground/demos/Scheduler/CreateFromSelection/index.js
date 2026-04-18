@@ -1,66 +1,45 @@
 $(() => {
-  console.log('CreateFromSelection demo v1.3.0');
+  console.log('CreateFromSelection demo v2.0.0');
   let selectionData = null;
-  let $overlays = [];
-  let $anchor = null;
+  let $overlay = null;
 
   function showSelectionOverlay($cells) {
     removeOverlay();
     if (!$cells.length) return;
 
-    const columns = {};
+    const rects = [];
     $cells.each(function () {
-      const r = this.getBoundingClientRect();
-      const key = Math.round(r.x);
-      if (!columns[key]) {
-        columns[key] = { x: r.x, width: r.width, minY: r.y, maxY: r.y + r.height };
-      } else {
-        columns[key].minY = Math.min(columns[key].minY, r.y);
-        columns[key].maxY = Math.max(columns[key].maxY, r.y + r.height);
-      }
+      rects.push(this.getBoundingClientRect());
     });
 
-    const cols = Object.values(columns);
-    cols.forEach((col) => {
-      $overlays.push($('<div>').css({
-        position: 'fixed',
-        left: `${col.x}px`,
-        top: `${col.minY}px`,
-        width: `${col.width}px`,
-        height: `${col.maxY - col.minY}px`,
-        backgroundColor: 'rgba(0, 120, 215, 0.2)',
-        borderRadius: '2px',
-        pointerEvents: 'none',
-        zIndex: 100,
-      }).appendTo('body'));
-    });
+    const minX = Math.min(...rects.map((r) => r.x));
+    const minY = Math.min(...rects.map((r) => r.y));
+    const maxX = Math.max(...rects.map((r) => r.x + r.width));
+    const maxY = Math.max(...rects.map((r) => r.y + r.height));
 
-    const lastCol = cols[cols.length - 1];
-    $anchor = $('<div>').css({
+    $overlay = $('<div>').css({
       position: 'fixed',
-      left: `${lastCol.x + lastCol.width}px`,
-      top: `${(lastCol.minY + lastCol.maxY) / 2}px`,
-      width: '1px',
-      height: '1px',
+      left: `${minX}px`,
+      top: `${minY}px`,
+      width: `${maxX - minX}px`,
+      height: `${maxY - minY}px`,
+      backgroundColor: 'rgba(0, 120, 215, 0.2)',
+      borderRadius: '2px',
       pointerEvents: 'none',
+      zIndex: 100,
     }).appendTo('body');
   }
 
   function removeOverlay() {
-    $overlays.forEach(($el) => $el.remove());
-    $overlays = [];
-    if ($anchor) {
-      $anchor.remove();
-      $anchor = null;
+    if ($overlay) {
+      $overlay.remove();
+      $overlay = null;
     }
   }
 
-  const popover = $('#creation-popover').dxPopover({
+  const tooltip = $('#creation-tooltip').dxTooltip({
     width: 260,
     height: 'auto',
-    showTitle: true,
-    title: 'New Appointment',
-    showCloseButton: false,
     shading: false,
     position: 'right',
     hideOnOutsideClick: true,
@@ -99,14 +78,14 @@ $(() => {
             ...selectionData.groups,
           });
 
-          popover.hide();
+          tooltip.hide();
         },
       });
 
       $('#cancel-btn').dxButton({
         text: 'Cancel',
         onClick() {
-          popover.hide();
+          tooltip.hide();
         },
       });
     },
@@ -117,7 +96,7 @@ $(() => {
         subjectBox.option('value', '');
       }
     },
-  }).dxPopover('instance');
+  }).dxTooltip('instance');
 
   const scheduler = $('#scheduler').dxScheduler({
     timeZone: 'America/Los_Angeles',
@@ -140,18 +119,6 @@ $(() => {
     }],
     showCurrentTimeIndicator: false,
     allDayPanelMode: 'allDay',
-    onAppointmentFormOpening() {
-      popover.hide();
-    },
-    onAppointmentTooltipShowing() {
-      popover.hide();
-    },
-    onAppointmentClick() {
-      popover.hide();
-    },
-    onCellClick() {
-      popover.hide();
-    },
     onSelectionEnd(e) {
       const cells = e.selectedCellData;
       if (cells.length <= 1) {
@@ -171,9 +138,9 @@ $(() => {
       showSelectionOverlay($focused);
 
       setTimeout(() => {
-        if ($anchor) {
-          popover.option('target', $anchor);
-          popover.show();
+        if ($overlay) {
+          tooltip.option('target', $overlay);
+          tooltip.show();
         }
       }, 50);
     },
