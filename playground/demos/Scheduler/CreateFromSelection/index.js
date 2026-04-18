@@ -1,17 +1,16 @@
 $(() => {
-  console.log('CreateFromSelection demo v1.2.0');
+  console.log('CreateFromSelection demo v1.3.0');
   let selectionData = null;
-  let lastSelectedCellRects = [];
   let $overlays = [];
   let $anchor = null;
-  let popoverVisible = false;
 
-  function createOverlay(schedulerElement, rects) {
+  function showSelectionOverlay($cells) {
     removeOverlay();
-    if (!rects.length) return;
+    if (!$cells.length) return;
 
     const columns = {};
-    rects.forEach((r) => {
+    $cells.each(function () {
+      const r = this.getBoundingClientRect();
       const key = Math.round(r.x);
       if (!columns[key]) {
         columns[key] = { x: r.x, width: r.width, minY: r.y, maxY: r.y + r.height };
@@ -23,7 +22,7 @@ $(() => {
 
     const cols = Object.values(columns);
     cols.forEach((col) => {
-      const $el = $('<div>').css({
+      $overlays.push($('<div>').css({
         position: 'fixed',
         left: `${col.x}px`,
         top: `${col.minY}px`,
@@ -33,16 +32,14 @@ $(() => {
         borderRadius: '2px',
         pointerEvents: 'none',
         zIndex: 100,
-      }).appendTo('body');
-      $overlays.push($el);
+      }).appendTo('body'));
     });
 
     const lastCol = cols[cols.length - 1];
-    const midY = (lastCol.minY + lastCol.maxY) / 2;
     $anchor = $('<div>').css({
       position: 'fixed',
       left: `${lastCol.x + lastCol.width}px`,
-      top: `${midY}px`,
+      top: `${(lastCol.minY + lastCol.maxY) / 2}px`,
       width: '1px',
       height: '1px',
       pointerEvents: 'none',
@@ -80,9 +77,6 @@ $(() => {
 
       return $content;
     },
-    onShowing() {
-      popoverVisible = true;
-    },
     onShown() {
       $('#appointment-subject').dxTextBox({
         placeholder: 'Enter appointment name',
@@ -97,13 +91,6 @@ $(() => {
 
           const subject = $('#appointment-subject').dxTextBox('instance').option('value');
           if (!subject) return;
-
-          console.log('Creating appointment:', JSON.stringify({
-            text: subject,
-            startDate: selectionData.startDate,
-            endDate: selectionData.endDate,
-            ...selectionData.groups,
-          }));
 
           scheduler.addAppointment({
             text: subject,
@@ -124,7 +111,6 @@ $(() => {
       });
     },
     onHidden() {
-      popoverVisible = false;
       removeOverlay();
       const subjectBox = $('#appointment-subject').data('dxTextBox');
       if (subjectBox) {
@@ -166,18 +152,6 @@ $(() => {
     onCellClick() {
       popover.hide();
     },
-    onOptionChanged(e) {
-      if (e.name === 'selectedCellData' && e.value && e.value.length > 0) {
-        const $el = e.component.$element();
-        const focused = $el.find('.dx-scheduler-date-table-cell.dx-state-focused, .dx-scheduler-date-table-cell.dx-scheduler-focused-cell');
-        if (focused.length > 0) {
-          lastSelectedCellRects = [];
-          focused.each(function () {
-            lastSelectedCellRects.push(this.getBoundingClientRect());
-          });
-        }
-      }
-    },
     onSelectionEnd(e) {
       const cells = e.selectedCellData;
       if (cells.length <= 1) {
@@ -193,7 +167,8 @@ $(() => {
         groups: cells[0].groups || {},
       };
 
-      createOverlay(e.component.$element(), lastSelectedCellRects);
+      const $focused = e.component.$element().find('.dx-scheduler-date-table-cell.dx-state-focused');
+      showSelectionOverlay($focused);
 
       setTimeout(() => {
         if ($anchor) {
