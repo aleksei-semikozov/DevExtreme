@@ -1,5 +1,5 @@
 $(() => {
-  console.log('CreateFromSelection demo v1.0.0');
+  console.log('CreateFromSelection demo v1.1.0');
   let selectionData = null;
   let lastSelectedCellRects = [];
   let $overlays = [];
@@ -155,6 +155,9 @@ $(() => {
     showCurrentTimeIndicator: false,
     allDayPanelMode: 'allDay',
     onAppointmentFormOpening() {
+      popover.hide();
+    },
+    onAppointmentTooltipShowing() {
       popover.hide();
     },
     onAppointmentClick() {
