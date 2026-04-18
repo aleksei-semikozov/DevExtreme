@@ -1,18 +1,35 @@
 $(() => {
   let selectionData = null;
+  let $selectedCells = $();
 
   function markSelectedCells(schedulerElement) {
-    schedulerElement
+    $selectedCells = schedulerElement
       .find('.dx-scheduler-date-table-cell.dx-state-focused, .dx-scheduler-date-table-cell.dx-scheduler-focused-cell')
-      .addClass('dx-scheduler-selected-cell-data');
+      .clone(false);
+
+    const originals = schedulerElement
+      .find('.dx-scheduler-date-table-cell.dx-state-focused, .dx-scheduler-date-table-cell.dx-scheduler-focused-cell');
+
+    originals.each(function () {
+      $(this).addClass('selection-highlighted');
+    });
+
     schedulerElement.addClass('selection-active');
   }
 
   function clearSelectedCells(schedulerElement) {
     schedulerElement
-      .find('.dx-scheduler-date-table-cell.dx-scheduler-selected-cell-data')
-      .removeClass('dx-scheduler-selected-cell-data');
+      .find('.selection-highlighted')
+      .removeClass('selection-highlighted');
     schedulerElement.removeClass('selection-active');
+    $selectedCells = $();
+  }
+
+  function getMiddleCell(schedulerElement) {
+    const highlighted = schedulerElement.find('.selection-highlighted');
+    if (!highlighted.length) return null;
+    const midIndex = Math.floor(highlighted.length / 2);
+    return highlighted.eq(midIndex);
   }
 
   const popover = $('#creation-popover').dxPopover({
@@ -22,6 +39,7 @@ $(() => {
     shading: false,
     position: 'right',
     hideOnOutsideClick: true,
+    hideOnParentScroll: false,
     contentTemplate() {
       const $content = $('<div>').addClass('popover-content');
 
@@ -116,14 +134,14 @@ $(() => {
 
       markSelectedCells($schedulerElement);
 
-      const lastCell = $schedulerElement
-        .find('.dx-scheduler-date-table-cell.dx-scheduler-selected-cell-data')
-        .last();
+      setTimeout(() => {
+        const middleCell = getMiddleCell($schedulerElement);
 
-      if (lastCell.length) {
-        popover.option('target', lastCell);
-        popover.show();
-      }
+        if (middleCell && middleCell.length) {
+          popover.option('target', middleCell);
+          popover.show();
+        }
+      }, 0);
     },
   }).dxScheduler('instance');
 });
