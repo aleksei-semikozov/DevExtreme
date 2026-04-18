@@ -1,4 +1,5 @@
 $(() => {
+  console.log('CreateFromSelection demo v1.0.0');
   let selectionData = null;
   let lastSelectedCellRects = [];
   let $overlays = [];
@@ -83,12 +84,10 @@ $(() => {
       popoverVisible = true;
     },
     onShown() {
-      const subjectBox = $('#appointment-subject').dxTextBox({
+      $('#appointment-subject').dxTextBox({
         placeholder: 'Enter appointment name',
         stylingMode: 'outlined',
-      }).dxTextBox('instance');
-      subjectBox.option('value', '');
-      subjectBox.focus();
+      }).dxTextBox('instance').focus();
 
       $('#create-btn').dxButton({
         text: 'Create',
@@ -127,6 +126,10 @@ $(() => {
     onHidden() {
       popoverVisible = false;
       removeOverlay();
+      const subjectBox = $('#appointment-subject').data('dxTextBox');
+      if (subjectBox) {
+        subjectBox.option('value', '');
+      }
     },
   }).dxPopover('instance');
 
