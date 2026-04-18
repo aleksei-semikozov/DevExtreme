@@ -1,11 +1,26 @@
 $(() => {
   let selectionData = null;
 
+  function markSelectedCells(schedulerElement) {
+    schedulerElement
+      .find('.dx-scheduler-date-table-cell.dx-state-focused, .dx-scheduler-date-table-cell.dx-scheduler-focused-cell')
+      .addClass('dx-scheduler-selected-cell-data');
+    schedulerElement.addClass('selection-active');
+  }
+
+  function clearSelectedCells(schedulerElement) {
+    schedulerElement
+      .find('.dx-scheduler-date-table-cell.dx-scheduler-selected-cell-data')
+      .removeClass('dx-scheduler-selected-cell-data');
+    schedulerElement.removeClass('selection-active');
+  }
+
   const popover = $('#creation-popover').dxPopover({
     width: 280,
     showTitle: true,
     title: 'New Appointment',
     shading: false,
+    position: 'right',
     hideOnOutsideClick: true,
     contentTemplate() {
       const $content = $('<div>').addClass('popover-content');
@@ -56,6 +71,9 @@ $(() => {
         },
       });
     },
+    onHidden() {
+      clearSelectedCells($('#scheduler'));
+    },
   }).dxPopover('instance');
 
   const scheduler = $('#scheduler').dxScheduler({
@@ -94,8 +112,12 @@ $(() => {
         groups: cells[0].groups || {},
       };
 
-      const lastCell = e.component.$element()
-        .find('.dx-scheduler-date-table-cell.dx-state-focused')
+      const $schedulerElement = e.component.$element();
+
+      markSelectedCells($schedulerElement);
+
+      const lastCell = $schedulerElement
+        .find('.dx-scheduler-date-table-cell.dx-scheduler-selected-cell-data')
         .last();
 
       if (lastCell.length) {
