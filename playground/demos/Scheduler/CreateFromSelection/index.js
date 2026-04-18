@@ -1,5 +1,5 @@
 $(() => {
-  console.log('CreateFromSelection demo v1.1.0');
+  console.log('CreateFromSelection demo v1.2.0');
   let selectionData = null;
   let lastSelectedCellRects = [];
   let $overlays = [];
