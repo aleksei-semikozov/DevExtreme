@@ -26,8 +26,8 @@ $(() => {
         return;
       }
 
-      const startDate = cells[0].startDate;
-      const endDate = cells[cells.length - 1].endDate;
+      const startDate = cells[0].startDateUTC || cells[0].startDate;
+      const endDate = cells[cells.length - 1].endDateUTC || cells[cells.length - 1].endDate;
 
       e.component.showAppointmentPopup({
         startDate,
