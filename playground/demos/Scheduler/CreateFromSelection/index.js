@@ -123,13 +123,11 @@ $(() => {
       if (e.name === 'selectedCellData' && e.value && e.value.length > 0) {
         const $el = e.component.$element();
         const focused = $el.find('.dx-scheduler-date-table-cell.dx-state-focused, .dx-scheduler-date-table-cell.dx-scheduler-focused-cell');
-        console.log('onOptionChanged selectedCellData:', e.value.length, 'focused cells:', focused.length);
         if (focused.length > 0) {
           lastSelectedCellRects = [];
           focused.each(function () {
             lastSelectedCellRects.push(this.getBoundingClientRect());
           });
-          console.log('Saved rects:', lastSelectedCellRects.length, JSON.stringify(lastSelectedCellRects[0]));
         }
       }
     },
@@ -151,7 +149,6 @@ $(() => {
       const $schedulerElement = e.component.$element();
 
       setTimeout(() => {
-        console.log('Highlighting with rects:', lastSelectedCellRects.length);
         highlightCellsByRects($schedulerElement, lastSelectedCellRects);
 
         const middleCell = getMiddleHighlighted($schedulerElement);
