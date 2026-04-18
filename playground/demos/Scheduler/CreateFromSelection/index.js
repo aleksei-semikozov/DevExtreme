@@ -47,9 +47,11 @@ $(() => {
   }
 
   const popover = $('#creation-popover').dxPopover({
-    width: 280,
+    width: 260,
+    height: 'auto',
     showTitle: true,
     title: 'New Appointment',
+    showCloseButton: false,
     shading: false,
     position: 'right',
     hideOnOutsideClick: true,
@@ -57,15 +59,11 @@ $(() => {
     contentTemplate() {
       const $content = $('<div>').addClass('popover-content');
 
-      $('<div>').addClass('dx-field').append(
-        $('<div id="appointment-subject">'),
-      ).appendTo($content);
+      $('<div id="appointment-subject">').appendTo($content);
 
       const $buttons = $('<div>').addClass('popover-buttons');
-
       $('<div id="create-btn">').appendTo($buttons);
       $('<div id="cancel-btn">').appendTo($buttons);
-
       $buttons.appendTo($content);
 
       return $content;
