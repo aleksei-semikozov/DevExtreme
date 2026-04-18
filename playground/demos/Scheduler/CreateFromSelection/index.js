@@ -1,37 +1,49 @@
 $(() => {
   let selectionData = null;
   let lastSelectedCellRects = [];
-  let $overlay = null;
+  let $overlays = [];
   let popoverVisible = false;
 
   function createOverlay(schedulerElement, rects) {
     removeOverlay();
     if (!rects.length) return;
 
-    const minX = Math.min(...rects.map((r) => r.x));
-    const minY = Math.min(...rects.map((r) => r.y));
-    const maxX = Math.max(...rects.map((r) => r.x + r.width));
-    const maxY = Math.max(...rects.map((r) => r.y + r.height));
+    const columns = {};
+    rects.forEach((r) => {
+      const key = Math.round(r.x);
+      if (!columns[key]) {
+        columns[key] = { x: r.x, width: r.width, minY: r.y, maxY: r.y + r.height };
+      } else {
+        columns[key].minY = Math.min(columns[key].minY, r.y);
+        columns[key].maxY = Math.max(columns[key].maxY, r.y + r.height);
+      }
+    });
 
-    $overlay = $('<div>').css({
-      position: 'fixed',
-      left: `${minX}px`,
-      top: `${minY}px`,
-      width: `${maxX - minX}px`,
-      height: `${maxY - minY}px`,
-      backgroundColor: 'rgba(0, 120, 215, 0.2)',
-      border: '2px solid rgba(0, 120, 215, 0.5)',
-      borderRadius: '3px',
-      pointerEvents: 'none',
-      zIndex: 100,
-    }).appendTo('body');
+    Object.values(columns).forEach((col) => {
+      const $el = $('<div>').css({
+        position: 'fixed',
+        left: `${col.x}px`,
+        top: `${col.minY}px`,
+        width: `${col.width}px`,
+        height: `${col.maxY - col.minY}px`,
+        backgroundColor: 'rgba(0, 120, 215, 0.2)',
+        border: '2px solid rgba(0, 120, 215, 0.5)',
+        borderRadius: '3px',
+        pointerEvents: 'none',
+        zIndex: 100,
+      }).appendTo('body');
+      $overlays.push($el);
+    });
   }
 
   function removeOverlay() {
-    if ($overlay) {
-      $overlay.remove();
-      $overlay = null;
-    }
+    $overlays.forEach(($el) => $el.remove());
+    $overlays = [];
+  }
+
+  function getMiddleOverlay() {
+    if (!$overlays.length) return null;
+    return $overlays[Math.floor($overlays.length / 2)];
   }
 
   const popover = $('#creation-popover').dxPopover({
@@ -151,8 +163,9 @@ $(() => {
       createOverlay(e.component.$element(), lastSelectedCellRects);
 
       setTimeout(() => {
-        if ($overlay) {
-          popover.option('target', $overlay);
+        const target = getMiddleOverlay();
+        if (target) {
+          popover.option('target', target);
           popover.show();
         }
       }, 50);
