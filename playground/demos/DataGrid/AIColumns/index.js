@@ -46,7 +46,7 @@ $(() => {
       });
   }
 
-  const aiIntegration = new DevExpress.aiIntegration.AIIntegration({
+  const aiIntegration = new DevExpress.aiIntegration({
     sendRequest({ prompt }) {
       const isValidRequest = JSON.stringify(prompt.user).length < 5000;
       if (!isValidRequest) {
