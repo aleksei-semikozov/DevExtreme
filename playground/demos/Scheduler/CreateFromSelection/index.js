@@ -83,10 +83,12 @@ $(() => {
       popoverVisible = true;
     },
     onShown() {
-      $('#appointment-subject').dxTextBox({
+      const subjectBox = $('#appointment-subject').dxTextBox({
         placeholder: 'Enter appointment name',
         stylingMode: 'outlined',
-      }).dxTextBox('instance').focus();
+      }).dxTextBox('instance');
+      subjectBox.option('value', '');
+      subjectBox.focus();
 
       $('#create-btn').dxButton({
         text: 'Create',
