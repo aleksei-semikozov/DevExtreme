@@ -2,12 +2,11 @@ $(() => {
   let selectionData = null;
   let lastSelectedCellRects = [];
   let $overlay = null;
+  let popoverVisible = false;
 
   function createOverlay(schedulerElement, rects) {
     removeOverlay();
     if (!rects.length) return;
-
-    const containerRect = schedulerElement.find('.dx-scheduler-date-table')[0].getBoundingClientRect();
 
     const minX = Math.min(...rects.map((r) => r.x));
     const minY = Math.min(...rects.map((r) => r.y));
@@ -16,15 +15,15 @@ $(() => {
 
     $overlay = $('<div>').css({
       position: 'fixed',
-      left: minX,
-      top: minY,
-      width: maxX - minX,
-      height: maxY - minY,
+      left: `${minX}px`,
+      top: `${minY}px`,
+      width: `${maxX - minX}px`,
+      height: `${maxY - minY}px`,
       backgroundColor: 'rgba(0, 120, 215, 0.2)',
-      border: '1px solid rgba(0, 120, 215, 0.4)',
-      borderRadius: '2px',
+      border: '2px solid rgba(0, 120, 215, 0.5)',
+      borderRadius: '3px',
       pointerEvents: 'none',
-      zIndex: 1,
+      zIndex: 100,
     }).appendTo('body');
   }
 
@@ -33,11 +32,6 @@ $(() => {
       $overlay.remove();
       $overlay = null;
     }
-  }
-
-  function getOverlayCenter() {
-    if (!$overlay) return null;
-    return $overlay;
   }
 
   const popover = $('#creation-popover').dxPopover({
@@ -63,6 +57,9 @@ $(() => {
       $buttons.appendTo($content);
 
       return $content;
+    },
+    onShowing() {
+      popoverVisible = true;
     },
     onShown() {
       $('#appointment-subject').dxTextBox({
@@ -98,6 +95,7 @@ $(() => {
       });
     },
     onHidden() {
+      popoverVisible = false;
       removeOverlay();
     },
   }).dxPopover('instance');
@@ -150,12 +148,11 @@ $(() => {
         groups: cells[0].groups || {},
       };
 
-      setTimeout(() => {
-        createOverlay(e.component.$element(), lastSelectedCellRects);
+      createOverlay(e.component.$element(), lastSelectedCellRects);
 
-        const target = getOverlayCenter();
-        if (target) {
-          popover.option('target', target);
+      setTimeout(() => {
+        if ($overlay) {
+          popover.option('target', $overlay);
           popover.show();
         }
       }, 50);
