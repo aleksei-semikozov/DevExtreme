@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <title>DevExtreme Demo</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+    
+    
+    
+    
+    
+    <style>
+      .demo-container {
+        display: flex;
+        gap: 16px;
+      }
+      #scheduler {
+        flex: 1;
+      }
+      .summary-panel {
+        width: 280px;
+        min-height: 400px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 16px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #fafafa;
+      }
+      .summary-panel h3 {
+        margin: 0 0 12px;
+        font-size: 16px;
+        color: #333;
+      }
+      .summary-placeholder {
+        color: #999;
+        font-size: 14px;
+        text-align: center;
+        padding: 40px 0;
+      }
+      .summary-section {
+        margin-bottom: 16px;
+      }
+      .summary-section-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: #666;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+      }
+      .summary-time {
+        font-size: 15px;
+        font-weight: 500;
+        color: #1D90FF;
+        margin-bottom: 4px;
+      }
+      .summary-duration {
+        font-size: 13px;
+        color: #888;
+      }
+      .team-member {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 0;
+        font-size: 14px;
+        border-bottom: 1px solid #eee;
+      }
+      .team-member:last-child {
+        border-bottom: none;
+      }
+      .status-busy {
+        color: #e74c3c;
+        font-size: 12px;
+      }
+      .status-free {
+        color: #27ae60;
+        font-size: 12px;
+      }
+      .weather-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+      }
+      .weather-icon {
+        font-size: 24px;
+      }
+      .best-slot {
+        background: #e8f5e9;
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-size: 13px;
+        color: #2e7d32;
+      }
+    </style>
+  </head>
+  <body class="dx-viewport">
+    <div class="demo-container">
+      <div id="scheduler"></div>
+      <div class="summary-panel">
+        <h3>Selection Summary</h3>
+        <div id="summary-content">
+          <div class="summary-placeholder">Select a time range to see details</div>
+        </div>
+      </div>
+    </div>
+  <script type="module">
+  import '../../../demo-init.js';
+  const srcs = ["data.js","index.js"];
+  for (const src of srcs) {
+    await new Promise((resolve) => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = resolve;
+      document.body.appendChild(s);
+    });
+  }
+</script>
+</body>
+</html>
