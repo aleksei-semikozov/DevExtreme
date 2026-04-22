@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PR #33352 — Tooltip delete behavior</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="dx.fluent.blue.light.css" />
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 20px; }
+        h1 { font-size: 18px; }
+        .info { background: #f0f4ff; border-left: 4px solid #4a7dff; padding: 12px 16px; margin-bottom: 20px; font-size: 14px; line-height: 1.6; }
+        .info b { color: #1a3a6e; }
+        #scheduler { margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>PR #33352 — Scheduler: Don't hide tooltip on item delete</h1>
+    <div class="info">
+        <b>How to test:</b><br>
+        1. Click a collector button ("+N More") on May 21 to open tooltip<br>
+        2. Click the trash icon on any appointment in the tooltip<br>
+        3. <b>Baseline:</b> tooltip closes after delete. <b>Fix:</b> tooltip stays open, item is removed from list<br>
+        4. Try deleting the recurring appointment — recurrence dialog should appear<br>
+        5. Delete all items one by one — tooltip should close when last item is deleted<br>
+        <br>
+        <b>Bug to check (setListItems):</b> After deleting all items, check console for errors (missing return after hide)
+    </div>
+    <div id="scheduler"></div>
+
+    <script src="dx.all.debug.js"></script>
+    <script>
+        var now = new Date(2017, 4, 21);
+
+        $("#scheduler").dxScheduler({
+            dataSource: [
+                {
+                    text: "Regular Apt 1",
+                    startDate: new Date(2017, 4, 21, 9, 30),
+                    endDate: new Date(2017, 4, 21, 10, 30)
+                },
+                {
+                    text: "Inside Collector Apt 1",
+                    startDate: new Date(2017, 4, 21, 9, 30),
+                    endDate: new Date(2017, 4, 21, 10, 30)
+                },
+                {
+                    text: "Inside Collector Apt 2",
+                    startDate: new Date(2017, 4, 21, 9, 30),
+                    endDate: new Date(2017, 4, 21, 10, 30)
+                },
+                {
+                    text: "Collector Recurring Apt",
+                    startDate: new Date(2017, 4, 21, 9, 30),
+                    endDate: new Date(2017, 4, 21, 10, 30),
+                    recurrenceRule: "FREQ=YEARLY"
+                },
+                {
+                    text: "Inside Collector Apt 3",
+                    startDate: new Date(2017, 4, 21, 9, 30),
+                    endDate: new Date(2017, 4, 21, 10, 30)
+                },
+                {
+                    text: "Standalone Recurring Apt",
+                    startDate: new Date(2017, 4, 23, 9, 30),
+                    endDate: new Date(2017, 4, 23, 10, 30),
+                    recurrenceRule: "FREQ=YEARLY"
+                },
+                {
+                    text: "Disabled Apt",
+                    startDate: new Date(2017, 4, 21, 9, 30),
+                    endDate: new Date(2017, 4, 21, 10, 30),
+                    disabled: true
+                }
+            ],
+            views: [{ type: "month", maxAppointmentsPerCell: 1 }],
+            currentView: "month",
+            currentDate: now,
+            editing: true,
+            height: 700,
+            width: "100%",
+            onAppointmentDeleted: function(e) {
+                console.log("onAppointmentDeleted:", e.appointmentData.text);
+            },
+            onAppointmentUpdated: function(e) {
+                console.log("onAppointmentUpdated:", e.appointmentData.text);
+            }
+        });
+    </script>
+</body>
+</html>
