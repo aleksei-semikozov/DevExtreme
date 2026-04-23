@@ -1,0 +1,1 @@
+var e=`/DevExtreme/playground/assets/dx.light-WPyMwHvT.css`;export{e as default};

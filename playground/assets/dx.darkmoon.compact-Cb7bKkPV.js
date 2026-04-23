@@ -1,0 +1,1 @@
+var e=`/DevExtreme/playground/assets/dx.darkmoon.compact-Bw6CS-8T.css`;export{e as default};

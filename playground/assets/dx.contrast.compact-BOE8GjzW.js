@@ -1,0 +1,1 @@
+var e=`/DevExtreme/playground/assets/dx.contrast.compact-BeENI6U6.css`;export{e as default};

@@ -1,0 +1,1 @@
+var e=`/DevExtreme/playground/assets/dx.greenmist.compact-Bjv_PZT0.css`;export{e as default};

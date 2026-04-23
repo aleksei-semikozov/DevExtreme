@@ -1,0 +1,1 @@
+var e=`/DevExtreme/playground/assets/dx.softblue.compact-CImnlIeb.css`;export{e as default};

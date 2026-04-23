@@ -1,0 +1,1 @@
+var e=`/DevExtreme/playground/assets/dx.fluent.blue.dark-Ci-z-nix.css`;export{e as default};

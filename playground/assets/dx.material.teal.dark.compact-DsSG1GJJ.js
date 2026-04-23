@@ -1,0 +1,1 @@
+var e=`/DevExtreme/playground/assets/dx.material.teal.dark.compact-C3SINUAR.css`;export{e as default};

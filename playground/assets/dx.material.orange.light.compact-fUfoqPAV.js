@@ -1,0 +1,1 @@
+var e=`/DevExtreme/playground/assets/dx.material.orange.light.compact-CtobAoFs.css`;export{e as default};

@@ -1,0 +1,1 @@
+var e=`/DevExtreme/playground/assets/dx.light.compact-DcdrP6hR.css`;export{e as default};

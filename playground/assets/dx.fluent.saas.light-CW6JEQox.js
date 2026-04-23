@@ -1,0 +1,1 @@
+var e=`/DevExtreme/playground/assets/dx.fluent.saas.light-UC3qEmeq.css`;export{e as default};

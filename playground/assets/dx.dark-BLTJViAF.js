@@ -1,0 +1,1 @@
+var e=`/DevExtreme/playground/assets/dx.dark-D6E_De4p.css`;export{e as default};

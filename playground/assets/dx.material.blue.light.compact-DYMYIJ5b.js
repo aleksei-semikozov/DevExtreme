@@ -1,0 +1,1 @@
+var e=`/DevExtreme/playground/assets/dx.material.blue.light.compact-Di-GmBK-.css`;export{e as default};

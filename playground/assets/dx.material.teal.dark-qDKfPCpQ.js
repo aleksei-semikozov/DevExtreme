@@ -1,0 +1,1 @@
+var e=`/DevExtreme/playground/assets/dx.material.teal.dark-DnaUda2c.css`;export{e as default};

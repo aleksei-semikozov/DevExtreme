@@ -1,0 +1,1 @@
+var e=`/DevExtreme/playground/assets/dx.fluent.blue.light-B6EP-22Z.css`;export{e as default};

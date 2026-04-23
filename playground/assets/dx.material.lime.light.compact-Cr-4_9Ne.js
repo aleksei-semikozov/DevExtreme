@@ -1,0 +1,1 @@
+var e=`/DevExtreme/playground/assets/dx.material.lime.light.compact-KYdFp38Q.css`;export{e as default};

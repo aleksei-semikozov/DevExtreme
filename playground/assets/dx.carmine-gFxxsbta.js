@@ -1,0 +1,1 @@
+var e=`/DevExtreme/playground/assets/dx.carmine-CBKzRHQn.css`;export{e as default};

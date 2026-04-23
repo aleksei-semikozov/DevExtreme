@@ -1,0 +1,1 @@
+var e=`/DevExtreme/playground/assets/dx.fluent.blue.dark.compact-jJdlAdqM.css`;export{e as default};

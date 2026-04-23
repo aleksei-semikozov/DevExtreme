@@ -1,0 +1,1 @@
+var e=`/DevExtreme/playground/assets/dx.fluent.saas.dark.compact-DLU5Iq-v.css`;export{e as default};

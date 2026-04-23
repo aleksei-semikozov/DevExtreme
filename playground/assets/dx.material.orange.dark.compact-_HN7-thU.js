@@ -1,0 +1,1 @@
+var e=`/DevExtreme/playground/assets/dx.material.orange.dark.compact-gVIXVntl.css`;export{e as default};
