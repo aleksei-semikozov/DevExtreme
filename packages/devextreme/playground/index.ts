@@ -1,32 +1,73 @@
 import '../js/__internal/integration/jquery';
-import '../js/ui/card_view';
+import '../js/ui/scheduler';
 import $ from 'jquery';
 import { setupThemeSelector } from './themeSelector.ts';
 
-const customers = [
-  { ID: 1, Company: 'Super Mart of the West', Address: '702 SW 8th Street', City: 'Bentonville', State: 'Arkansas', Zipcode: 72716, Phone: '(800) 555-2797' },
-  { ID: 2, Company: 'Electronics Depot', Address: '2455 Paces Ferry Road NW', City: 'Atlanta', State: 'Georgia', Zipcode: 30339, Phone: '(800) 595-3232' },
-  { ID: 3, Company: 'K&S Music', Address: '1000 Nicllet Mall', City: 'Minneapolis', State: 'Minnesota', Zipcode: 55403, Phone: '(612) 304-6073' },
-  { ID: 4, Company: "Tom's Club", Address: '999 Lake Drive', City: 'Issaquah', State: 'Washington', Zipcode: 98027, Phone: '(800) 955-2292' },
-  { ID: 5, Company: 'E-Mart', Address: '3333 Beverly Rd', City: 'Hoffman Estates', State: 'Illinois', Zipcode: 60179, Phone: '(847) 286-2500' },
-  { ID: 6, Company: 'Walters', Address: '200 Wilmot Rd', City: 'Deerfield', State: 'Illinois', Zipcode: 60015, Phone: '(847) 940-2500' },
-  { ID: 7, Company: 'StereoShack', Address: '400 Commerce S', City: 'Fort Worth', State: 'Texas', Zipcode: 76102, Phone: '(817) 820-0741' },
-  { ID: 8, Company: 'Circuit Town', Address: '2200 Kensington Court', City: 'Oak Brook', State: 'Illinois', Zipcode: 60523, Phone: '(800) 955-2929' },
-  { ID: 9, Company: 'Premier Buy', Address: '7601 Penn Avenue South', City: 'Richfield', State: 'Minnesota', Zipcode: 55423, Phone: '(612) 291-1000' },
-  { ID: 10, Company: 'ElectrixMax', Address: '263 Shuman Blvd', City: 'Naperville', State: 'Illinois', Zipcode: 60563, Phone: '(630) 438-7800' },
-  { ID: 11, Company: 'Video Emporium', Address: '1201 Elm Street', City: 'Dallas', State: 'Texas', Zipcode: 75270, Phone: '(214) 854-3000' },
-  { ID: 12, Company: 'Screen Shop', Address: '1000 Lowes Blvd', City: 'Mooresville', State: 'North Carolina', Zipcode: 28117, Phone: '(800) 445-6937' },
+const now = new Date();
+const year = now.getFullYear();
+const month = now.getMonth();
+const day = now.getDate();
+
+const appointments = [
+  {
+    text: 'Team Standup',
+    startDate: new Date(year, month, day, 9, 0),
+    endDate: new Date(year, month, day, 9, 30),
+  },
+  {
+    text: 'Design Review',
+    startDate: new Date(year, month, day, 10, 0),
+    endDate: new Date(year, month, day, 11, 30),
+  },
+  {
+    text: 'Recurring Weekly',
+    startDate: new Date(year, month, day, 14, 0),
+    endDate: new Date(year, month, day, 15, 0),
+    recurrenceRule: 'FREQ=WEEKLY;BYDAY=MO,WE,FR',
+  },
 ];
 
 window.addEventListener('load', () =>
   setupThemeSelector('theme-selector')
     .catch((err) => console.error('Theme loading failed:', err))
     .then(() => {
-      $('#widget-container').dxCardView({
-        dataSource: customers,
-        keyExpr: 'ID',
-        cardsPerRow: 'auto',
-        cardMinWidth: 320,
-        columns: ['Company', 'Address', 'City', 'State', 'Zipcode', 'Phone'],
-      });
+      const scheduler = ($('#widget-container') as any).dxScheduler({
+        dataSource: {
+          store: {
+            type: 'array',
+            data: appointments,
+          },
+        },
+        currentView: 'week',
+        currentDate: now,
+        startDayHour: 8,
+        endDayHour: 20,
+        height: 700,
+        onAppointmentFormOpening(e: any) {
+          updateLog(`Popup opened for: "${e.appointmentData?.text || 'New Appointment'}"`);
+        },
+        onAppointmentUpdating(e: any) {
+          updateLog(`Updating: "${e.oldData?.text}"`);
+        },
+        onAppointmentUpdated(e: any) {
+          updateLog(`Updated: "${e.appointmentData?.text}"`);
+        },
+        onAppointmentAdding(e: any) {
+          updateLog(`Adding: "${e.appointmentData?.text || '(new)'}"`);
+        },
+        onAppointmentAdded(e: any) {
+          updateLog(`Added: "${e.appointmentData?.text}"`);
+        },
+      }).dxScheduler('instance');
+
+      (window as any).scheduler = scheduler;
+
+      updateLog('Scheduler ready. Double-click a cell or appointment to open the popup.');
     }));
+
+function updateLog(message: string) {
+  const log = document.getElementById('event-log');
+  if (!log) return;
+  const time = new Date().toLocaleTimeString();
+  log.textContent = `[${time}] ${message}\n${log.textContent}`;
+}
