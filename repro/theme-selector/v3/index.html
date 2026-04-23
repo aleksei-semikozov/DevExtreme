@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Theme Selector — V3 (custom dropdown with icons)</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0; padding: 0; background: #f8f9fa;
+        }
+        .toolbar {
+            display: flex; align-items: center; gap: 12px;
+            padding: 8px 16px; background: #fff; border-bottom: 1px solid #e0e0e0;
+        }
+        .toolbar label { font-size: 13px; color: #666; }
+        .info {
+            margin: 20px; padding: 12px 16px; background: #e8f4fd;
+            border-radius: 8px; font-size: 14px; line-height: 1.6;
+        }
+
+        /* --- Theme Selector --- */
+        .ts { position: relative; display: inline-block; }
+        .ts-btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 6px 12px; border: 1px solid #ccc; border-radius: 6px;
+            background: #fff; cursor: pointer; font: inherit; font-size: 14px;
+            color: #1a1a1a; transition: border-color 0.15s;
+        }
+        .ts-btn:hover { border-color: #999; }
+        .ts-btn:focus { outline: none; border-color: #0a5fc1; box-shadow: 0 0 0 2px rgba(10,95,193,0.15); }
+        .ts-btn-icon { width: 22px; height: 22px; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.12)); border-radius: 4px; }
+        .ts-btn-arrow {
+            width: 7px; height: 7px; border-right: 1.5px solid currentColor;
+            border-bottom: 1.5px solid currentColor; transform: translateY(-1px) rotate(45deg);
+            margin-left: 4px; transition: transform 0.15s;
+        }
+        .ts.open .ts-btn-arrow { transform: translateY(2px) rotate(-135deg); }
+
+        .ts-popup {
+            display: none; position: absolute; top: calc(100% + 4px); left: 0;
+            width: 340px; max-height: 460px; background: #fff;
+            border: 1px solid #e0e0e0; border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 1000;
+            flex-direction: column; overflow: hidden;
+        }
+        .ts.open .ts-popup { display: flex; }
+
+        .ts-tabs {
+            display: flex; border-bottom: 1px solid #e0e0e0; flex-shrink: 0;
+        }
+        .ts-tab {
+            flex: 1; padding: 10px 0; text-align: center; cursor: pointer;
+            font-size: 13px; font-weight: 500; color: #666; border: none;
+            background: none; border-bottom: 2px solid transparent;
+            transition: color 0.15s, border-color 0.15s;
+        }
+        .ts-tab:hover { color: #333; background: rgba(0,0,0,0.03); }
+        .ts-tab.active { color: #0a5fc1; border-bottom-color: #0a5fc1; }
+
+        .ts-list {
+            flex: 1; overflow-y: auto; overscroll-behavior: contain;
+        }
+        .ts-group-header {
+            padding: 6px 14px; font-size: 11px; font-weight: 600;
+            color: #888; background: #f7f8fa; border-bottom: 1px solid #eee;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .ts-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 14px; cursor: pointer; font-size: 14px;
+            color: #1a1a1a; transition: background 0.1s; border: none;
+            background: none; width: 100%; text-align: left;
+        }
+        .ts-item:hover { background: rgba(0,0,0,0.04); }
+        .ts-item.selected { background: rgba(10,95,193,0.08); }
+        .ts-item-icon {
+            width: 28px; height: 28px; flex-shrink: 0; border-radius: 4px;
+            filter: drop-shadow(0 1px 1px rgba(0,0,0,0.12));
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <label>Theme:</label>
+        <div class="ts" id="theme-selector"></div>
+    </div>
+    <div class="info">
+        <b>V3 — Custom dropdown with icons, pure HTML/CSS/JS</b><br>
+        No DevExtreme widgets. No !important. Icons from DevExpress CDN.<br>
+        ~100 lines JS + ~50 lines CSS. Keyboard accessible (Escape to close).
+    </div>
+
+    <script>
+    const ICON_BASE = 'https://js.devexpress.com/Demos/WidgetsGallery/Content/Images/Themes';
+    const themeKey = 'currentThemeId';
+
+    const THEMES = {
+        Fluent: {
+            'Fluent Light': ['fluent.blue.light', 'fluent.saas.light'],
+            'Fluent Dark': ['fluent.blue.dark', 'fluent.saas.dark'],
+            'Fluent Light Compact': ['fluent.blue.light.compact', 'fluent.saas.light.compact'],
+            'Fluent Dark Compact': ['fluent.blue.dark.compact', 'fluent.saas.dark.compact'],
+        },
+        Material: {
+            'Material Light': ['material.blue.light', 'material.orange.light', 'material.purple.light', 'material.teal.light', 'material.lime.light'],
+            'Material Dark': ['material.blue.dark', 'material.orange.dark', 'material.purple.dark', 'material.teal.dark', 'material.lime.dark'],
+            'Material Light Compact': ['material.blue.light.compact', 'material.orange.light.compact', 'material.purple.light.compact', 'material.teal.light.compact', 'material.lime.light.compact'],
+            'Material Dark Compact': ['material.blue.dark.compact', 'material.orange.dark.compact', 'material.purple.dark.compact', 'material.teal.dark.compact', 'material.lime.dark.compact'],
+        },
+        Generic: {
+            'Generic Light': ['light', 'softblue', 'greenmist', 'carmine'],
+            'Generic Dark': ['dark', 'darkmoon', 'darkviolet', 'contrast'],
+            'Generic Compact': ['light.compact', 'dark.compact', 'carmine.compact', 'contrast.compact', 'softblue.compact', 'greenmist.compact', 'darkmoon.compact', 'darkviolet.compact'],
+        },
+    };
+
+    function iconUrl(id) {
+        return ICON_BASE + '/' + id.replace(/\.compact$/, '') + '.svg';
+    }
+    function displayName(id) {
+        return id.replaceAll('.', ' ');
+    }
+
+    const container = document.getElementById('theme-selector');
+    const groups = Object.keys(THEMES);
+    let activeGroup = groups[0];
+    let selectedId = localStorage.getItem(themeKey) || 'fluent.blue.light';
+
+    // Determine initial group from selected theme
+    for (const [group, subgroups] of Object.entries(THEMES)) {
+        for (const items of Object.values(subgroups)) {
+            if (items.includes(selectedId)) { activeGroup = group; break; }
+        }
+    }
+
+    function render() {
+        container.innerHTML = '';
+
+        // Button
+        const btn = document.createElement('button');
+        btn.className = 'ts-btn';
+        btn.innerHTML =
+            '<img class="ts-btn-icon" src="' + iconUrl(selectedId) + '" alt="">' +
+            '<span>' + displayName(selectedId) + '</span>' +
+            '<span class="ts-btn-arrow"></span>';
+        container.appendChild(btn);
+
+        // Popup
+        const popup = document.createElement('div');
+        popup.className = 'ts-popup';
+
+        // Tabs
+        const tabs = document.createElement('div');
+        tabs.className = 'ts-tabs';
+        groups.forEach(g => {
+            const tab = document.createElement('button');
+            tab.className = 'ts-tab' + (g === activeGroup ? ' active' : '');
+            tab.textContent = g;
+            tab.onclick = (e) => {
+                e.stopPropagation();
+                activeGroup = g;
+                renderList();
+                tabs.querySelectorAll('.ts-tab').forEach(t => t.classList.toggle('active', t.textContent === g));
+            };
+            tabs.appendChild(tab);
+        });
+        popup.appendChild(tabs);
+
+        // List
+        const list = document.createElement('div');
+        list.className = 'ts-list';
+        popup.appendChild(list);
+        container.appendChild(popup);
+
+        function renderList() {
+            list.innerHTML = '';
+            const subgroups = THEMES[activeGroup];
+            Object.entries(subgroups).forEach(([header, items]) => {
+                const h = document.createElement('div');
+                h.className = 'ts-group-header';
+                h.textContent = header;
+                list.appendChild(h);
+
+                items.forEach(id => {
+                    const item = document.createElement('button');
+                    item.className = 'ts-item' + (id === selectedId ? ' selected' : '');
+                    item.innerHTML =
+                        '<img class="ts-item-icon" src="' + iconUrl(id) + '" alt="">' +
+                        '<span>' + displayName(id) + '</span>';
+                    item.onclick = (e) => {
+                        e.stopPropagation();
+                        selectedId = id;
+                        localStorage.setItem(themeKey, id);
+                        container.classList.remove('open');
+                        render();
+                    };
+                    list.appendChild(item);
+                });
+            });
+        }
+        renderList();
+
+        // Toggle
+        btn.onclick = () => container.classList.toggle('open');
+
+        // Close on outside click
+        document.addEventListener('click', (e) => {
+            if (!container.contains(e.target)) container.classList.remove('open');
+        });
+
+        // Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') container.classList.remove('open');
+        });
+    }
+
+    render();
+    </script>
+</body>
+</html>

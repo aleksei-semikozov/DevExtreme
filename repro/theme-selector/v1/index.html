@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Theme Selector — V1 (native select)</title>
+    <style>
+        body {
+            font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f8f9fa;
+        }
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 16px;
+            background: #fff;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .toolbar label {
+            font-size: 13px;
+            color: #666;
+        }
+        #theme-selector {
+            font-family: inherit;
+            font-size: 14px;
+            padding: 6px 8px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            background: #fff;
+            cursor: pointer;
+            min-width: 220px;
+        }
+        #theme-selector:hover {
+            border-color: #999;
+        }
+        #theme-selector:focus {
+            outline: none;
+            border-color: #0a5fc1;
+            box-shadow: 0 0 0 2px rgba(10, 95, 193, 0.15);
+        }
+        .info {
+            margin: 20px;
+            padding: 12px 16px;
+            background: #e8f4fd;
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        #preview {
+            margin: 20px;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        .theme-preview-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 6px;
+            background: #f4f5f7;
+        }
+        .theme-preview-card img {
+            width: 32px;
+            height: 32px;
+            filter: drop-shadow(0 1px 1px rgba(0,0,0,0.12));
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <label>Theme:</label>
+        <select id="theme-selector"></select>
+    </div>
+    <div class="info">
+        <b>V1 — Native &lt;select&gt; with &lt;optgroup&gt;</b><br>
+        No DevExtreme widgets. No custom CSS for overrides. No external icon URLs.<br>
+        ~40 lines of JS. 0 lines of widget CSS.
+    </div>
+    <div id="preview"></div>
+
+    <script>
+    const ICON_BASE = 'https://js.devexpress.com/Demos/WidgetsGallery/Content/Images/Themes';
+    const themeKey = 'currentThemeId';
+
+    const themes = {
+        Fluent: [
+            'fluent.blue.light', 'fluent.blue.light.compact',
+            'fluent.blue.dark', 'fluent.blue.dark.compact',
+            'fluent.saas.light', 'fluent.saas.light.compact',
+            'fluent.saas.dark', 'fluent.saas.dark.compact',
+        ],
+        Material: [
+            'material.blue.light', 'material.blue.light.compact',
+            'material.blue.dark', 'material.blue.dark.compact',
+            'material.orange.light', 'material.orange.dark',
+            'material.purple.light', 'material.purple.dark',
+            'material.teal.light', 'material.teal.dark',
+            'material.lime.light', 'material.lime.dark',
+        ],
+        Generic: [
+            'light', 'light.compact',
+            'dark', 'dark.compact',
+            'carmine', 'contrast',
+            'darkmoon', 'darkviolet',
+            'softblue', 'greenmist',
+        ],
+    };
+
+    const select = document.getElementById('theme-selector');
+
+    Object.entries(themes).forEach(([group, list]) => {
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = group;
+        list.forEach(id => {
+            const option = document.createElement('option');
+            option.value = id;
+            option.textContent = id.replaceAll('.', ' ');
+            optgroup.appendChild(option);
+        });
+        select.appendChild(optgroup);
+    });
+
+    const saved = localStorage.getItem(themeKey) || 'fluent.blue.light';
+    select.value = saved;
+
+    function showPreview(themeId) {
+        const iconId = themeId.replace(/\.compact$/, '');
+        document.getElementById('preview').innerHTML =
+            '<div class="theme-preview-card">' +
+            '<img src="' + ICON_BASE + '/' + iconId + '.svg" alt="">' +
+            '<span>Selected: <b>' + themeId.replaceAll('.', ' ') + '</b></span>' +
+            '</div>';
+    }
+    showPreview(saved);
+
+    select.addEventListener('change', () => {
+        localStorage.setItem(themeKey, select.value);
+        showPreview(select.value);
+    });
+    </script>
+</body>
+</html>
