@@ -1,0 +1,1 @@
+var e=`/DevExtreme/vite-playground/assets/dx.carmine-1H7LTun7.css`;export{e as default};

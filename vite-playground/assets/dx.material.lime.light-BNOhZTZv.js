@@ -1,0 +1,1 @@
+var e=`/DevExtreme/vite-playground/assets/dx.material.lime.light-CYr_uM_u.css`;export{e as default};

@@ -1,0 +1,1 @@
+var e=`/DevExtreme/vite-playground/assets/dx.fluent.blue.dark.compact-BkMkc--5.css`;export{e as default};

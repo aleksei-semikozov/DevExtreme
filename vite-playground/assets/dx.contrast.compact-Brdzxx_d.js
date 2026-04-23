@@ -1,0 +1,1 @@
+var e=`/DevExtreme/vite-playground/assets/dx.contrast.compact-D4KAHj7R.css`;export{e as default};

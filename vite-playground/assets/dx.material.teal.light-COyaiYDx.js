@@ -1,0 +1,1 @@
+var e=`/DevExtreme/vite-playground/assets/dx.material.teal.light-B_4slNH5.css`;export{e as default};

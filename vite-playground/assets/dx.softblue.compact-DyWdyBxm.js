@@ -1,0 +1,1 @@
+var e=`/DevExtreme/vite-playground/assets/dx.softblue.compact-Doed-vE1.css`;export{e as default};

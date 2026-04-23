@@ -1,0 +1,1 @@
+var e=`/DevExtreme/vite-playground/assets/dx.fluent.saas.light.compact-nVgDoq4s.css`;export{e as default};

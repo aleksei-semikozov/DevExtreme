@@ -1,0 +1,1 @@
+var e=`/DevExtreme/vite-playground/assets/dx.light.compact-C441LXkP.css`;export{e as default};

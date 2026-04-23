@@ -1,0 +1,1 @@
+var e=`/DevExtreme/vite-playground/assets/dx.fluent.saas.light-BiSaXBu5.css`;export{e as default};

@@ -1,0 +1,1 @@
+var e=`/DevExtreme/vite-playground/assets/dx.material.purple.light-CDSJ-lpn.css`;export{e as default};

@@ -1,0 +1,1 @@
+var e=`/DevExtreme/vite-playground/assets/dx.fluent.saas.dark.compact-_-BigSj2.css`;export{e as default};

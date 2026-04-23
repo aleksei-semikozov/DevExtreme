@@ -1,0 +1,1 @@
+var e=`/DevExtreme/vite-playground/assets/dx.darkmoon-BvRtVjrK.css`;export{e as default};

@@ -1,0 +1,1 @@
+var e=`/DevExtreme/vite-playground/assets/dx.fluent.blue.light-I5DJBn0z.css`;export{e as default};

@@ -1,0 +1,1 @@
+var e=`/DevExtreme/vite-playground/assets/dx.greenmist.compact-CAKu4xjK.css`;export{e as default};
