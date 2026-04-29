@@ -754,7 +754,8 @@ const themeLoaders = /* #__PURE__ */ Object.assign({"../artifacts/css/dx.carmine
 
 });
 const themeId = localStorage.getItem('currentThemeId');
-const themeKey = themeId ? Object.keys(themeLoaders).find(p => p.includes(`dx.${themeId}.css`)) : Object.keys(themeLoaders)[0];
+const defaultThemeId = 'fluent.blue.light';
+const themeKey = themeId ? Object.keys(themeLoaders).find(p => p.includes(`dx.${themeId}.css`)) : Object.keys(themeLoaders).find(p => p.includes(`dx.${defaultThemeId}.css`)) ?? Object.keys(themeLoaders)[0];
 if (themeKey) {
   const rawUrl = await themeLoaders[themeKey]();
   const url = new URL(rawUrl, import.meta.url).href;
