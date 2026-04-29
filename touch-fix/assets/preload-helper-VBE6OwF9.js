@@ -217755,7 +217755,7 @@ const getAppointmentDateRange = options => {
 };
 
 const isNeedToAdd = item => item.needToAdd;
-function getArraysDiff$1(a, b, equal) {
+function getArraysDiff$1(a, b, match, equal, itemsLengthEqual) {
   const n = a.length;
   const m = b.length;
   const dp = Array.from({
@@ -217764,28 +217764,49 @@ function getArraysDiff$1(a, b, equal) {
   for (let i = 1; i <= n; i += 1) {
     const ai = a[i - 1];
     for (let j = 1; j <= m; j += 1) {
-      dp[i][j] = equal(ai, b[j - 1]) ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
+      dp[i][j] = match(ai, b[j - 1]) ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
     }
   }
   const result = [];
   let i = n;
   let j = m;
   while (i > 0 && j > 0) {
-    if (equal(a[i - 1], b[j - 1])) {
-      result.push({
-        item: b[j - 1]
-      });
+    const ai = a[i - 1];
+    const bj = b[j - 1];
+    if (match(ai, bj)) {
+      if (equal(ai, bj)) {
+        // eslint-disable-next-line max-depth
+        if (!itemsLengthEqual(ai, bj)) {
+          result.push({
+            item: bj,
+            needToUpdateItems: true
+          });
+        } else {
+          result.push({
+            item: bj
+          });
+        }
+      } else {
+        result.push({
+          item: ai,
+          needToRemove: true
+        });
+        result.push({
+          item: bj,
+          needToAdd: true
+        });
+      }
       i -= 1;
       j -= 1;
     } else if (dp[i - 1][j] >= dp[i][j - 1]) {
       result.push({
-        item: a[i - 1],
+        item: ai,
         needToRemove: true
       });
       i -= 1;
     } else {
       result.push({
-        item: b[j - 1],
+        item: bj,
         needToAdd: true
       });
       j -= 1;
@@ -217818,8 +217839,7 @@ const getObjectToCompare$1 = item => {
       allDay: item.allDay,
       groupIndex: item.groupIndex,
       top: item.top,
-      left: item.left,
-      items: item.items.length
+      left: item.left
     };
   }
   return {
@@ -217837,12 +217857,30 @@ const getObjectToCompare$1 = item => {
     columnIndex: item.columnIndex
   };
 };
+const getItemsLengthToCompare = item => {
+  if ('items' in item) {
+    return {
+      items: item.items.length
+    };
+  }
+  return {};
+};
 const isDataChanged = (data, appointmentDataSource) => {
   const updatedData = appointmentDataSource.getUpdatedAppointment();
   return updatedData === data || appointmentDataSource.getUpdatedAppointmentKeys().some(item => data[item.key] === item.value);
 };
-const compareViewModel = appointmentDataSource => (viewModelOld, viewModelNext) => viewModelOld.itemData === viewModelNext.itemData && !isDataChanged(viewModelNext.itemData, appointmentDataSource) && equalByValue(getObjectToCompare$1(viewModelOld), getObjectToCompare$1(viewModelNext));
-const getViewModelDiff$1 = (viewModelOld, viewModelNext, appointmentDataSource) => getArraysDiff$1(viewModelOld, viewModelNext, compareViewModel(appointmentDataSource));
+const getViewModelDiff$1 = (viewModelOld, viewModelNext, appointmentDataSource) => {
+  const equal = (a, b) => equalByValue(getObjectToCompare$1(a), getObjectToCompare$1(b));
+  const match = (a, b) => {
+    if ('items' in a && 'items' in b) {
+      return equal(a, b);
+    }
+    return a.itemData === b.itemData && !isDataChanged(a.itemData, appointmentDataSource);
+  };
+  const itemsLengthEqual = (a, b) => equalByValue(getItemsLengthToCompare(a), getItemsLengthToCompare(b));
+  const result = getArraysDiff$1(viewModelOld, viewModelNext, match, equal, itemsLengthEqual);
+  return result;
+};
 
 /* eslint-disable spellcheck/spell-checker */
 const COMPONENT_CLASS$1 = 'dx-scheduler-scrollable-appointments';
@@ -218025,6 +218063,11 @@ class SchedulerAppointments extends CollectionWidget {
   }
   repaintAppointments(diff) {
     this.$itemBySortedIndex = [];
+    const {
+      appointmentTooltip
+    } = this.option();
+    let $newTooltipTarget = null;
+    let targetViewModel = null;
     this._renderByFragments(($commonFragment, $allDayFragment) => {
       const isRepaintAll = diff.every(item => Boolean(item.needToAdd ?? item.needToRemove));
       if (isRepaintAll) {
@@ -218039,13 +218082,23 @@ class SchedulerAppointments extends CollectionWidget {
           return;
         }
         if (item.needToRemove) {
-          item.element?.detach();
           item.element?.remove();
           return;
         }
+        const container = item.item.allDay ? $allDayFragment : $commonFragment;
         if (item.needToAdd) {
-          const container = item.item.allDay ? $allDayFragment : $commonFragment;
           this._renderItem(index, item.item, container);
+          return;
+        }
+        if (item.needToUpdateItems) {
+          const $oldElement = item.element;
+          $oldElement.detach();
+          const $newElement = this._renderItem(index, item.item, container);
+          if (appointmentTooltip.isShownForTarget($oldElement)) {
+            $newTooltipTarget = $newElement;
+            targetViewModel = item.item;
+          }
+          $oldElement.remove();
           return;
         }
         if (item.element) {
@@ -218054,6 +218107,25 @@ class SchedulerAppointments extends CollectionWidget {
         }
       });
     });
+    this.updateTooltip($newTooltipTarget, targetViewModel);
+  }
+  updateTooltip($newTarget, collectorViewModel) {
+    const {
+      appointmentTooltip
+    } = this.option();
+    if (!appointmentTooltip) {
+      return;
+    }
+    if ($newTarget !== null && collectorViewModel !== null) {
+      const dataList = this.getCompactAppointmentItems(collectorViewModel);
+      appointmentTooltip.setTarget($newTarget);
+      appointmentTooltip.setListItems(dataList);
+    } else {
+      const targetElement = appointmentTooltip.getTarget()?.[0];
+      if (targetElement && !targetElement.isConnected) {
+        appointmentTooltip.hide();
+      }
+    }
   }
   _renderByFragments(renderFunction) {
     if (this.isVirtualScrolling) {
@@ -218546,30 +218618,15 @@ class SchedulerAppointments extends CollectionWidget {
     });
   }
   renderDropDownAppointment($fragment, appointment) {
-    const virtualItems = appointment.items;
-    const items = [];
-    virtualItems.forEach(item => {
-      const appointmentConfig = {
-        itemData: item.itemData,
-        groupIndex: appointment.groupIndex,
-        groups: this.option('groups')
-      };
-      const resourceManager = this.getResourceManager();
-      items.push({
-        appointment: item.itemData,
-        targetedAppointment: getTargetedAppointment$1(item.itemData, item, this.dataAccessors, resourceManager),
-        color: resourceManager.getAppointmentColor(appointmentConfig),
-        settings: item
-      });
-    });
+    const compactAppointmentItems = this.getCompactAppointmentItems(appointment);
     const $item = this.invoke('renderCompactAppointments', {
       $container: $fragment,
       coordinates: {
         top: appointment.top,
         left: appointment.left
       },
-      items,
-      buttonColor: items[0].color,
+      items: compactAppointmentItems,
+      buttonColor: compactAppointmentItems[0].color,
       sortedIndex: appointment.sortedIndex,
       width: appointment.width,
       height: appointment.height,
@@ -218579,6 +218636,23 @@ class SchedulerAppointments extends CollectionWidget {
     });
     this.$itemBySortedIndex[appointment.sortedIndex] = $item;
     return $item;
+  }
+  getCompactAppointmentItems(appointment) {
+    const resourceManager = this.getResourceManager();
+    const result = appointment.items.map(item => {
+      const appointmentConfig = {
+        itemData: item.itemData,
+        groupIndex: appointment.groupIndex,
+        groups: this.option('groups')
+      };
+      return {
+        appointment: item.itemData,
+        targetedAppointment: getTargetedAppointment$1(item.itemData, item, this.dataAccessors, resourceManager),
+        color: resourceManager.getAppointmentColor(appointmentConfig),
+        settings: item
+      };
+    });
+    return result;
   }
   moveAppointmentBack(dragEvent) {
     const $appointment = this._kbn.$focusTarget();
@@ -221922,28 +221996,50 @@ class TooltipStrategyBase {
 
   constructor(options) {
     this.asyncTemplatePromises = new Set();
+    this.$target = null;
     this.tooltip = null;
     this._options = options;
     this.extraOptions = null;
   }
   show(target, dataList, extraOptions) {
-    if (this.canShowTooltip(dataList)) {
+    if (dataList.length) {
       this.hide();
+      this.$target = target;
       this.extraOptions = extraOptions;
-      this.showCore(target, dataList);
+      this.showCore(dataList);
     }
   }
-  showCore(target, dataList) {
-    const describedByValue = isRenderer(target) && target.attr('aria-describedby');
+  setTarget($target) {
+    this.$target = $target;
+    if (this.isDesktop()) {
+      const originalAnimationValue = this.tooltip.option('animation');
+      this.tooltip.option('animation', null);
+      this.tooltip.option('target', $target);
+      this.tooltip.option('animation', originalAnimationValue);
+    }
+  }
+  getTarget() {
+    return this.$target;
+  }
+  setListItems(dataList) {
+    if (dataList.length === 0) {
+      this.hide();
+    }
+    this.list.option('dataSource', dataList);
+  }
+  showCore(dataList) {
+    const describedByValue = isRenderer(this.$target) && this.$target?.attr('aria-describedby');
     if (!this.tooltip) {
-      this.tooltip = this.createTooltip(target, dataList);
+      this.tooltip = this.createTooltip(dataList);
     } else {
-      this.shouldUseTarget() && this.tooltip.option('target', target);
+      if (this.isDesktop()) {
+        this.tooltip.option('target', this.$target);
+      }
       this.list.option('dataSource', dataList);
     }
     this.prepareBeforeVisibleChanged(dataList);
     this.tooltip.option('visible', true);
-    describedByValue && target.attr('aria-describedby', describedByValue);
+    describedByValue && this.$target?.attr('aria-describedby', describedByValue);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -221980,17 +222076,16 @@ class TooltipStrategyBase {
           return;
         }
         if (this.isDeletingAllowed(appointment)) {
-          this.hide();
           this._options.checkAndDeleteAppointment(appointment, targetedAppointment);
         }
       });
     };
   }
-  isAlreadyShown(target) {
-    if (this.tooltip && this.tooltip.option('visible')) {
-      return this.tooltip.option('target')[0] === target[0];
+  isShownForTarget($target) {
+    if (!this.tooltip?.option('visible')) {
+      return false;
     }
-    return undefined;
+    return $target.get(0) === this.$target?.get(0);
   }
   onShown() {
     this.list.option('focusStateEnabled', this.extraOptions.focusStateEnabled);
@@ -222001,18 +222096,12 @@ class TooltipStrategyBase {
       this.tooltip.option('visible', false);
     }
   }
-  shouldUseTarget() {
+  isDesktop() {
     return true;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  createTooltip(target, dataList) {}
-  canShowTooltip(dataList) {
-    if (!dataList.length) {
-      return false;
-    }
-    return true;
-  }
+  createTooltip(dataList) {}
   createListOption(dataList) {
     return {
       dataSource: dataList,
@@ -222114,7 +222203,6 @@ class TooltipStrategyBase {
       stylingMode: 'text',
       tabIndex: -1,
       onClick: e => {
-        this.hide();
         e.event.stopPropagation();
         this._options.checkAndDeleteAppointment(appointment, targetedAppointment);
       }
@@ -222155,10 +222243,10 @@ class DesktopTooltipStrategy extends TooltipStrategyBase {
     result.showScrollbar = supportUtils.touch ? 'always' : 'onHover';
     return result;
   }
-  createTooltip(target, dataList) {
+  createTooltip(dataList) {
     const tooltipElement = this.createTooltipElement(APPOINTMENT_TOOLTIP_WRAPPER_CLASS);
     const tooltip = this._options.createComponent(tooltipElement, Tooltip$1, {
-      target,
+      target: this.$target,
       maxHeight: MAX_TOOLTIP_HEIGHT,
       rtlEnabled: this.extraOptions.rtlEnabled,
       onShown: this.onShown.bind(this),
@@ -222259,7 +222347,7 @@ const createTabletDeviceConfig = listHeight => {
   };
 };
 class MobileTooltipStrategy extends TooltipStrategyBase {
-  shouldUseTarget() {
+  isDesktop() {
     return false;
   }
   setTooltipConfig() {
@@ -222277,7 +222365,7 @@ class MobileTooltipStrategy extends TooltipStrategyBase {
     await Promise.all([...this.asyncTemplatePromises]);
     this.setTooltipConfig();
   }
-  createTooltip(target, dataList) {
+  createTooltip(dataList) {
     const element = this.createTooltipElement(CLASS.slidePanel);
     return this._options.createComponent(element, Overlay, {
       target: getWindow(),
@@ -233875,11 +233963,10 @@ const DragEventNames = {
   LEAVE: addNamespace$1(DRAG_LEAVE_EVENT, 'dxSchedulerDateTable')
 };
 const SCHEDULER_CELL_DXCLICK_EVENT_NAME = addNamespace$1(CLICK_EVENT_NAME$2, 'dxSchedulerDateTable');
+const SCHEDULER_CELL_DXPOINTERDOWN_EVENT_NAME = addNamespace$1(pointer.down, 'dxSchedulerDateTable');
 const SCHEDULER_CELL_DXPOINTERUP_EVENT_NAME = addNamespace$1(pointer.up, 'dxSchedulerDateTable');
 const SCHEDULER_TABLE_DXPOINTERUP_EVENT_NAME = addNamespace$1(pointer.up, 'dxSchedulerTable');
-const SCHEDULER_CELL_MOUSEDOWN_EVENT_NAME = addNamespace$1('mousedown', 'dxSchedulerDateTable');
-const SCHEDULER_CELL_MOUSEMOVE_EVENT_NAME = addNamespace$1('mousemove', 'dxSchedulerDateTable');
-const SCHEDULER_CELL_MOUSEUP_EVENT_NAME = addNamespace$1('mouseup', 'dxSchedulerDateTable');
+const SCHEDULER_CELL_DXPOINTERMOVE_EVENT_NAME = addNamespace$1(pointer.move, 'dxSchedulerDateTable');
 const CELL_DATA = 'dxCellData';
 const DATE_TABLE_MIN_CELL_WIDTH = 75;
 const DAY_MS = toMs$4('day');
@@ -234657,22 +234744,20 @@ class SchedulerWorkSpace extends Widget$1 {
   }
   attachPointerEvents(element) {
     let isPointerDown = false;
-    const resetMouseSelectionState = () => {
-      isPointerDown = false;
-      this.$element().removeClass(WORKSPACE_WITH_MOUSE_SELECTION_CLASS);
-    };
-    eventsEngine.off(element, SCHEDULER_CELL_MOUSEMOVE_EVENT_NAME);
-    eventsEngine.off(element, SCHEDULER_CELL_MOUSEDOWN_EVENT_NAME);
-    eventsEngine.off(domAdapter.getDocument(), SCHEDULER_CELL_MOUSEUP_EVENT_NAME);
-    eventsEngine.on(element, SCHEDULER_CELL_MOUSEDOWN_EVENT_NAME, DRAG_AND_DROP_SELECTOR, e => {
-      if (e.which === 1) {
+    eventsEngine.off(element, SCHEDULER_CELL_DXPOINTERMOVE_EVENT_NAME);
+    eventsEngine.off(element, SCHEDULER_CELL_DXPOINTERDOWN_EVENT_NAME);
+    eventsEngine.on(element, SCHEDULER_CELL_DXPOINTERDOWN_EVENT_NAME, DRAG_AND_DROP_SELECTOR, e => {
+      if ((isMouseEvent(e) || e.originalEvent && isMouseEvent(e.originalEvent)) && e.which === 1) {
         isPointerDown = true;
         this.$element().addClass(WORKSPACE_WITH_MOUSE_SELECTION_CLASS);
-        eventsEngine.off(domAdapter.getDocument(), SCHEDULER_CELL_MOUSEUP_EVENT_NAME);
-        eventsEngine.on(domAdapter.getDocument(), SCHEDULER_CELL_MOUSEUP_EVENT_NAME, resetMouseSelectionState);
+        eventsEngine.off(domAdapter.getDocument(), SCHEDULER_CELL_DXPOINTERUP_EVENT_NAME);
+        eventsEngine.on(domAdapter.getDocument(), SCHEDULER_CELL_DXPOINTERUP_EVENT_NAME, () => {
+          isPointerDown = false;
+          this.$element().removeClass(WORKSPACE_WITH_MOUSE_SELECTION_CLASS);
+        });
       }
     });
-    eventsEngine.on(element, SCHEDULER_CELL_MOUSEMOVE_EVENT_NAME, DRAG_AND_DROP_SELECTOR, e => {
+    eventsEngine.on(element, SCHEDULER_CELL_DXPOINTERMOVE_EVENT_NAME, DRAG_AND_DROP_SELECTOR, e => {
       if (isPointerDown && this._dateTableScrollable) {
         e.preventDefault();
         e.stopPropagation();
@@ -235951,7 +236036,6 @@ class SchedulerWorkSpace extends Widget$1 {
   }
   _clean() {
     eventsEngine.off(domAdapter.getDocument(), SCHEDULER_CELL_DXPOINTERUP_EVENT_NAME);
-    eventsEngine.off(domAdapter.getDocument(), SCHEDULER_CELL_MOUSEUP_EVENT_NAME);
     this.disposeRenovatedComponents();
 
     // @ts-expect-error
@@ -238547,6 +238631,7 @@ class Scheduler extends SchedulerOptionsBaseWidget {
     this.renderHeader();
     this.toggleAdaptiveClass();
     this._layoutManager = new AppointmentLayoutManager(this);
+    this.appointmentTooltip = new (this.option('adaptivityEnabled') ? MobileTooltipStrategy : DesktopTooltipStrategy)(this.getAppointmentTooltipOptions());
     if (this.option('_newAppointments')) {
       const appointmentsConfig = {
         tabIndex: this.option('tabIndex'),
@@ -238576,7 +238661,6 @@ class Scheduler extends SchedulerOptionsBaseWidget {
       this._appointments = this._createComponent('<div>', SchedulerAppointments, this.appointmentsConfig());
       this._appointments.option('itemTemplate', this.getAppointmentTemplate('appointmentTemplate'));
     }
-    this.appointmentTooltip = new (this.option('adaptivityEnabled') ? MobileTooltipStrategy : DesktopTooltipStrategy)(this.getAppointmentTooltipOptions());
     this.createAppointmentPopupForm();
 
     // @ts-expect-error
@@ -238772,6 +238856,7 @@ class Scheduler extends SchedulerOptionsBaseWidget {
       getAppointmentDataSource: () => this.appointmentDataSource,
       getSortedAppointments: () => this._layoutManager.sortedItems,
       scrollTo: this.scrollTo.bind(this),
+      appointmentTooltip: this.appointmentTooltip,
       dataAccessors: this._dataAccessors,
       notifyScheduler: this.notifyScheduler,
       onItemRendered: this.getAppointmentRenderedAction(),
@@ -239377,7 +239462,7 @@ class Scheduler extends SchedulerOptionsBaseWidget {
       targetElement: getPublicElement(target)
     };
     this._createActionByOption('onAppointmentTooltipShowing')(arg);
-    if (this.appointmentTooltip.isAlreadyShown(target)) {
+    if (this.appointmentTooltip.isShownForTarget(target)) {
       this.hideAppointmentTooltip();
     } else {
       this.processActionResult(arg, canceled => {

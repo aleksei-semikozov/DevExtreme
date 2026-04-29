@@ -1,4 +1,4 @@
-import { u as utils, a as alert, c as confirm, b as custom, f as formatDate, d as formatMessage, e as formatNumber, l as loadMessages, g as locale, p as parseDate, h as parseNumber, C as CustomStore, j as jQuery, r as registerGradient, i as registerPattern, R as RemoteFileSystemProvider, k as generateColors, m as currentPalette, n as registerPalette, o as getPalette, A as Ajax, q as repaint, t as notify, G as Guid, v as query, D as DataSource, w as ArrayStore, x as setTemplateEngine, y as configMethod, _ as __vitePreload, s as setLicenseCheckSkipCondition } from './assets/preload-helper-CkkjtEfI.js';
+import { u as utils, a as alert, c as confirm, b as custom, f as formatDate, d as formatMessage, e as formatNumber, l as loadMessages, g as locale, p as parseDate, h as parseNumber, C as CustomStore, j as jQuery, r as registerGradient, i as registerPattern, R as RemoteFileSystemProvider, k as generateColors, m as currentPalette, n as registerPalette, o as getPalette, A as Ajax, q as repaint, t as notify, G as Guid, v as query, D as DataSource, w as ArrayStore, x as setTemplateEngine, y as configMethod, _ as __vitePreload, s as setLicenseCheckSkipCondition } from './assets/preload-helper-VBE6OwF9.js';
 
 const getTimeZones = utils.getTimeZones;
 
@@ -754,8 +754,7 @@ const themeLoaders = /* #__PURE__ */ Object.assign({"../artifacts/css/dx.carmine
 
 });
 const themeId = localStorage.getItem('currentThemeId');
-const defaultThemeId = 'fluent.blue.light';
-const themeKey = themeId ? Object.keys(themeLoaders).find(p => p.includes(`dx.${themeId}.css`)) : Object.keys(themeLoaders).find(p => p.includes(`dx.${defaultThemeId}.css`)) ?? Object.keys(themeLoaders)[0];
+const themeKey = themeId ? Object.keys(themeLoaders).find(p => p.includes(`dx.${themeId}.css`)) : Object.keys(themeLoaders).find(p => p.includes('dx.fluent.blue.light.css')) ?? Object.keys(themeLoaders)[0];
 if (themeKey) {
   const rawUrl = await themeLoaders[themeKey]();
   const url = new URL(rawUrl, import.meta.url).href;
