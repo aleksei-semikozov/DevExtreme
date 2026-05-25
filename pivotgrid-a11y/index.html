@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>PivotGrid A11y - Expand Icons Keyboard Navigation Test</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <link rel="stylesheet" href="dx.light.css" />
+  <script src="dx.all.js"></script>
+  <script src="data.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 20px; }
+    h1 { font-size: 1.3em; }
+    .test-info { background: #f0f4f8; border: 1px solid #d0d7de; border-radius: 6px; padding: 16px; margin-bottom: 20px; }
+    .test-info h2 { font-size: 1em; margin-top: 0; }
+    .test-info ol { margin: 0; padding-left: 20px; }
+    .test-info li { margin-bottom: 6px; }
+    .status-panel { background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 12px; margin-bottom: 20px; font-size: 0.9em; }
+    #pivotgrid { margin-top: 10px; }
+    td[aria-expanded] { outline: 2px solid transparent; }
+    td[aria-expanded]:focus { outline: 2px solid #1976d2; outline-offset: -2px; border-radius: 2px; }
+    kbd { background: #eee; border: 1px solid #ccc; border-radius: 3px; padding: 1px 5px; font-size: 0.85em; }
+  </style>
+</head>
+<body class="dx-viewport">
+  <h1>PivotGrid A11y - Expand Icons Keyboard Navigation (KBN)</h1>
+
+  <div class="test-info">
+    <h2>Test Plan</h2>
+    <ol>
+      <li><strong>Tab to expand icon cell</strong> &mdash; click on a row header with expand icon (e.g. "North America"), then use <kbd>Tab</kbd> to navigate. The cell with expand icon should be focusable.</li>
+      <li><strong>Enter key</strong> &mdash; focus a cell with expand icon, press <kbd>Enter</kbd>. It should toggle expand/collapse.</li>
+      <li><strong>Space key</strong> &mdash; focus a cell with expand icon, press <kbd>Space</kbd>. It should also toggle expand/collapse.</li>
+      <li><strong>aria-expanded attribute</strong> &mdash; open DevTools, inspect a header cell with expand icon. It should have <code>aria-expanded="true"</code> or <code>aria-expanded="false"</code> on the <code>&lt;td&gt;</code> element.</li>
+      <li><strong>Screen reader</strong> &mdash; if available, verify the screen reader announces expanded/collapsed state.</li>
+      <li><strong>Plain cells</strong> &mdash; cells WITHOUT expand icon should NOT have <code>aria-expanded</code> and Enter/Space should do nothing.</li>
+    </ol>
+  </div>
+
+  <div class="status-panel" id="status">
+    Status: Ready. Click on an expandable cell or use keyboard to test.
+  </div>
+
+  <div id="pivotgrid"></div>
+
+  <script>
+    $(() => {
+      const statusEl = document.getElementById('status');
+      function log(msg) {
+        statusEl.textContent = 'Status: ' + msg;
+      }
+
+      const pivotGrid = $('#pivotgrid').dxPivotGrid({
+        allowSortingBySummary: true,
+        allowFiltering: true,
+        showBorders: true,
+        showColumnGrandTotals: false,
+        showRowGrandTotals: false,
+        showRowTotals: false,
+        showColumnTotals: false,
+        fieldChooser: {
+          enabled: true,
+          height: 400,
+        },
+        onCellClick: function(e) {
+          if (e.cell && e.cell.expanded !== undefined) {
+            log('Clicked cell "' + (e.cell.text || '') + '" — expanded=' + e.cell.expanded + ', area=' + e.area);
+          }
+        },
+        dataSource: {
+          fields: [{
+            caption: 'Region',
+            width: 120,
+            dataField: 'region',
+            area: 'row',
+            sortBySummaryField: 'Total',
+          }, {
+            caption: 'City',
+            dataField: 'city',
+            width: 150,
+            area: 'row',
+          }, {
+            dataField: 'date',
+            dataType: 'date',
+            area: 'column',
+          }, {
+            groupName: 'date',
+            groupInterval: 'month',
+            visible: false,
+          }, {
+            caption: 'Total',
+            dataField: 'amount',
+            dataType: 'number',
+            summaryType: 'sum',
+            format: 'currency',
+            area: 'data',
+          }],
+          store: sales,
+        },
+      }).dxPivotGrid('instance');
+
+      function expand() {
+        const dataSource = pivotGrid.getDataSource();
+        dataSource.expandHeaderItem('row', ['North America']);
+        dataSource.expandHeaderItem('column', [2013]);
+      }
+
+      setTimeout(expand, 0);
+    });
+  </script>
+</body>
+</html>
