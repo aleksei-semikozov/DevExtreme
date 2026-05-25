@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PivotGrid Keyboard Accessibility Comparison</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+            color: #1a1a2e;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 16px;
+        }
+        .cards {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 28px 32px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid #e8ecf1;
+            transition: box-shadow 0.2s;
+        }
+        .card:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        }
+        .card h2 {
+            font-size: 20px;
+            margin-bottom: 8px;
+        }
+        .card p {
+            color: #555;
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+        .card a {
+            display: inline-block;
+            padding: 10px 24px;
+            background: #4361ee;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        .card a:hover { background: #3a56d4; }
+        .card a:focus { outline: 3px solid #93a8f5; outline-offset: 2px; }
+        .card.devextreme a { background: #ff7043; }
+        .card.devextreme a:hover { background: #f4511e; }
+        .card.kendo a { background: #ff6358; }
+        .card.kendo a:hover { background: #e5574d; }
+        .card.syncfusion a { background: #6750a4; }
+        .card.syncfusion a:hover { background: #5a4493; }
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+        .badge.ours { background: #fff3e0; color: #e65100; }
+        .badge.competitor { background: #e3f2fd; color: #1565c0; }
+        table.comparison {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        table.comparison th, table.comparison td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        table.comparison th {
+            background: #f8f9fa;
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #555;
+        }
+        table.comparison td { font-size: 14px; }
+        .yes { color: #2e7d32; font-weight: 600; }
+        .no { color: #c62828; font-weight: 600; }
+        .partial { color: #f57f17; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PivotGrid Keyboard Accessibility Comparison</h1>
+        <p class="subtitle">Compare keyboard navigation and ARIA support across PivotGrid implementations</p>
+
+        <table class="comparison">
+            <thead>
+                <tr>
+                    <th>Feature</th>
+                    <th>DevExtreme</th>
+                    <th>Kendo UI</th>
+                    <th>Syncfusion</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Tab into grid</td>
+                    <td class="yes">Yes</td>
+                    <td class="yes">Yes</td>
+                    <td class="yes">Yes</td>
+                </tr>
+                <tr>
+                    <td>Arrow key cell navigation</td>
+                    <td class="yes">Yes</td>
+                    <td class="yes">Yes</td>
+                    <td class="yes">Yes</td>
+                </tr>
+                <tr>
+                    <td>Enter/Space expand/collapse</td>
+                    <td>Test below</td>
+                    <td>Test below</td>
+                    <td>Test below</td>
+                </tr>
+                <tr>
+                    <td>role="grid" on table</td>
+                    <td>Test below</td>
+                    <td>Test below</td>
+                    <td>Test below</td>
+                </tr>
+                <tr>
+                    <td>aria-expanded on headers</td>
+                    <td>Test below</td>
+                    <td>Test below</td>
+                    <td>Test below</td>
+                </tr>
+                <tr>
+                    <td>Focus visible indicator</td>
+                    <td>Test below</td>
+                    <td>Test below</td>
+                    <td>Test below</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="cards">
+            <div class="card devextreme">
+                <h2>DevExtreme PivotGrid <span class="badge ours">Ours</span></h2>
+                <p>Our implementation with keyboard navigation improvements. Tab through cells, use arrow keys to navigate, Enter/Space to expand/collapse field headers.</p>
+                <a href="../index.html">Open DevExtreme Demo</a>
+            </div>
+
+            <div class="card kendo">
+                <h2>Kendo UI PivotGridV2 <span class="badge competitor">Competitor</span></h2>
+                <p>Telerik Kendo UI PivotGridV2 with built-in keyboard navigation. Uses their standard grid keyboard interaction model with Tab and arrow keys.</p>
+                <a href="kendo.html">Open Kendo Demo</a>
+            </div>
+
+            <div class="card syncfusion">
+                <h2>Syncfusion Pivot Table <span class="badge competitor">Competitor</span></h2>
+                <p>Syncfusion EJ2 Pivot Table with keyboard interaction support. Reference to their official demo with accessibility features.</p>
+                <a href="syncfusion.html">Open Syncfusion Demo</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

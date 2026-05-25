@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kendo UI PivotGridV2 - Keyboard Accessibility</title>
+    <link rel="stylesheet" href="https://kendo.cdn.telerik.com/themes/10.2.0/default/default-ocean-blue.css">
+    <script src="https://kendo.cdn.telerik.com/2024.4.1112/js/jquery.min.js"></script>
+    <script src="https://kendo.cdn.telerik.com/2024.4.1112/js/kendo.all.min.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fa;
+            margin: 0;
+            padding: 20px;
+        }
+        .header {
+            max-width: 1200px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .header a {
+            color: #4361ee;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .header h1 {
+            font-size: 22px;
+            color: #1a1a2e;
+        }
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #ffebee;
+            color: #c62828;
+            margin-left: 8px;
+        }
+        .layout {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+        }
+        .instructions {
+            background: #fff;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid #e8ecf1;
+            align-self: start;
+            position: sticky;
+            top: 20px;
+        }
+        .instructions h2 {
+            font-size: 16px;
+            margin-bottom: 16px;
+            color: #333;
+        }
+        .instructions .key-group {
+            margin-bottom: 16px;
+        }
+        .instructions .key-group h3 {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #888;
+            margin-bottom: 8px;
+        }
+        .key-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+        kbd {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            min-width: 28px;
+            text-align: center;
+        }
+        .grid-container {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid #e8ecf1;
+            overflow: auto;
+        }
+        .note {
+            background: #fff8e1;
+            border: 1px solid #ffe082;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-top: 16px;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #5d4037;
+        }
+        .status {
+            margin-top: 16px;
+            padding: 12px 16px;
+            background: #e8f5e9;
+            border: 1px solid #a5d6a7;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #2e7d32;
+        }
+        .status.error {
+            background: #ffebee;
+            border-color: #ef9a9a;
+            color: #c62828;
+        }
+        @media (max-width: 900px) {
+            .layout { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="index.html">&larr; Back to comparison</a>
+        <h1>Kendo UI PivotGridV2 <span class="badge">Competitor</span></h1>
+    </div>
+
+    <div class="layout">
+        <div class="instructions">
+            <h2>Keyboard Shortcuts</h2>
+
+            <div class="key-group">
+                <h3>Navigation</h3>
+                <div class="key-row"><kbd>Tab</kbd> Enter the grid</div>
+                <div class="key-row"><kbd>&uarr;</kbd><kbd>&darr;</kbd><kbd>&larr;</kbd><kbd>&rarr;</kbd> Move between cells</div>
+            </div>
+
+            <div class="key-group">
+                <h3>Expand / Collapse</h3>
+                <div class="key-row"><kbd>Enter</kbd> Expand or collapse a header</div>
+            </div>
+
+            <div class="key-group">
+                <h3>Focus</h3>
+                <div class="key-row"><kbd>Tab</kbd> Move to next focusable area</div>
+                <div class="key-row"><kbd>Shift</kbd>+<kbd>Tab</kbd> Move to previous area</div>
+            </div>
+
+            <div class="note">
+                <strong>Observations:</strong> Try tabbing into the grid and using arrow keys.
+                Note how the focus indicator appears, and whether Enter expands/collapses
+                row/column headers.
+            </div>
+
+            <div id="status" class="status">
+                Loading Kendo UI...
+            </div>
+        </div>
+
+        <div class="grid-container">
+            <div id="pivotgrid"></div>
+        </div>
+    </div>
+
+    <script>
+        $(function() {
+            var statusEl = document.getElementById('status');
+
+            try {
+                var pivotgrid = $("#pivotgrid").kendoPivotGridV2({
+                    height: 600,
+                    navigatable: true,
+                    dataSource: {
+                        type: "xmla",
+                        columns: [{ name: "[Product]", expand: true }],
+                        rows: [{ name: "[Geography]", expand: true }],
+                        measures: {
+                            values: ["[Measures].[Reseller Order Count]"]
+                        },
+                        transport: {
+                            connection: {
+                                catalog: "Adventure Works DW 2008R2",
+                                cube: "Adventure Works"
+                            },
+                            read: "https://demos.telerik.com/olap/msmdpump.dll"
+                        },
+                        schema: {
+                            type: "xmla"
+                        }
+                    }
+                }).data("kendoPivotGridV2");
+
+                statusEl.textContent = "Kendo PivotGridV2 initialized. Uses remote OLAP data from Telerik demo server.";
+                statusEl.className = "status";
+
+                setTimeout(function() {
+                    if ($("#pivotgrid").find("table").length === 0 &&
+                        $("#pivotgrid").find(".k-pivotgrid-empty").length > 0) {
+                        statusEl.textContent = "Grid loaded but may be empty - the remote OLAP server might be unavailable. See the local data fallback below.";
+                        statusEl.className = "status error";
+                        initLocalFallback();
+                    }
+                }, 8000);
+
+            } catch(e) {
+                statusEl.textContent = "Error initializing Kendo PivotGridV2: " + e.message + ". Falling back to local data.";
+                statusEl.className = "status error";
+                initLocalFallback();
+            }
+
+            function initLocalFallback() {
+                $("#pivotgrid").empty();
+                $("#pivotgrid").kendoPivotGridV2({
+                    height: 600,
+                    navigatable: true,
+                    dataSource: {
+                        data: generateLocalData(),
+                        schema: {
+                            model: {
+                                fields: {
+                                    ProductName: { type: "string" },
+                                    Country: { type: "string" },
+                                    City: { type: "string" },
+                                    Amount: { type: "number" },
+                                    Quantity: { type: "number" }
+                                }
+                            },
+                            cube: {
+                                dimensions: {
+                                    ProductName: { caption: "Product" },
+                                    Country: { caption: "Country" },
+                                    City: { caption: "City" }
+                                },
+                                measures: {
+                                    "Sum Amount": { field: "Amount", aggregate: "sum", format: "{0:c}" },
+                                    "Count": { field: "Quantity", aggregate: "sum" }
+                                }
+                            }
+                        },
+                        columns: [{ name: "ProductName", expand: true }],
+                        rows: [{ name: "Country", expand: true }, { name: "City" }],
+                        measures: ["Sum Amount", "Count"]
+                    }
+                });
+
+                statusEl.textContent = "Using local data fallback. Tab into the grid and try arrow keys + Enter.";
+                statusEl.className = "status";
+            }
+
+            function generateLocalData() {
+                var products = ["Chai", "Chang", "Tofu", "Ikura", "Konbu"];
+                var countries = [
+                    { country: "USA", cities: ["New York", "Los Angeles", "Chicago"] },
+                    { country: "UK", cities: ["London", "Manchester"] },
+                    { country: "Germany", cities: ["Berlin", "Munich"] },
+                    { country: "Japan", cities: ["Tokyo", "Osaka"] }
+                ];
+                var data = [];
+                for (var p = 0; p < products.length; p++) {
+                    for (var c = 0; c < countries.length; c++) {
+                        for (var ci = 0; ci < countries[c].cities.length; ci++) {
+                            data.push({
+                                ProductName: products[p],
+                                Country: countries[c].country,
+                                City: countries[c].cities[ci],
+                                Amount: Math.round(Math.random() * 5000 + 500),
+                                Quantity: Math.round(Math.random() * 100 + 10)
+                            });
+                        }
+                    }
+                }
+                return data;
+            }
+        });
+    </script>
+</body>
+</html>

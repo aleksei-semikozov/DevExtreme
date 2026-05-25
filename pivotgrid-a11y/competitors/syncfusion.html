@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syncfusion Pivot Table - Keyboard Accessibility</title>
+    <link rel="stylesheet" href="https://cdn.syncfusion.com/ej2/24.2.3/material.css">
+    <script src="https://cdn.syncfusion.com/ej2/24.2.3/dist/ej2.min.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fa;
+            margin: 0;
+            padding: 20px;
+        }
+        .header {
+            max-width: 1200px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .header a {
+            color: #4361ee;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .header h1 {
+            font-size: 22px;
+            color: #1a1a2e;
+        }
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #ede7f6;
+            color: #4527a0;
+            margin-left: 8px;
+        }
+        .layout {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+        }
+        .instructions {
+            background: #fff;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid #e8ecf1;
+            align-self: start;
+            position: sticky;
+            top: 20px;
+        }
+        .instructions h2 {
+            font-size: 16px;
+            margin-bottom: 16px;
+            color: #333;
+        }
+        .instructions .key-group {
+            margin-bottom: 16px;
+        }
+        .instructions .key-group h3 {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #888;
+            margin-bottom: 8px;
+        }
+        .key-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+        kbd {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            min-width: 28px;
+            text-align: center;
+        }
+        .grid-container {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid #e8ecf1;
+            overflow: auto;
+        }
+        .note {
+            background: #f3e5f5;
+            border: 1px solid #ce93d8;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-top: 16px;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #4a148c;
+        }
+        .external-links {
+            margin-top: 16px;
+            padding: 12px 16px;
+            background: #e8f5e9;
+            border: 1px solid #a5d6a7;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+        .external-links a {
+            color: #2e7d32;
+            font-weight: 600;
+        }
+        .status {
+            margin-top: 16px;
+            padding: 12px 16px;
+            background: #e8f5e9;
+            border: 1px solid #a5d6a7;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #2e7d32;
+        }
+        .status.error {
+            background: #ffebee;
+            border-color: #ef9a9a;
+            color: #c62828;
+        }
+        @media (max-width: 900px) {
+            .layout { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="index.html">&larr; Back to comparison</a>
+        <h1>Syncfusion Pivot Table <span class="badge">Competitor</span></h1>
+    </div>
+
+    <div class="layout">
+        <div class="instructions">
+            <h2>Keyboard Shortcuts</h2>
+
+            <div class="key-group">
+                <h3>Navigation</h3>
+                <div class="key-row"><kbd>Tab</kbd> Enter the grid</div>
+                <div class="key-row"><kbd>&uarr;</kbd><kbd>&darr;</kbd><kbd>&larr;</kbd><kbd>&rarr;</kbd> Move between cells</div>
+                <div class="key-row"><kbd>Home</kbd> First cell in row</div>
+                <div class="key-row"><kbd>End</kbd> Last cell in row</div>
+            </div>
+
+            <div class="key-group">
+                <h3>Expand / Collapse</h3>
+                <div class="key-row"><kbd>Enter</kbd> Expand or collapse header</div>
+            </div>
+
+            <div class="key-group">
+                <h3>Selection</h3>
+                <div class="key-row"><kbd>Shift</kbd>+<kbd>Arrow</kbd> Extend selection</div>
+                <div class="key-row"><kbd>Ctrl</kbd>+<kbd>A</kbd> Select all</div>
+            </div>
+
+            <div class="note">
+                <strong>Observations:</strong> Syncfusion Pivot Table provides grid-based keyboard
+                navigation. Focus on how expand/collapse icons respond to Enter key and how
+                aria-expanded attributes are managed.
+            </div>
+
+            <div class="external-links">
+                <strong>Official demos:</strong><br>
+                <a href="https://ej2.syncfusion.com/demos/#/fluent2/pivot-table/keyboard-navigation.html" target="_blank">Syncfusion Keyboard Navigation Demo</a><br>
+                <a href="https://ej2.syncfusion.com/demos/#/fluent2/pivot-table/default.html" target="_blank">Syncfusion Default Pivot Table Demo</a>
+            </div>
+
+            <div id="status" class="status">
+                Loading Syncfusion Pivot Table...
+            </div>
+        </div>
+
+        <div class="grid-container">
+            <div id="pivotview"></div>
+        </div>
+    </div>
+
+    <script>
+        var statusEl = document.getElementById('status');
+
+        try {
+            var pivotData = [
+                { Product: 'Chai', Country: 'USA', City: 'New York', Amount: 2100, Quantity: 42 },
+                { Product: 'Chai', Country: 'USA', City: 'Los Angeles', Amount: 1800, Quantity: 36 },
+                { Product: 'Chai', Country: 'UK', City: 'London', Amount: 1500, Quantity: 30 },
+                { Product: 'Chai', Country: 'UK', City: 'Manchester', Amount: 900, Quantity: 18 },
+                { Product: 'Chai', Country: 'Germany', City: 'Berlin', Amount: 1200, Quantity: 24 },
+                { Product: 'Chang', Country: 'USA', City: 'New York', Amount: 3200, Quantity: 64 },
+                { Product: 'Chang', Country: 'USA', City: 'Chicago', Amount: 2800, Quantity: 56 },
+                { Product: 'Chang', Country: 'UK', City: 'London', Amount: 2100, Quantity: 42 },
+                { Product: 'Chang', Country: 'Germany', City: 'Berlin', Amount: 1700, Quantity: 34 },
+                { Product: 'Chang', Country: 'Germany', City: 'Munich', Amount: 1400, Quantity: 28 },
+                { Product: 'Tofu', Country: 'USA', City: 'New York', Amount: 1900, Quantity: 38 },
+                { Product: 'Tofu', Country: 'USA', City: 'Los Angeles', Amount: 2300, Quantity: 46 },
+                { Product: 'Tofu', Country: 'UK', City: 'London', Amount: 1100, Quantity: 22 },
+                { Product: 'Tofu', Country: 'Germany', City: 'Munich', Amount: 1600, Quantity: 32 },
+                { Product: 'Ikura', Country: 'USA', City: 'Chicago', Amount: 4100, Quantity: 82 },
+                { Product: 'Ikura', Country: 'UK', City: 'Manchester', Amount: 2700, Quantity: 54 },
+                { Product: 'Ikura', Country: 'Germany', City: 'Berlin', Amount: 3300, Quantity: 66 },
+                { Product: 'Konbu', Country: 'USA', City: 'New York', Amount: 1500, Quantity: 30 },
+                { Product: 'Konbu', Country: 'UK', City: 'London', Amount: 2000, Quantity: 40 },
+                { Product: 'Konbu', Country: 'Germany', City: 'Berlin', Amount: 1800, Quantity: 36 },
+                { Product: 'Konbu', Country: 'Germany', City: 'Munich', Amount: 1300, Quantity: 26 }
+            ];
+
+            var pivotObj = new ej.pivotview.PivotView({
+                height: 600,
+                dataSourceSettings: {
+                    dataSource: pivotData,
+                    expandAll: false,
+                    rows: [
+                        { name: 'Country', expandAll: true },
+                        { name: 'City' }
+                    ],
+                    columns: [
+                        { name: 'Product', expandAll: true }
+                    ],
+                    values: [
+                        { name: 'Amount', caption: 'Total Amount' },
+                        { name: 'Quantity', caption: 'Total Qty' }
+                    ]
+                },
+                gridSettings: {
+                    columnWidth: 120
+                },
+                allowDeferLayoutUpdate: false,
+                showFieldList: false
+            });
+
+            pivotObj.appendTo('#pivotview');
+            statusEl.textContent = 'Syncfusion Pivot Table loaded with local data. Tab into the grid and try keyboard navigation.';
+            statusEl.className = 'status';
+
+        } catch(e) {
+            statusEl.textContent = 'Error loading Syncfusion: ' + e.message + '. Visit the official demo links above instead.';
+            statusEl.className = 'status error';
+        }
+    </script>
+</body>
+</html>
