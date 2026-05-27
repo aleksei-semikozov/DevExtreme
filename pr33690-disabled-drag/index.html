@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PR #33690 — Disabled appointment drag regression (M2)</title>
+
+    <script src="./jquery.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="./dx.light.css" />
+    <style>
+      body {
+        font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+        margin: 0;
+        padding: 24px;
+        color: #333;
+        background: #fafafa;
+      }
+      h1 { font-size: 20px; margin: 0 0 4px; }
+      .subtitle { color: #777; margin: 0 0 20px; font-size: 14px; }
+      .note {
+        background: #fff;
+        border: 1px solid #e0e0e0;
+        border-left: 4px solid #f05b41;
+        border-radius: 4px;
+        padding: 12px 16px;
+        margin-bottom: 24px;
+        font-size: 14px;
+        line-height: 1.5;
+        max-width: 1000px;
+      }
+      .note b { color: #f05b41; }
+      .grid { display: flex; gap: 24px; flex-wrap: wrap; }
+      .pane { flex: 1; min-width: 420px; }
+      .pane h2 { font-size: 15px; margin: 0 0 4px; }
+      .pane .tag { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 10px; }
+      .tag.ok { background: #e6f4ea; color: #1e7e34; }
+      .tag.bug { background: #fdecea; color: #c0392b; }
+      .pane .hint { color: #888; font-size: 12px; margin: 4px 0 10px; }
+      .scheduler { height: 560px; background: #fff; border: 1px solid #e0e0e0; border-radius: 4px; }
+    </style>
+  </head>
+  <body class="dx-viewport">
+    <h1>DevExtreme PR #33690 — Disabled appointment can be dragged (finding M2)</h1>
+    <p class="subtitle">Scheduler appointments DnD refactoring. The new path drops the legacy <code>disabled</code> guard.</p>
+
+    <div class="note">
+      <b>How to reproduce:</b> Try to drag the red <b>“Disabled — locked”</b> appointment in both schedulers.<br />
+      • <b>Left (old impl)</b> — the disabled appointment does <b>not</b> move. ✅ correct<br />
+      • <b>Right (new impl, <code>_newAppointments: true</code>)</b> — the disabled appointment <b>can be dragged and dropped</b>. ❌ regression<br />
+      The normal blue appointment is draggable in both — that part works.
+    </div>
+
+    <div class="grid">
+      <div class="pane">
+        <h2>Old appointments <span class="tag ok">expected</span></h2>
+        <p class="hint">_newAppointments: false — disabled drag blocked</p>
+        <div id="scheduler-old" class="scheduler"></div>
+      </div>
+      <div class="pane">
+        <h2>New appointments <span class="tag bug">bug</span></h2>
+        <p class="hint">_newAppointments: true — disabled drag allowed</p>
+        <div id="scheduler-new" class="scheduler"></div>
+      </div>
+    </div>
+
+    <script src="./dx.all.js"></script>
+    <script>
+      function buildData() {
+        return [
+          {
+            text: 'Normal — draggable',
+            startDate: new Date(2021, 3, 26, 9, 30),
+            endDate: new Date(2021, 3, 26, 11, 0),
+          },
+          {
+            text: 'Disabled — locked',
+            disabled: true,
+            startDate: new Date(2021, 3, 26, 12, 30),
+            endDate: new Date(2021, 3, 26, 14, 0),
+          },
+        ];
+      }
+
+      function commonConfig(newAppointments) {
+        return {
+          dataSource: buildData(),
+          views: ['day'],
+          currentView: 'day',
+          currentDate: new Date(2021, 3, 26),
+          startDayHour: 8,
+          endDayHour: 16,
+          height: 560,
+          editing: { allowDragging: true, allowUpdating: true },
+          _newAppointments: newAppointments,
+        };
+      }
+
+      $(function () {
+        $('#scheduler-old').dxScheduler(commonConfig(false));
+        $('#scheduler-new').dxScheduler(commonConfig(true));
+      });
+    </script>
+  </body>
+</html>
