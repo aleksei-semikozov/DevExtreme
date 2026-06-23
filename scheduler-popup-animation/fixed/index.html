@@ -64,6 +64,11 @@
         var fromScale = config && config.from ? JSON.stringify(config.from) : '?';
         var toStr = config && config.to ? JSON.stringify(config.to) : '?';
         log('fx.animate: type=' + type + ' dur=' + duration + ' from=' + fromScale + ' to=' + toStr, 'ok');
+        lastAnimateTime = Date.now();
+        if (type === 'pop' && fromScale.indexOf('0.55') >= 0) {
+          animateActive = true;
+          setTimeout(function() { animateActive = false; }, 500);
+        }
 
         var computedTransform = window.getComputedStyle(element).transform;
         var inlineTransform = element.style.transform;
@@ -72,16 +77,25 @@
       return origAnimate.apply(this, arguments);
     };
 
+    // Track when animate was last called
+    var lastAnimateTime = 0;
+    var animateActive = false;
+
     // Hook fx.stop
     var origStop = DevExpress.fx.stop;
     DevExpress.fx.stop = function(element, jumpToEnd) {
       var $el = $(element);
-      if ($el.hasClass('dx-overlay-content')) {
-        var stack = getStack();
-        var isResize = stack.indexOf('Resize') >= 0 || stack.indexOf('resize') >= 0
-          || stack.indexOf('renderGeometry') >= 0;
-        var cls = isResize ? 'err' : 'warn';
-        log('fx.stop(jumpToEnd=' + jumpToEnd + ') ' + (isResize ? '[FROM RESIZE/GEOMETRY]' : '') + ' | ' + stack.substring(0, 120), cls);
+      if ($el.hasClass('dx-overlay-content') && $el.closest('.dx-scheduler-appointment-popup').length) {
+        var timeSinceAnimate = Date.now() - lastAnimateTime;
+        var stack;
+        try { throw new Error(); } catch(e) { stack = e.stack || ''; }
+        var lines = stack.split('\n').slice(2, 8).map(function(l) { return l.trim(); }).join('\n    ');
+        var isKiller = animateActive && timeSinceAnimate < 500;
+        if (isKiller) {
+          log('!! fx.stop ' + timeSinceAnimate + 'ms AFTER animate (KILLS ANIMATION):\n    ' + lines, 'err');
+        } else {
+          log('fx.stop(jumpToEnd=' + jumpToEnd + ') ' + timeSinceAnimate + 'ms after animate', 'warn');
+        }
       }
       return origStop.apply(this, arguments);
     };
