@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>T1330691 - Scheduler Popup Animation Debug (WITH FIX)</title>
+  <title>T1330691 - Scheduler Popup Animation (FIXED, scheduler-side, 26_1)</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -9,26 +9,30 @@
   <script src="dx.all.js"></script>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 20px; }
-    h1 { font-size: 1.3em; margin-bottom: 8px; }
+    h1 { font-size: 1.25em; margin-bottom: 8px; }
     .info { background: #f0f4ff; border: 1px solid #cce; border-radius: 6px; padding: 10px 14px; margin-bottom: 12px; font-size: 13px; }
+    .info b { color: #1a3; }
     #scheduler { margin-top: 12px; }
-    #log { position: fixed; bottom: 0; left: 0; right: 0; background: #1a1a2e; color: #0f0; font-family: monospace; font-size: 11px; padding: 6px; max-height: 200px; overflow-y: auto; z-index: 99999; }
-    #log .entry { margin: 1px 0; }
+    #log { position: fixed; bottom: 0; left: 0; right: 0; background: #1a1a2e; color: #0f0; font-family: monospace; font-size: 11px; padding: 6px; max-height: 220px; overflow-y: auto; z-index: 99999; }
+    #log .entry { margin: 1px 0; white-space: pre-wrap; }
     #log .warn { color: #ff0; }
     #log .err { color: #f55; }
     #log .ok { color: #5f5; }
+    #log .hl { color: #6cf; font-weight: bold; }
     .controls { margin-bottom: 8px; }
     .controls button { margin-right: 8px; padding: 4px 12px; }
   </style>
 </head>
 <body class="dx-viewport">
-  <h1>T1330691 - Scheduler Popup Animation Debug (WITH FIX)</h1>
+  <h1>T1330691 - New appointment popup animation &mdash; FIXED (scheduler-side, branch 26_1)</h1>
   <div class="info">
-    <strong>Steps:</strong> Double-click empty slot (animation shows) &rarr; close &rarr; click same slot again (no animation).
-    <br>Check the debug log below for fx.animate / fx.stop calls and CSS transform values.
+    <strong>Repro steps:</strong> double-click an empty slot &rarr; close the popup &rarr; double-click the <em>same</em> (still selected) slot.
+    Also: single-click a slot to select it, then double-click it.
+    <br>With the fix the open animation now plays <b>every time</b>.
+    <br>The log proves: <b>showAppointmentPopup is called once</b> per open (no double-invocation) and <b>no animation-killing fx.stop</b> fires.
   </div>
   <div class="controls">
-    <button onclick="document.getElementById('log').innerHTML=''">Clear Log</button>
+    <button onclick="document.getElementById('log').innerHTML=''">Clear log</button>
   </div>
   <div id="scheduler"></div>
   <div id="log"></div>
@@ -45,56 +49,45 @@
       logEl.scrollTop = logEl.scrollHeight;
     }
 
-    function getStack() {
-      try { throw new Error(); } catch(e) {
-        var lines = (e.stack || '').split('\n').slice(2, 6);
-        return lines.map(function(l) { return l.trim().replace(/^at\s+/, ''); }).join(' < ');
-      }
-    }
+    // ---- Count high-level popup opens (answers the "double show()" question) ----
+    var showCalls = 0;
+    var Scheduler = DevExpress.ui.dxScheduler;
+    var origShowPopup = Scheduler.prototype.showAppointmentPopup;
+    Scheduler.prototype.showAppointmentPopup = function () {
+      showCalls += 1;
+      log('>> showAppointmentPopup() call #' + showCalls, 'hl');
+      return origShowPopup.apply(this, arguments);
+    };
 
-    var popupShowCount = 0;
+    // ---- Track the open animation lifecycle ----
+    var lastAnimateTime = 0;
+    var animateActive = false;
 
-    // Hook fx.animate
     var origAnimate = DevExpress.fx.animate;
-    DevExpress.fx.animate = function(element, config) {
+    DevExpress.fx.animate = function (element, config) {
       var $el = $(element);
-      if ($el.hasClass('dx-overlay-content')) {
+      if ($el.hasClass('dx-overlay-content') && $el.closest('.dx-scheduler-appointment-popup').length) {
         var type = config ? config.type : '?';
-        var duration = config ? config.duration : '?';
-        var fromScale = config && config.from ? JSON.stringify(config.from) : '?';
-        var toStr = config && config.to ? JSON.stringify(config.to) : '?';
-        log('fx.animate: type=' + type + ' dur=' + duration + ' from=' + fromScale + ' to=' + toStr, 'ok');
+        var from = config && config.from ? JSON.stringify(config.from) : '?';
+        log('fx.animate: type=' + type + ' from=' + from + '  -> open animation STARTED', 'ok');
         lastAnimateTime = Date.now();
-        if (type === 'pop' && fromScale.indexOf('0.55') >= 0) {
+        if (type === 'pop') {
           animateActive = true;
-          setTimeout(function() { animateActive = false; }, 500);
+          setTimeout(function () { animateActive = false; }, 600);
         }
-
-        var computedTransform = window.getComputedStyle(element).transform;
-        var inlineTransform = element.style.transform;
-        log('  CSS state: computed=' + computedTransform + ' inline=' + inlineTransform);
       }
       return origAnimate.apply(this, arguments);
     };
 
-    // Track when animate was last called
-    var lastAnimateTime = 0;
-    var animateActive = false;
-
-    // Hook fx.stop
     var origStop = DevExpress.fx.stop;
-    DevExpress.fx.stop = function(element, jumpToEnd) {
+    DevExpress.fx.stop = function (element, jumpToEnd) {
       var $el = $(element);
       if ($el.hasClass('dx-overlay-content') && $el.closest('.dx-scheduler-appointment-popup').length) {
-        var timeSinceAnimate = Date.now() - lastAnimateTime;
-        var stack;
-        try { throw new Error(); } catch(e) { stack = e.stack || ''; }
-        var lines = stack.split('\n').slice(2, 8).map(function(l) { return l.trim(); }).join('\n    ');
-        var isKiller = animateActive && timeSinceAnimate < 500;
-        if (isKiller) {
-          log('!! fx.stop ' + timeSinceAnimate + 'ms AFTER animate (KILLS ANIMATION):\n    ' + lines, 'err');
+        var dt = Date.now() - lastAnimateTime;
+        if (animateActive && dt < 600) {
+          log('!! fx.stop ' + dt + 'ms after animate START -> WOULD KILL ANIMATION (bug)', 'err');
         } else {
-          log('fx.stop(jumpToEnd=' + jumpToEnd + ') ' + timeSinceAnimate + 'ms after animate', 'warn');
+          log('fx.stop(jumpToEnd=' + jumpToEnd + ') ' + dt + 'ms after animate (normal, e.g. on close)', 'warn');
         }
       }
       return origStop.apply(this, arguments);
@@ -119,8 +112,8 @@
       currentView: 'week',
     });
 
-    log('Scheduler ready. Double-click empty slot, close popup, then click same slot again.');
-    log('Compare log output between first open (with animation) and second open (without).');
+    log('Build: scheduler-side fix (block stray pointerdown during popup show animation).');
+    log('Double-click a selected empty slot. Expected: one showAppointmentPopup call, fx.animate STARTED, and NO killing fx.stop.');
   </script>
 </body>
 </html>
