@@ -39,7 +39,7 @@
   </div>
   <script>
     function createGrid(rtlEnabled) {
-      $('#pivotgrid').dxPivotGrid('instance')?.dispose();
+      $('#pivotgrid').data('dxPivotGrid')?.dispose();
       $('#pivotgrid').empty().dxPivotGrid({
         width: 900,
         rtlEnabled: rtlEnabled,
