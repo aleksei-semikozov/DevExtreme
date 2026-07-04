@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>PivotGrid KBN — демки для QA (PR #34202/#34203/#34204)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 24px; max-width: 900px; margin: 0 auto; line-height: 1.55; color: #1f2328; }
+    h1 { font-size: 26px; } h2 { font-size: 19px; margin-top: 28px; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin: 18px 0; }
+    .card { border: 1px solid #d0d7de; border-radius: 8px; padding: 14px 16px; text-decoration: none; color: inherit; display: block; }
+    .card:hover { background: #f6f8fa; }
+    .card b { font-size: 15px; }
+    .card span { display: block; color: #57606a; font-size: 13px; margin-top: 6px; }
+    .note { padding: 10px 14px; background: #ddf4ff; border-left: 4px solid #218bff; border-radius: 4px; font-size: 14px; margin: 14px 0; }
+    ul { padding-left: 22px; } li { margin: 5px 0; }
+    kbd { background: #f6f8fa; border: 1px solid #d0d7de; border-bottom-width: 2px; border-radius: 4px; padding: 1px 5px; font-size: 12px; }
+    .prs { font-size: 13px; color: #57606a; }
+    code { background: #f6f8fa; padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <h1>PivotGrid — Keyboard Navigation (roving tabindex)</h1>
+  <p class="prs">
+    Сборка из стека PR:
+    <a href="https://github.com/DevExpress/DevExtreme/pull/34202">#34202</a> (helper) →
+    <a href="https://github.com/DevExpress/DevExtreme/pull/34203">#34203</a> (заголовки колонок) →
+    <a href="https://github.com/DevExpress/DevExtreme/pull/34204">#34204</a> (заголовки строк).
+    База: 26_1.
+  </p>
+
+  <div class="cards">
+    <a class="card" href="column-headers.html"><b>1. Заголовки колонок</b><span>Стрелки по уровням и внутри уровня, единый tab stop, Enter/Space</span></a>
+    <a class="card" href="row-headers.html"><b>2. Заголовки строк</b><span>Стрелки по строкам и уровням вложенности (rowspan)</span></a>
+    <a class="card" href="virtual-scrolling.html"><b>3. Virtual scrolling</b><span>Фокус едет со скроллом и переживает ререндер</span></a>
+  </div>
+
+  <h2>Что проверять (общий QA-чеклист)</h2>
+
+  <h3>Единый tab stop и roving tabindex</h3>
+  <ul>
+    <li><kbd>Tab</kbd> с адресной строки: <b>одна</b> остановка на область заголовков колонок, затем <b>одна</b> на область строк. Tab больше <b>не ходит</b> по каждой expand-иконке.</li>
+    <li>Уйти стрелками на другую ячейку → <kbd>Shift+Tab</kbd> из грида → <kbd>Tab</kbd> обратно: фокус возвращается на <b>ту же</b> ячейку, а не на первую.</li>
+    <li>Клик мышью по любой ячейке заголовка: она становится текущей tab-остановкой (проверить возвратом через Tab).</li>
+    <li>В DevTools: в области ровно одна ячейка с <code>tabindex="0"</code>, остальные <code>tabindex="-1"</code>; expand-иконки — <code>tabindex="-1"</code>.</li>
+  </ul>
+
+  <h3>Активация и сохранение фокуса</h3>
+  <ul>
+    <li><kbd>Enter</kbd> / <kbd>Space</kbd> на ячейке с иконкой: сворачивает/разворачивает группу, фокус остаётся на том же месте (не улетает в body), <code>aria-expanded</code> меняется.</li>
+    <li>Удержание <kbd>Enter</kbd> (авто-повтор) не должно многократно сворачивать/разворачивать.</li>
+    <li>Фокусная обводка (2px) видна при клавиатурной навигации; при кликах мышью обводки быть не должно (focus-visible).</li>
+  </ul>
+
+  <h3>Границы и регрессии</h3>
+  <ul>
+    <li>На краю области стрелка «в никуда» — фокус стоит на месте, <b>страница не скроллится</b>.</li>
+    <li>Клик по expand-иконке мышью работает как раньше; onCellClick срабатывает.</li>
+    <li>Навигация по полям field panel (Tab/Enter/Alt+↓) не изменилась.</li>
+    <li>Скролл областей остаётся синхронизированным (заголовки ↔ данные).</li>
+    <li>Ячейки области данных фокус <b>не</b> получают (по дизайну — навигация только там, где есть контролы).</li>
+  </ul>
+
+  <div class="note">
+    На каждой странице есть чекбокс <b>RTL</b> — в RTL стрелки ←/→ должны следовать <b>визуальному</b> направлению.
+    Известное ограничение: скринридерная семантика ячеек (roles/aria на td) — отдельная задача, в этих PR не входит.
+  </div>
+</body>
+</html>

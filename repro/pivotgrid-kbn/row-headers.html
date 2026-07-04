@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>PivotGrid KBN — заголовки строк</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" type="text/css" href="dx.fluent.blue.light.css" />
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="dx.all.debug.js"></script>
+  <script src="data.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 24px; max-width: 1100px; margin: 0 auto; }
+    .checklist { padding: 12px 16px; background: #fff7e6; border-left: 4px solid #f59e0b; margin-bottom: 16px; line-height: 1.5; font-size: 14px; }
+    .checklist ol { margin: 6px 0 0; padding-left: 20px; }
+    .toolbar { margin-bottom: 12px; }
+    kbd { background: #f6f8fa; border: 1px solid #d0d7de; border-bottom-width: 2px; border-radius: 4px; padding: 1px 5px; font-size: 12px; }
+    a { font-size: 13px; }
+  </style>
+</head>
+<body>
+  <a href="index.html">← ко всем демкам</a>
+  <h1>2. Заголовки строк (#4478 / PR #34204)</h1>
+  <div class="checklist">
+    <strong>Проверить:</strong>
+    <ol>
+      <li><kbd>Tab</kbd> — заголовки колонок, ещё <kbd>Tab</kbd> — фокус на <b>первой ячейке заголовков строк</b> (регион). Дальше Tab уходит из грида (иконки не в tab-порядке).</li>
+      <li><kbd>↓</kbd>/<kbd>↑</kbd> — предыдущая/следующая <b>строка</b>: с региона вниз — следующий блок (Total/регион), с города вниз — следующий город.</li>
+      <li><kbd>→</kbd> с региона (ячейка с rowspan) — его первый город; <kbd>←</kbd> с любого города — его регион-родитель.</li>
+      <li>С «… Total» (colspan на оба уровня) <kbd>→</kbd> — никуда; с «Grand Total» <kbd>↓</kbd> — никуда. Фокус на месте, страница не скроллится.</li>
+      <li><kbd>Enter</kbd>/<kbd>Space</kbd> на регионе — collapse/expand, фокус сохраняется, <code>aria-expanded</code> меняется. После collapse строки городов исчезают — навигация продолжает работать.</li>
+      <li>Стрелками уйти вглубь → <kbd>Shift+Tab</kbd>/<kbd>Tab</kbd> — возврат на ту же ячейку (roving).</li>
+      <li>Клик по городу — он становится tab-остановкой.</li>
+      <li>Включить <b>RTL</b>: <kbd>←</kbd>/<kbd>→</kbd> между уровнями следуют визуальному направлению.</li>
+    </ol>
+  </div>
+  <div class="toolbar"><label><input type="checkbox" id="rtl" /> RTL</label></div>
+  <div class="dx-viewport demo-container">
+    <div id="pivotgrid"></div>
+  </div>
+  <script>
+    function createGrid(rtlEnabled) {
+      $('#pivotgrid').dxPivotGrid('instance')?.dispose();
+      $('#pivotgrid').empty().dxPivotGrid({
+        width: 900,
+        rtlEnabled: rtlEnabled,
+        allowExpandAll: true,
+        fieldChooser: { enabled: false },
+        dataSource: {
+          fields: [
+            { dataField: 'region', area: 'row', expanded: true },
+            { dataField: 'city', area: 'row' },
+            { dataField: 'date', dataType: 'date', area: 'column' },
+            { dataField: 'amount', area: 'data', summaryType: 'sum', dataType: 'number' },
+          ],
+          store: sales,
+        },
+      });
+    }
+
+    $(() => {
+      createGrid(false);
+      $('#rtl').on('change', (e) => createGrid(e.target.checked));
+    });
+  </script>
+</body>
+</html>
