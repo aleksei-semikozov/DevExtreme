@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PR #34187 — Scheduler resizing: новый vs легаси</title>
+<link rel="stylesheet" href="https://cdn3.devexpress.com/jslib/26.1.3/css/dx.fluent.blue.light.css">
+<script src="fixed/dx.all.js"></script>
+<style>
+  body { font-family: "Segoe UI", system-ui, sans-serif; margin: 0; background: #f5f6f8; color: #222; }
+  header { background: #fff; border-bottom: 1px solid #ddd; padding: 12px 20px; }
+  header h1 { font-size: 17px; margin: 0 0 4px; }
+  header .sub { font-size: 12px; color: #777; }
+  .controls { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; padding: 10px 20px; background: #fff; border-bottom: 1px solid #ddd; }
+  .controls label { font-size: 13px; }
+  select { font-size: 14px; padding: 4px 8px; max-width: 560px; }
+  .mech { display: flex; gap: 6px; }
+  .mech button { font-size: 13px; padding: 5px 12px; border: 1px solid #bbb; background: #fff; cursor: pointer; border-radius: 4px; }
+  .mech button.active { background: #337ab7; color: #fff; border-color: #337ab7; }
+  .descr { padding: 10px 20px; background: #fffbe8; border-bottom: 1px solid #eee0a0; font-size: 13.5px; line-height: 1.5; }
+  .descr b { color: #8a6d00; }
+  .layout { display: flex; gap: 0; }
+  .main { flex: 1; min-width: 0; padding: 14px 20px; }
+  .extra { margin-bottom: 10px; }
+  .extra button { font-size: 13px; padding: 5px 12px; margin-right: 8px; cursor: pointer; }
+  #host { background: #fff; }
+  aside { width: 340px; flex: none; border-left: 1px solid #ddd; background: #fff; padding: 10px 14px; height: calc(100vh - 170px); overflow: auto; }
+  aside h2 { font-size: 13px; margin: 0 0 8px; color: #555; }
+  #log { font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; white-space: pre-wrap; }
+  #log .upd { color: #0a6b2c; }
+  #log .info { color: #555; }
+  #log .err { color: #b00020; }
+  .box-wrap { padding: 40px; background: #fff; border: 1px dashed #ccc; }
+  .rbox { width: 220px; height: 120px; background: #337ab7; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; outline: none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Scheduler — Refactor Appointments Collection: Resizing (PR #34187)</h1>
+  <div class="sub">Билд с головы PR <code>cb4b5dff</code> (dx.all.debug 26.1.3). Переключатель «Новый/Легаси» — это одна и та же сборка, меняется только приватный флаг <code>_newAppointments</code>.</div>
+</header>
+<div class="controls">
+  <label>Сценарий:
+    <select id="scenario"></select>
+  </label>
+  <div class="mech" id="mech">
+    <button data-mode="new">Новый механизм</button>
+    <button data-mode="legacy">Легаси</button>
+  </div>
+</div>
+<div class="descr" id="descr"></div>
+<div class="layout">
+  <div class="main">
+    <div class="extra" id="extra"></div>
+    <div id="host"></div>
+  </div>
+  <aside>
+    <h2>Лог (onAppointmentUpdated и др.)</h2>
+    <div id="log"></div>
+  </aside>
+</div>
+
+<script>
+const MONDAY = new Date(2026, 6, 6); // неделя 6–12 июля 2026
+const OWNERS = [{ id: 1, text: 'Комната A', color: '#337ab7' }, { id: 2, text: 'Комната B', color: '#c9302c' }];
+
+function fmt(d) {
+  if (!(d instanceof Date)) d = new Date(d);
+  const p = n => String(n).padStart(2, '0');
+  return `${p(d.getDate())}.${p(d.getMonth() + 1)} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function log(msg, cls) {
+  const el = document.getElementById('log');
+  const line = document.createElement('div');
+  line.className = cls || 'info';
+  line.textContent = `[${new Date().toTimeString().slice(0, 8)}] ${msg}`;
+  el.prepend(line);
+}
+window.addEventListener('error', e => log('JS error: ' + e.message, 'err'));
+
+const commonEvents = {
+  onAppointmentUpdated(e) {
+    log(`updated: "${e.appointmentData.text}" → ${fmt(e.appointmentData.startDate)} – ${fmt(e.appointmentData.endDate)}`, 'upd');
+  },
+  onAppointmentUpdating(e) {
+    log(`updating: ${fmt(e.newData.startDate)} – ${fmt(e.newData.endDate)}`);
+  },
+};
+
+const SCENARIOS = [
+  {
+    id: 's1', title: 'S1 — Область ресайза после вертикального скролла (без групп)',
+    descr: '<b>Шаги:</b> прокрутите вью вниз к аппойнтменту «Вечер» (18:00) и потяните его нижнюю ручку вниз, к нижнему краю видимой области и дальше. ' +
+      '<b>Ожидание (баг в новом):</b> область ресайза — вьюпорт скроллируемого контейнера, а не весь контент: ручка клэмпится по видимой области, растянуть за край нельзя / клэмп в неожиданном месте. В легаси областью служил весь скроллируемый контент.',
+    config: () => ({
+      views: ['week'], currentView: 'week', currentDate: MONDAY,
+      startDayHour: 0, endDayHour: 24, cellDuration: 60, height: 620,
+      dataSource: [
+        { text: 'Утро', startDate: new Date(2026, 6, 7, 8, 0), endDate: new Date(2026, 6, 7, 9, 30) },
+        { text: 'Вечер', startDate: new Date(2026, 6, 7, 18, 0), endDate: new Date(2026, 6, 7, 19, 30) },
+      ],
+    }),
+  },
+  {
+    id: 's2', title: 'S2 — All-day аппойнтмент в timeline: минутная дельта вместо дневной',
+    descr: '<b>Шаги:</b> потяните правую ручку all-day аппойнтмента на одну ячейку вправо и отпустите. Сравните лог дат в двух режимах. ' +
+      '<b>Ожидание (баг в новом):</b> в timeline-вью all-day аппойнтмент попадает в «минутную» ветку (<code>isAllDayPanel: false</code> захардкожен) — конец сдвигается на длительность ячейки, а не на день, и/или клэмпится по startDayHour/endDayHour. Ответ автора «all-day никогда не попадает в timed-ветку» здесь опровергается.',
+    config: () => ({
+      views: ['timelineWeek'], currentView: 'timelineWeek', currentDate: MONDAY,
+      startDayHour: 9, endDayHour: 13, cellDuration: 60, height: 480,
+      dataSource: [
+        { text: 'All-day задача', allDay: true, startDate: new Date(2026, 6, 7), endDate: new Date(2026, 6, 9) },
+        { text: 'Обычная', startDate: new Date(2026, 6, 7, 10, 0), endDate: new Date(2026, 6, 7, 12, 0) },
+      ],
+    }),
+  },
+  {
+    id: 's3', title: 'S3 — Esc-отмена не очищает transform (верхняя/левая ручка)',
+    descr: '<b>Шаги (только новый механизм):</b> начните тянуть <b>верхнюю</b> ручку аппойнтмента вверх и, НЕ отпуская кнопку мыши, нажмите Esc. ' +
+      '<b>Ожидание (баг):</b> размер откатывается, но CSS-<code>transform</code>, которым Resizable смещает элемент при драге за верхнюю ручку, не очищается — аппойнтмент остаётся визуально смещён до следующего перерендера. В легаси Esc-отмены нет вовсе (нажатие Esc ничего не делает).',
+    config: () => ({
+      views: ['week'], currentView: 'week', currentDate: MONDAY,
+      startDayHour: 8, endDayHour: 20, height: 620,
+      dataSource: [
+        { text: 'Встреча', startDate: new Date(2026, 6, 7, 12, 0), endDate: new Date(2026, 6, 7, 14, 0) },
+      ],
+    }),
+  },
+  {
+    id: 's4', title: 'S4 — groupByDate: потерян guard для reduced-частей',
+    descr: '<b>Шаги:</b> наведите курсор на части многодневного аппойнтмента «Проект» и посмотрите, какие ручки доступны на голове/теле/хвосте; попробуйте ресайзить средние части. ' +
+      '<b>Ожидание (баг в новом):</b> при <code>groupByDate: true</code> легаси сбрасывал <code>reduced</code> (у всех частей обе ручки), новый механизм передаёт reduced как есть — у «тела» ручек нет, у головы/хвоста только одна, ресайз частей ограничен.',
+    config: () => ({
+      views: ['week'], currentView: 'week', currentDate: MONDAY,
+      groups: ['ownerId'], groupByDate: true,
+      resources: [{ fieldExpr: 'ownerId', dataSource: OWNERS, label: 'Комната' }],
+      startDayHour: 8, endDayHour: 20, height: 620,
+      dataSource: [
+        { text: 'Проект', ownerId: 1, startDate: new Date(2026, 6, 7, 9, 0), endDate: new Date(2026, 6, 9, 18, 0) },
+        { text: 'Обычная', ownerId: 2, startDate: new Date(2026, 6, 8, 10, 0), endDate: new Date(2026, 6, 8, 12, 0) },
+      ],
+    }),
+  },
+  {
+    id: 's5', title: 'S5 — Устаревшие границы группы после скролла (вертикальная группировка)',
+    descr: '<b>Шаги:</b> прокрутите вью вниз ко второй группе («Комната B»), потяните ручку её аппойнтмента. ' +
+      '<b>Ожидание (баг в новом):</b> границы группы (top/bottom) вычислены при рендере и не пересчитываются после скролла — клэмп срабатывает не по реальной границе группы. В легаси область пересчитывалась по <code>onScrollEnd</code> (<code>updateResizableArea</code>), но этот путь выключен при <code>_newAppointments</code>.',
+    config: () => ({
+      views: [{ type: 'week', groupOrientation: 'vertical' }], currentView: 'week', currentDate: MONDAY,
+      groups: ['ownerId'],
+      resources: [{ fieldExpr: 'ownerId', dataSource: OWNERS, label: 'Комната' }],
+      startDayHour: 8, endDayHour: 20, cellDuration: 60, height: 560,
+      dataSource: [
+        { text: 'A: встреча', ownerId: 1, startDate: new Date(2026, 6, 7, 10, 0), endDate: new Date(2026, 6, 7, 12, 0) },
+        { text: 'B: встреча', ownerId: 2, startDate: new Date(2026, 6, 7, 10, 0), endDate: new Date(2026, 6, 7, 12, 0) },
+      ],
+    }),
+  },
+  {
+    id: 's6', title: 'S6 — editing.allowResizing на лету не применяется',
+    descr: '<b>Шаги:</b> нажмите кнопку «Переключить allowResizing» и наведите на аппойнтмент. ' +
+      '<b>Ожидание (баг в новом):</b> ветка <code>optionChanged</code> для editing при <code>_newAppointments</code> обновляет только <code>allowDelete</code> и не перерисовывает аппойнтменты — ручки не появляются/не исчезают. В легаси происходит repaint и состояние ручек меняется.',
+    extra: [{
+      label: 'Переключить editing.allowResizing',
+      onClick(scheduler) {
+        const cur = scheduler.option('editing.allowResizing');
+        scheduler.option('editing.allowResizing', !cur);
+        log(`editing.allowResizing → ${!cur}`);
+      },
+    }],
+    config: () => ({
+      views: ['week'], currentView: 'week', currentDate: MONDAY,
+      startDayHour: 8, endDayHour: 20, height: 620,
+      editing: { allowResizing: false },
+      dataSource: [
+        { text: 'Встреча', startDate: new Date(2026, 6, 7, 10, 0), endDate: new Date(2026, 6, 7, 12, 0) },
+      ],
+    }),
+  },
+  {
+    id: 's7', title: 'S7 — startDayHour/endDayHour берутся с корня, а не с вью',
+    descr: 'Корневой <code>startDayHour: 9</code>, у вью — <code>startDayHour: 6</code>. <b>Шаги:</b> потяните верхнюю ручку аппойнтмента «Встреча» (10:00) вверх до самого верха вью (06:00) и отпустите. Смотрите лог. ' +
+      '<b>Ожидание (баг в новом, воспроизведено):</b> расчёт идёт по корневым 9–18 вместо вью-уровневых 6–20 — коррекция дат «занимает» день, и начало уезжает на <b>предыдущий день 15:30</b>. В легаси — корректно 06:00 (опция резолвится с уровня вью).',
+    config: () => ({
+      views: [{ type: 'week', startDayHour: 6, endDayHour: 20 }], currentView: 'week', currentDate: MONDAY,
+      startDayHour: 9, endDayHour: 18, height: 620,
+      dataSource: [
+        { text: 'Встреча', startDate: new Date(2026, 6, 7, 10, 0), endDate: new Date(2026, 6, 7, 11, 0) },
+      ],
+    }),
+  },
+  {
+    id: 's8', title: 'S8 — [Resizable] cancelOnEscape без фокуса — тихий no-op',
+    descr: 'Standalone <code>dxResizable</code> с <code>cancelOnEscape: true</code> (как использует шедулер). <b>Шаги:</b> у левого бокса (без tabindex) начните ресайз и нажмите Esc — отмены не будет: keydown вешается на сам элемент и требует фокуса внутри. Правый бокс сфокусируйте кликом/Tab (tabindex=0) — Esc сработает. Шедулер решает это принудительным фокусом при старте ресайза; любой другой потребитель опции получает тихий no-op.',
+    standalone(host) {
+      const wrap = document.createElement('div');
+      wrap.className = 'box-wrap';
+      wrap.innerHTML = '<div style="display:flex;gap:60px">' +
+        '<div id="rb1" class="rbox">без tabindex</div>' +
+        '<div id="rb2" class="rbox" tabindex="0">tabindex=0 (кликните, потом Esc)</div></div>';
+      host.appendChild(wrap);
+      ['rb1', 'rb2'].forEach(id => new DevExpress.ui.dxResizable(document.getElementById(id), {
+        handles: 'right bottom',
+        cancelOnEscape: true,
+        onResizeStart: () => log(`${id}: resize start`),
+        onResizeEnd: e => log(`${id}: resize end → ${Math.round(e.width)}×${Math.round(e.height)}`, 'upd'),
+      }));
+    },
+  },
+  {
+    id: 's9', title: 'S9 — [Resizable] disabled во время ресайза: залипший _isResizing',
+    descr: '<b>Шаги:</b> 1) нажмите кнопку «disabled через 2 сек»; 2) сразу начните тянуть правую ручку бокса и держите — виджет задизейблится посреди жеста (dragend не придёт, класс <code>dx-resizable-resizing</code> и внутренний <code>_isResizing</code> останутся); 3) отпустите, нажмите «включить обратно»; 4) сфокусируйте бокс и нажмите Esc, НЕ начиная новый ресайз — элемент прыгнет к размеру, запомненному до дизейбла. Это баг переработанного Esc-механизма (round 2).',
+    standalone(host) {
+      const wrap = document.createElement('div');
+      wrap.className = 'box-wrap';
+      wrap.innerHTML = '<div id="rb9" class="rbox" tabindex="0">бокс</div>';
+      host.appendChild(wrap);
+      const inst = new DevExpress.ui.dxResizable(document.getElementById('rb9'), {
+        handles: 'right bottom',
+        cancelOnEscape: true,
+        onResizeStart: () => log('rb9: resize start'),
+        onResizeEnd: e => log(`rb9: resize end → ${Math.round(e.width)}×${Math.round(e.height)}`, 'upd'),
+      });
+      const b1 = document.createElement('button');
+      b1.textContent = 'disabled через 2 сек';
+      b1.onclick = () => { log('disable через 2с — начинайте тянуть ручку'); setTimeout(() => { inst.option('disabled', true); log('disabled=true (посреди жеста)'); }, 2000); };
+      const b2 = document.createElement('button');
+      b2.textContent = 'включить обратно';
+      b2.onclick = () => { inst.option('disabled', false); log('disabled=false; сфокусируйте бокс и нажмите Esc'); };
+      const extra = document.getElementById('extra');
+      extra.appendChild(b1); extra.appendChild(b2);
+    },
+  },
+];
+
+let mode = 'new';
+let schedulerInstance = null;
+
+function render() {
+  const sc = SCENARIOS.find(s => s.id === document.getElementById('scenario').value);
+  document.getElementById('descr').innerHTML = sc.descr;
+  const host = document.getElementById('host');
+  const extra = document.getElementById('extra');
+  if (schedulerInstance) { try { schedulerInstance.dispose(); } catch (e) {} schedulerInstance = null; }
+  host.innerHTML = '';
+  extra.innerHTML = '';
+  document.getElementById('mech').style.display = sc.standalone ? 'none' : 'flex';
+
+  if (sc.standalone) { sc.standalone(host); return; }
+
+  const cfg = Object.assign(sc.config(), commonEvents, {
+    editing: Object.assign({ allowResizing: true, allowDragging: true, allowUpdating: true }, (sc.config().editing || {})),
+    _newAppointments: mode === 'new',
+  });
+  schedulerInstance = new DevExpress.ui.dxScheduler(host, cfg);
+  (sc.extra || []).forEach(x => {
+    const b = document.createElement('button');
+    b.textContent = x.label;
+    b.onclick = () => x.onClick(schedulerInstance);
+    extra.appendChild(b);
+  });
+  log(`сценарий ${sc.id}, механизм: ${mode === 'new' ? 'НОВЫЙ (_newAppointments)' : 'ЛЕГАСИ'}`);
+}
+
+const sel = document.getElementById('scenario');
+SCENARIOS.forEach(s => {
+  const o = document.createElement('option');
+  o.value = s.id; o.textContent = s.title;
+  sel.appendChild(o);
+});
+sel.onchange = render;
+document.querySelectorAll('#mech button').forEach(b => {
+  b.onclick = () => {
+    mode = b.dataset.mode;
+    document.querySelectorAll('#mech button').forEach(x => x.classList.toggle('active', x === b));
+    render();
+  };
+});
+document.querySelector('#mech button[data-mode="new"]').classList.add('active');
+render();
+</script>
+</body>
+</html>
