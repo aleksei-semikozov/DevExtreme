@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>PR #34257 — stale collector tooltip repro</title>
+  <style>
+    body { font-family: "Segoe UI", sans-serif; margin: 20px; color: #222; }
+    h1 { font-size: 20px; }
+    .frames { display: flex; gap: 16px; margin-top: 16px; }
+    .frames > div { flex: 1; min-width: 0; }
+    iframe { width: 100%; height: 560px; border: 1px solid #ccc; border-radius: 6px; }
+    ol li { margin: 4px 0; }
+    code { background: #f2f2f2; padding: 1px 5px; border-radius: 3px; }
+    .verdict { border-left: 4px solid #c62828; background: #fdecea; padding: 10px 14px; margin: 14px 0; }
+    .note { font-size: 13px; color: #666; margin-top: 14px; }
+  </style>
+</head>
+<body>
+  <h1>PR #34257 — collector tooltip shows stale appointment data (regression repro)</h1>
+
+  <p>
+    Both frames run the same scenario with <code>_newAppointments: true</code>:
+    3 appointments at 8:00–9:00, <code>maxAppointmentsPerCell: 1</code>, so two of them are
+    hidden behind the “2” collector. The button calls
+    <code>scheduler.updateAppointment()</code> and changes the <b>hidden</b> “Appointment&nbsp;2”
+    end time from 9:00 to 8:30 — the collector item <b>count does not change</b>.
+  </p>
+
+  <ol>
+    <li>Click <b>“1. Change hidden appointment”</b> in both frames.</li>
+    <li>Click the <b>“2” collector button</b> in both frames.</li>
+    <li>Compare the time shown for Appointment 2 in the tooltip.</li>
+  </ol>
+
+  <div class="verdict">
+    <b>Left (base, before PR):</b> tooltip shows the updated time <code>8:00 AM - 8:30 AM</code> ✔<br>
+    <b>Right (PR #34257 head):</b> tooltip still shows <code>8:00 AM - 9:00 AM</code> ✘ — the collector
+    is matched by position + item count only, so it is not rerendered and keeps stale view models.
+  </div>
+
+  <div class="frames">
+    <div><iframe src="base/index.html"></iframe></div>
+    <div><iframe src="pr/index.html"></iframe></div>
+  </div>
+
+  <p class="note">
+    Cause: <code>get_view_model_diff.ts</code> — the new collector <code>match</code> no longer consults
+    <code>isAppointmentDataChanged()</code>, and <code>needToUpdateItems</code> fires only when
+    <code>items.length</code> changes. Same-count data updates (e.g. time edits) leave the collector—and
+    the tooltip data built from its stale <code>items</code>—unrefreshed.
+    Jest repro: base commit a88c55a4 passes, PR head cd2ed9d6 fails.
+  </p>
+</body>
+</html>
