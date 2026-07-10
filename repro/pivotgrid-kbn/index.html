@@ -22,12 +22,18 @@
 <body>
   <h1>PivotGrid — Keyboard Navigation (roving tabindex)</h1>
   <p class="prs">
-    Сборка из стека PR:
-    <a href="https://github.com/DevExpress/DevExtreme/pull/34202">#34202</a> (helper) →
-    <a href="https://github.com/DevExpress/DevExtreme/pull/34203">#34203</a> (заголовки колонок) →
-    <a href="https://github.com/DevExpress/DevExtreme/pull/34204">#34204</a> (заголовки строк).
-    База: 26_1.
+    Сборка от 2026-07-10 из стека PR (после rebase на свежий 26_1 и правок по ревью):
+    <a href="https://github.com/DevExpress/DevExtreme/pull/34202">#34202</a> (helper, влит) →
+    <a href="https://github.com/DevExpress/DevExtreme/pull/34203">#34203</a> (заголовки колонок, issue #4477, head <code>d94cd782</code>) →
+    <a href="https://github.com/DevExpress/DevExtreme/pull/34204">#34204</a> (заголовки строк, head <code>5350601b</code>).
+    База 26_1 включает ARIA-роли ячеек (<a href="https://github.com/DevExpress/DevExtreme/pull/34220">#34220</a>).
   </p>
+  <div class="note">
+    <b>Новое после ревью (2026-07-09):</b>
+    восстановление фокуса при ререндере теперь идёт по <b>идентичности ячейки</b> (aria-colindex), а не по позиции —
+    при виртуальном скроллинге фокус возвращается на ту же логическую колонку;
+    раскрываемая ячейка получила <code>aria-expanded</code> на самом <code>td</code> (скринридер объявляет состояние с фокуса).
+  </div>
 
   <div class="cards">
     <a class="card" href="column-headers.html"><b>1. Заголовки колонок</b><span>Стрелки по уровням и внутри уровня, единый tab stop, Enter/Space</span></a>
@@ -62,8 +68,12 @@
   </ul>
 
   <div class="note">
-    На каждой странице есть чекбокс <b>RTL</b> — в RTL стрелки ←/→ должны следовать <b>визуальному</b> направлению.
-    Известное ограничение: скринридерная семантика ячеек (roles/aria на td) — отдельная задача, в этих PR не входит.
+    На страницах с чекбоксом <b>RTL</b> стрелки ←/→ должны следовать <b>визуальному</b> направлению.
+    <br /><b>Известные ограничения (осознанные, кандидаты на обсуждение при ревью):</b>
+    <ul>
+      <li>Стрелки с модификаторами (<kbd>Ctrl/Alt/Cmd+стрелка</kbd>) сейчас тоже перехватываются гридом — может мешать командам скринридеров.</li>
+      <li>Виртуальный скроллинг: групповой заголовок с <code>colspan&gt;1</code>, обрезанный границей страницы, меняет <code>aria-colindex</code> — идентичность теряется, срабатывает мягкий fallback на позицию (поведение до фикса).</li>
+    </ul>
   </div>
 </body>
 </html>

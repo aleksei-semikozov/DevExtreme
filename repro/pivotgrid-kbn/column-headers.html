@@ -28,10 +28,14 @@
       <li><kbd>↓</kbd> с региона — первый его ребёнок (страна); <kbd>↑</kbd> со страны — её регион (родитель).</li>
       <li>С «Grand Total» (rowspan на оба уровня) <kbd>↓</kbd>/<kbd>→</kbd> — никуда, фокус на месте, страница не скроллится.</li>
       <li><kbd>Enter</kbd>/<kbd>Space</kbd> на регионе — collapse/expand, фокус остаётся на том же элементе, <code>aria-expanded</code> меняется. Повторить несколько раз.</li>
+      <li><b>Новое (фикс по ревью):</b> в DevTools у раскрываемого <code>td</code> есть свой <code>aria-expanded</code> (не только у внутренней иконки) — скринридер объявляет состояние прямо с ячейки. У td роль <code>columnheader</code>.</li>
       <li>Стрелками уйти на 3-ю ячейку → <kbd>Shift+Tab</kbd> → <kbd>Tab</kbd>: фокус вернулся на неё же (roving).</li>
       <li>Клик по ячейке страны → <kbd>Shift+Tab</kbd> → <kbd>Tab</kbd>: возврат на неё.</li>
       <li>Включить <b>RTL</b>: <kbd>←</kbd>/<kbd>→</kbd> двигают фокус по <b>визуальному</b> направлению.</li>
     </ol>
+    <strong>Известное ограничение (обсудить при ревью):</strong> стрелки с модификаторами
+    (<kbd>Ctrl/Alt/Cmd+→</kbd> и т.п.) тоже перехватываются и двигают фокус — команды скринридеров
+    с модифицированными стрелками внутри заголовков работать не будут.
   </div>
   <div class="toolbar"><label><input type="checkbox" id="rtl" /> RTL</label></div>
   <div class="dx-viewport demo-container">
