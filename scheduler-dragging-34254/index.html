@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>PR #34254 — appointmentDragging regressions repro (P1, P2)</title>
+  <style>
+    body { font-family: "Segoe UI", sans-serif; margin: 20px; color: #222; }
+    h1 { font-size: 20px; }
+    .frames { display: flex; gap: 16px; margin-top: 16px; }
+    .frames > div { flex: 1; min-width: 0; }
+    iframe { width: 100%; height: 700px; border: 1px solid #ccc; border-radius: 6px; }
+    ol li, ul li { margin: 4px 0; }
+    code { background: #f2f2f2; padding: 1px 5px; border-radius: 3px; }
+    .verdict { border-left: 4px solid #c62828; background: #fdecea; padding: 10px 14px; margin: 14px 0; }
+    .note { font-size: 13px; color: #666; margin-top: 14px; }
+    a { color: #1565c0; }
+  </style>
+</head>
+<body>
+  <h1>PR <a href="https://github.com/DevExpress/DevExtreme/pull/34254">#34254</a> — Scheduler appointmentDragging: two repro scenarios</h1>
+
+  <div class="verdict">
+    <b>P1 (regression):</b> with two schedulers on a page and no <code>appointmentDragging.group</code>,
+    dropping an appointment onto the <i>other</i> scheduler moves it inside the <i>source</i> scheduler.
+    The PR removed the <code>isSameScheduler</code> containment check in
+    <code>appointment_drag_controller.ts &gt; onDragEnd</code>; the drop should be cancelled.
+    <br><br>
+    <b>P2 (contract miss):</b> for cross-component drags (<code>appointmentDragging.group</code> shared)
+    the <code>onDragEnd</code> event no longer carries <code>toItemData</code> — the old implementation
+    (<code>m_appointment_drag_behavior.ts:143</code>) always set it before invoking the callback.
+  </div>
+
+  <p><b>Steps (both frames run the same scenario):</b></p>
+  <ol>
+    <li><b>P1</b> (default radio): drag <i>Appointment 1</i> from Scheduler A and drop it on any cell of Scheduler B.
+      Left (PR): the appointment <b>moves inside Scheduler A</b> and red <code>onAppointmentUpdating/Updated</code>
+      lines appear in the log. Right (old impl reference): the appointment snaps back, log stays empty.</li>
+    <li><b>P2</b> radio: drag <i>Appointment 1</i> from A onto B. Compare the <code>onDragEnd — toItemData</code>
+      log line: left (PR) shows <code>undefined</code> (red), right shows the drop dates (green).</li>
+  </ol>
+
+  <div class="frames">
+    <div>
+      <h3>PR #34254 head — new appointments (bug)</h3>
+      <iframe src="pr/index.html"></iframe>
+    </div>
+    <div>
+      <h3>Old implementation — reference (same build)</h3>
+      <iframe src="old/index.html"></iframe>
+    </div>
+  </div>
+
+  <p class="note">
+    Extra: <a href="base/index.html">merge-base 6fc13807 with <code>_newAppointments: true</code></a> —
+    P1 behaves correctly there (the containment check still exists), which proves P1 is introduced by this PR.
+    P2 callbacks don't fire on the base build (the feature didn't exist yet).
+    <br>
+    Jest repro: <code>packages/devextreme/js/__internal/scheduler/__tests__/pr34254_repro.test.ts</code> —
+    both tests fail on the PR head; P1 passes on the merge-base.
+  </p>
+</body>
+</html>

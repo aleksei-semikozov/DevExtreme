@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>PR #34254 head (7b567aa3) — new appointments</title>
+  <link rel="stylesheet" href="../css/dx.fluent.blue.light.css">
+  <link rel="stylesheet" href="../variant.css">
+  <script src="dx.all.js"></script>
+  <script>window.DEMO_CONFIG = { newAppointments: true, badge: 'PR #34254 head (7b567aa3), _newAppointments: true', badgeColor: '#c62828' };</script>
+  <script src="../scenario.js"></script>
+</head>
+<body>
+  <div class="header">
+    <span id="badge" class="badge"></span>
+    <div class="scenario-switch">
+      <label><input type="radio" name="scenario" value="p1" checked> P1 — no group (foreign drop)</label>
+      <label><input type="radio" name="scenario" value="p2"> P2 — shared group (toItemData)</label>
+    </div>
+  </div>
+  <div id="hint"></div>
+  <div class="schedulers">
+    <div><h4>Scheduler A (source)</h4><div id="schedulerA"></div></div>
+    <div><h4>Scheduler B (target)</h4><div id="schedulerB"></div></div>
+  </div>
+  <div id="log"></div>
+</body>
+</html>
