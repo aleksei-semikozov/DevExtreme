@@ -2,52 +2,30 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>PR #34254 — appointmentDragging regressions repro (P1, P2 fixed; C1 async cancel)</title>
+  <title>PR #34254 — appointmentDragging async cancel repro</title>
   <style>
     body { font-family: "Segoe UI", sans-serif; margin: 20px; color: #222; }
     h1 { font-size: 20px; }
+    p { max-width: 900px; }
     .frames { display: flex; gap: 16px; margin-top: 16px; }
     .frames > div { flex: 1; min-width: 0; }
-    iframe { width: 100%; height: 700px; border: 1px solid #ccc; border-radius: 6px; }
-    ol li, ul li { margin: 4px 0; }
+    iframe { width: 100%; height: 720px; border: 1px solid #ccc; border-radius: 6px; }
     code { background: #f2f2f2; padding: 1px 5px; border-radius: 3px; }
-    .verdict { border-left: 4px solid #c62828; background: #fdecea; padding: 10px 14px; margin: 14px 0; }
-    .fixed { border-left: 4px solid #0b6a0b; background: #edf7ed; padding: 10px 14px; margin: 14px 0; }
-    .note { font-size: 13px; color: #666; margin-top: 14px; }
     a { color: #1565c0; }
   </style>
 </head>
 <body>
-  <h1>PR <a href="https://github.com/DevExpress/DevExtreme/pull/34254">#34254</a> — Scheduler appointmentDragging repro (head acd03721)</h1>
+  <h1>PR <a href="https://github.com/DevExpress/DevExtreme/pull/34254">#34254</a> — appointmentDragging async cancel</h1>
 
-  <div class="fixed">
-    <b>Fixed in head acd03721:</b> P1 (drop over a foreign ungrouped scheduler moved the source appointment)
-    and P2 (missing <code>toItemData</code> in cross-component <code>onDragEnd</code>). The P1/P2 radios
-    below now demonstrate the correct behavior and can be used to verify the fix.
-  </div>
-
-  <div class="verdict">
-    <b>C1 (open, review round 2):</b> <code>onDragEnd</code> uses a strict <code>e.cancel === true</code>
-    check, so a <b>promise</b> assigned to <code>e.cancel</code> (async confirm dialog) is treated as
-    "not cancelled": <code>updateAppointmentOnDrop()</code> / <code>onRemove</code> run immediately,
-    before the user answers. The old implementation skipped the update for any truthy <code>cancel</code>
-    (<code>m_appointment_drag_behavior.ts</code>: <i>"event.cancel may be promise …"</i>).
-  </div>
-
-  <p><b>C1 steps (both frames run the same code):</b></p>
-  <ol>
-    <li>Select the <b>C1 — async cancel (confirm)</b> radio in both frames.</li>
-    <li>Drag <i>Appointment 1</i> to another cell <b>within Scheduler A</b>. A confirm dialog opens
-      (<code>e.cancel</code> is a pending promise).</li>
-    <li>Left (PR, new appointments): red <code>onAppointmentUpdating/Updated</code> lines appear in the log
-      <b>before you answer</b>; pressing <b>No</b> does not restore the appointment — the data is already saved.</li>
-    <li>Right (old impl, same build): nothing happens until you answer; <b>No</b> reverts the drag,
-      the appointment stays at 8:00.</li>
-  </ol>
+  <p>
+    Drag <i>Appointment 1</i> to another cell — a confirm dialog opens while
+    <code>appointmentDragging.onDragEnd</code> keeps a pending promise in <code>e.cancel</code>.
+    Answer <b>No</b> and compare the two frames (watch the log under each scheduler).
+  </p>
 
   <div class="frames">
     <div>
-      <h3>PR #34254 head — new appointments (C1 bug)</h3>
+      <h3>PR #34254 head — new appointments</h3>
       <iframe src="pr/index.html"></iframe>
     </div>
     <div>
@@ -55,14 +33,5 @@
       <iframe src="old/index.html"></iframe>
     </div>
   </div>
-
-  <p class="note">
-    Extra: <a href="base/index.html">merge-base 6fc13807, <code>_newAppointments: true</code></a> (before the PR —
-    appointmentDragging callbacks don't fire there at all).
-    <br>
-    Jest repro: <code>packages/devextreme/js/__internal/scheduler/__tests__/pr34254_repro.test.ts</code> —
-    C1a (pending promise → data updated immediately) and C1b (promise resolved to <code>true</code> →
-    <code>onRemove</code> still called) fail on head acd03721; P1/P2 pass after the fix.
-  </p>
 </body>
 </html>
