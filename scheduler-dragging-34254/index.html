@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>PR #34254 — appointmentDragging regressions repro (P1, P2)</title>
+  <title>PR #34254 — appointmentDragging regressions repro (P1, P2 fixed; C1 async cancel)</title>
   <style>
     body { font-family: "Segoe UI", sans-serif; margin: 20px; color: #222; }
     h1 { font-size: 20px; }
@@ -12,36 +12,42 @@
     ol li, ul li { margin: 4px 0; }
     code { background: #f2f2f2; padding: 1px 5px; border-radius: 3px; }
     .verdict { border-left: 4px solid #c62828; background: #fdecea; padding: 10px 14px; margin: 14px 0; }
+    .fixed { border-left: 4px solid #0b6a0b; background: #edf7ed; padding: 10px 14px; margin: 14px 0; }
     .note { font-size: 13px; color: #666; margin-top: 14px; }
     a { color: #1565c0; }
   </style>
 </head>
 <body>
-  <h1>PR <a href="https://github.com/DevExpress/DevExtreme/pull/34254">#34254</a> — Scheduler appointmentDragging: two repro scenarios</h1>
+  <h1>PR <a href="https://github.com/DevExpress/DevExtreme/pull/34254">#34254</a> — Scheduler appointmentDragging repro (head acd03721)</h1>
 
-  <div class="verdict">
-    <b>P1 (regression):</b> with two schedulers on a page and no <code>appointmentDragging.group</code>,
-    dropping an appointment onto the <i>other</i> scheduler moves it inside the <i>source</i> scheduler.
-    The PR removed the <code>isSameScheduler</code> containment check in
-    <code>appointment_drag_controller.ts &gt; onDragEnd</code>; the drop should be cancelled.
-    <br><br>
-    <b>P2 (contract miss):</b> for cross-component drags (<code>appointmentDragging.group</code> shared)
-    the <code>onDragEnd</code> event no longer carries <code>toItemData</code> — the old implementation
-    (<code>m_appointment_drag_behavior.ts:143</code>) always set it before invoking the callback.
+  <div class="fixed">
+    <b>Fixed in head acd03721:</b> P1 (drop over a foreign ungrouped scheduler moved the source appointment)
+    and P2 (missing <code>toItemData</code> in cross-component <code>onDragEnd</code>). The P1/P2 radios
+    below now demonstrate the correct behavior and can be used to verify the fix.
   </div>
 
-  <p><b>Steps (both frames run the same scenario):</b></p>
+  <div class="verdict">
+    <b>C1 (open, review round 2):</b> <code>onDragEnd</code> uses a strict <code>e.cancel === true</code>
+    check, so a <b>promise</b> assigned to <code>e.cancel</code> (async confirm dialog) is treated as
+    "not cancelled": <code>updateAppointmentOnDrop()</code> / <code>onRemove</code> run immediately,
+    before the user answers. The old implementation skipped the update for any truthy <code>cancel</code>
+    (<code>m_appointment_drag_behavior.ts</code>: <i>"event.cancel may be promise …"</i>).
+  </div>
+
+  <p><b>C1 steps (both frames run the same code):</b></p>
   <ol>
-    <li><b>P1</b> (default radio): drag <i>Appointment 1</i> from Scheduler A and drop it on any cell of Scheduler B.
-      Left (PR): the appointment <b>moves inside Scheduler A</b> and red <code>onAppointmentUpdating/Updated</code>
-      lines appear in the log. Right (old impl reference): the appointment snaps back, log stays empty.</li>
-    <li><b>P2</b> radio: drag <i>Appointment 1</i> from A onto B. Compare the <code>onDragEnd — toItemData</code>
-      log line: left (PR) shows <code>undefined</code> (red), right shows the drop dates (green).</li>
+    <li>Select the <b>C1 — async cancel (confirm)</b> radio in both frames.</li>
+    <li>Drag <i>Appointment 1</i> to another cell <b>within Scheduler A</b>. A confirm dialog opens
+      (<code>e.cancel</code> is a pending promise).</li>
+    <li>Left (PR, new appointments): red <code>onAppointmentUpdating/Updated</code> lines appear in the log
+      <b>before you answer</b>; pressing <b>No</b> does not restore the appointment — the data is already saved.</li>
+    <li>Right (old impl, same build): nothing happens until you answer; <b>No</b> reverts the drag,
+      the appointment stays at 8:00.</li>
   </ol>
 
   <div class="frames">
     <div>
-      <h3>PR #34254 head — new appointments (bug)</h3>
+      <h3>PR #34254 head — new appointments (C1 bug)</h3>
       <iframe src="pr/index.html"></iframe>
     </div>
     <div>
@@ -51,12 +57,12 @@
   </div>
 
   <p class="note">
-    Extra: <a href="base/index.html">merge-base 6fc13807 with <code>_newAppointments: true</code></a> —
-    P1 behaves correctly there (the containment check still exists), which proves P1 is introduced by this PR.
-    P2 callbacks don't fire on the base build (the feature didn't exist yet).
+    Extra: <a href="base/index.html">merge-base 6fc13807, <code>_newAppointments: true</code></a> (before the PR —
+    appointmentDragging callbacks don't fire there at all).
     <br>
     Jest repro: <code>packages/devextreme/js/__internal/scheduler/__tests__/pr34254_repro.test.ts</code> —
-    both tests fail on the PR head; P1 passes on the merge-base.
+    C1a (pending promise → data updated immediately) and C1b (promise resolved to <code>true</code> →
+    <code>onRemove</code> still called) fail on head acd03721; P1/P2 pass after the fix.
   </p>
 </body>
 </html>

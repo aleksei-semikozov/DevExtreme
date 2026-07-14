@@ -51,6 +51,20 @@
     };
     options._newAppointments = cfg.newAppointments;
 
+    if (scenario === 'c1') {
+      options.appointmentDragging = {
+        onDragEnd: function (e) {
+          addLog('Scheduler ' + name + ' appointmentDragging.onDragEnd — cancel = confirm promise (pending)');
+          e.cancel = new Promise(function (resolve) {
+            DevExpress.ui.dialog.confirm('Move the appointment?', 'Confirm move').then(function (moveConfirmed) {
+              addLog('dialog answered: ' + (moveConfirmed ? 'Move' : 'Cancel (e.cancel resolves true)'), moveConfirmed ? 'good' : undefined);
+              resolve(!moveConfirmed);
+            });
+          });
+        },
+      };
+    }
+
     if (scenario === 'p2') {
       options.appointmentDragging = {
         group: 'sharedGroup',
@@ -83,9 +97,12 @@
     schedulerA = new DevExpress.ui.dxScheduler(elA, makeOptions('A'));
     schedulerB = new DevExpress.ui.dxScheduler(elB, makeOptions('B'));
     document.getElementById('log').innerHTML = '';
-    document.getElementById('hint').textContent = scenario === 'p1'
-      ? 'P1: schedulers are NOT linked (no appointmentDragging.group). Drag "Appointment 1" from Scheduler A and drop it on a cell of Scheduler B. Expected: the appointment snaps back, log stays empty. Bug: it MOVES inside Scheduler A and onAppointmentUpdating/Updated appear in the log.'
-      : 'P2: both schedulers share appointmentDragging.group. Drag "Appointment 1" from Scheduler A onto Scheduler B. Check onDragEnd in the log. Expected: toItemData contains the drop dates. Bug: toItemData is undefined.';
+    var hints = {
+      p1: 'P1 (fixed in acd03721): schedulers are NOT linked (no appointmentDragging.group). Drag "Appointment 1" from Scheduler A and drop it on a cell of Scheduler B. Expected: the appointment snaps back, log stays empty. Bug: it MOVES inside Scheduler A and onAppointmentUpdating/Updated appear in the log.',
+      p2: 'P2 (fixed in acd03721): both schedulers share appointmentDragging.group. Drag "Appointment 1" from Scheduler A onto Scheduler B. Check onDragEnd in the log. Expected: toItemData contains the drop dates. Bug: toItemData is undefined.',
+      c1: 'C1 (async cancel): drag "Appointment 1" to another cell WITHIN Scheduler A. A confirm dialog opens while e.cancel is a pending promise. Expected: no data changes until you answer; "Move the appointment? → No" reverts the move. Bug: red onAppointmentUpdating/Updated lines appear BEFORE you answer, and pressing No does not bring the appointment back.',
+    };
+    document.getElementById('hint').textContent = hints[scenario];
   }
 
   window.addEventListener('DOMContentLoaded', function () {
