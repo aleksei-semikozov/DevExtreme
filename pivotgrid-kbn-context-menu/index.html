@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>PivotGrid KBN - Context Menu from Keyboard</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <link rel="stylesheet" href="https://cdn3.devexpress.com/jslib/26.1.3/css/dx.light.css" />
+  <script src="dx.all.js"></script>
+  <script src="data.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 20px; color: #1f2328; }
+    h1 { font-size: 1.3em; }
+    .test-info { background: #f0f4f8; border: 1px solid #d0d7de; border-radius: 6px; padding: 16px; margin-bottom: 16px; max-width: 900px; }
+    .test-info h2 { font-size: 1em; margin-top: 0; }
+    .test-info ol { margin: 0; padding-left: 20px; }
+    .test-info li { margin-bottom: 6px; }
+    .note { background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 10px 12px; margin-bottom: 16px; font-size: 0.88em; max-width: 900px; }
+    .status-panel { background: #eef7ee; border: 1px solid #4caf50; border-radius: 6px; padding: 10px 12px; margin-bottom: 16px; font-size: 0.9em; max-width: 900px; }
+    #pivotgrid { margin-top: 10px; }
+    kbd { background: #eee; border: 1px solid #ccc; border-radius: 3px; padding: 1px 5px; font-size: 0.85em; }
+  </style>
+</head>
+<body class="dx-viewport">
+  <h1>PivotGrid KBN &mdash; Open the cell context menu from the keyboard</h1>
+
+  <div class="test-info">
+    <h2>How to test</h2>
+    <ol>
+      <li><strong>Focus a header cell</strong> &mdash; click inside the grid, then press <kbd>Tab</kbd> until a <em>row</em> or <em>column</em> header cell gets a focus outline.</li>
+      <li><strong>Open the menu</strong> &mdash; press <kbd>Shift</kbd>+<kbd>F10</kbd> or the dedicated <kbd>Menu</kbd> (Context Menu) key. The menu opens anchored to the focused cell and focus moves into it.</li>
+      <li><strong>Navigate the menu</strong> &mdash; <kbd>&darr;</kbd>/<kbd>&uarr;</kbd> to move, <kbd>Enter</kbd>/<kbd>Space</kbd> to execute, <kbd>Esc</kbd> to close.</li>
+      <li><strong>Focus returns</strong> &mdash; after <kbd>Esc</kbd> or executing an item, focus goes back to the originating cell.</li>
+      <li><strong>Row header cell</strong> exposes <em>Expand All / Collapse All</em>; <strong>column header cell</strong> exposes <em>Sort &hellip; by This Column</em> (sort by summary).</li>
+    </ol>
+  </div>
+
+  <div class="note">
+    Note: some OS/browsers intercept <kbd>Shift</kbd>+<kbd>F10</kbd> for their own context menu. If that happens, use the dedicated <kbd>Menu</kbd> key, or compare with a right-click which opens the same menu.
+  </div>
+
+  <div class="status-panel" id="status">
+    Status: ready &mdash; Tab to a header cell, then press Shift+F10 or the Menu key.
+  </div>
+
+  <div id="pivotgrid"></div>
+
+  <script>
+    $(() => {
+      const statusEl = document.getElementById('status');
+      const log = (msg) => { statusEl.textContent = 'Status: ' + msg; };
+
+      const pivotGrid = $('#pivotgrid').dxPivotGrid({
+        width: 900,
+        height: 520,
+        showBorders: true,
+        allowExpandAll: true,
+        allowSortingBySummary: true,
+        allowFiltering: true,
+        fieldChooser: { enabled: false },
+        fieldPanel: { visible: true, allowFieldDragging: true },
+        onContextMenuPreparing: (e) => {
+          log('context menu prepared for area "' + (e.area || '(none)') + '"');
+        },
+        dataSource: {
+          fields: [{
+            caption: 'Region',
+            width: 150,
+            dataField: 'region',
+            area: 'row',
+            sortBySummaryField: 'Total',
+          }, {
+            caption: 'City',
+            dataField: 'city',
+            width: 150,
+            area: 'row',
+          }, {
+            dataField: 'date',
+            dataType: 'date',
+            area: 'column',
+          }, {
+            groupName: 'date',
+            groupInterval: 'month',
+            visible: false,
+          }, {
+            caption: 'Total',
+            dataField: 'amount',
+            dataType: 'number',
+            summaryType: 'sum',
+            format: 'currency',
+            area: 'data',
+          }],
+          store: sales,
+        },
+      }).dxPivotGrid('instance');
+
+      setTimeout(() => {
+        const dataSource = pivotGrid.getDataSource();
+        dataSource.expandHeaderItem('row', ['North America']);
+        dataSource.expandHeaderItem('column', [2013]);
+      }, 0);
+    });
+  </script>
+</body>
+</html>
