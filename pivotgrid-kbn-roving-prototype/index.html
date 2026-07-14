@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>PivotGrid KBN - Prototype: roving field panel + data-cell focus</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <link rel="stylesheet" href="https://cdn3.devexpress.com/jslib/26.1.3/css/dx.light.css" />
+  <script src="dx.all.js"></script>
+  <script src="data.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 20px; color: #1f2328; }
+    h1 { font-size: 1.3em; }
+    .test-info { background: #f0f4f8; border: 1px solid #d0d7de; border-radius: 6px; padding: 14px 16px; margin-bottom: 14px; max-width: 960px; }
+    .test-info h2 { font-size: 1em; margin-top: 0; }
+    .test-info ul { margin: 6px 0; padding-left: 20px; }
+    .test-info li { margin-bottom: 5px; }
+    .proto { background: #e7f3ff; border: 1px solid #2b7de9; border-radius: 6px; padding: 10px 12px; margin-bottom: 14px; font-size: 0.9em; max-width: 960px; }
+    .status-panel { background: #eef7ee; border: 1px solid #4caf50; border-radius: 6px; padding: 8px 12px; margin-bottom: 14px; font-size: 0.9em; max-width: 960px; }
+    #pivotgrid { margin-top: 10px; }
+    kbd { background: #eee; border: 1px solid #ccc; border-radius: 3px; padding: 1px 5px; font-size: 0.85em; }
+
+    /* PROTOTYPE FIX #2a: give the data area the same visible focus outline that
+       the row/column headers already have (the shipped theme has no such rule). */
+    .dx-pivotgrid .dx-pivotgrid-area-data td:focus-visible {
+      outline: 2px solid #1976d2;
+      outline-offset: -2px;
+      border-radius: 2px;
+    }
+    /* make the single roving field-panel chip's focus obvious too */
+    .dx-pivotgrid .dx-area-field:focus-visible {
+      outline: 2px solid #1976d2;
+      outline-offset: -2px;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body class="dx-viewport">
+  <h1>PivotGrid KBN &mdash; Prototype (variant 2)</h1>
+
+  <div class="proto">
+    <strong>Prototype note.</strong> The two changes below are emulated in the demo layer on top of the stock library
+    (nothing in the PR/library is modified) so you can feel how it <em>should</em> behave:
+    <ul style="margin:6px 0 0; padding-left:20px;">
+      <li><strong>Field panel = one Tab stop + arrows.</strong> A small roving-tabindex controller (mirrors the built-in <code>RovingTabIndex</code>) turns all field chips into a single zone: <kbd>Tab</kbd> enters/leaves it once, <kbd>&larr;</kbd><kbd>&rarr;</kbd><kbd>&uarr;</kbd><kbd>&darr;</kbd>/<kbd>Home</kbd>/<kbd>End</kbd> move between fields &mdash; instead of one Tab stop per field.</li>
+      <li><strong>Data cell shows a focus outline</strong> (CSS <code>:focus-visible</code> rule the shipped theme is missing for the data area).</li>
+    </ul>
+  </div>
+
+  <div class="test-info">
+    <h2>Try the whole Tab order (now ~4 stops instead of 8)</h2>
+    <ul>
+      <li><kbd>Tab</kbd> once &rarr; lands on the <strong>field panel</strong> (one stop). Walk fields with arrows.</li>
+      <li><kbd>Tab</kbd> &rarr; <strong>column headers</strong> zone (arrows move within).</li>
+      <li><kbd>Tab</kbd> &rarr; <strong>row headers</strong> zone (arrows move within).</li>
+      <li><kbd>Tab</kbd> &rarr; <strong>data area</strong> &mdash; now with a visible focus outline.</li>
+      <li>On a header cell: <kbd>Shift</kbd>+<kbd>F10</kbd> / <kbd>Menu</kbd> opens the context menu (unchanged from the PR).</li>
+    </ul>
+  </div>
+
+  <div class="status-panel" id="status">Status: ready.</div>
+
+  <div id="pivotgrid"></div>
+
+  <script>
+    $(() => {
+      const statusEl = document.getElementById('status');
+      const log = (m) => { statusEl.textContent = 'Status: ' + m; };
+
+      const pivotGrid = $('#pivotgrid').dxPivotGrid({
+        width: 960, height: 520, showBorders: true,
+        allowExpandAll: true, allowSortingBySummary: true, allowFiltering: true,
+        fieldChooser: { enabled: false },
+        fieldPanel: { visible: true, allowFieldDragging: true },
+        onContentReady: () => setupFieldPanelRoving(),
+        dataSource: {
+          fields: [
+            { caption: 'Region', width: 150, dataField: 'region', area: 'row', sortBySummaryField: 'Total' },
+            { caption: 'City', dataField: 'city', width: 150, area: 'row' },
+            { dataField: 'date', dataType: 'date', area: 'column' },
+            { groupName: 'date', groupInterval: 'month', visible: false },
+            { caption: 'Total', dataField: 'amount', dataType: 'number', summaryType: 'sum', format: 'currency', area: 'data' },
+          ],
+          store: sales,
+        },
+      }).dxPivotGrid('instance');
+
+      // ---- PROTOTYPE FIX #2b: roving-tabindex over the field-panel chips ----
+      // Mirrors packages/.../keyboard_navigation/roving_tab_index.ts, but applied
+      // from the demo layer over the stock field panel (which ships tabindex=0 on
+      // EVERY chip = a "tab trap").
+      const root = document.getElementById('pivotgrid');
+      let focusedIndex = 0;
+
+      const getChips = () => Array.from(root.querySelectorAll('.dx-area-field.dx-area-box'))
+        .filter((el) => el.offsetParent !== null);
+
+      function updateTabIndexes() {
+        const chips = getChips();
+        if (!chips.length) return;
+        focusedIndex = Math.min(Math.max(focusedIndex, 0), chips.length - 1);
+        chips.forEach((c, i) => c.setAttribute('tabindex', i === focusedIndex ? '0' : '-1'));
+      }
+      function focusChip(i) {
+        const chips = getChips();
+        if (!chips.length) return;
+        focusedIndex = (i + chips.length) % chips.length;
+        updateTabIndexes();
+        chips[focusedIndex].focus();
+        const label = (chips[focusedIndex].textContent || '').trim();
+        log('field panel: focused "' + label + '" (' + (focusedIndex + 1) + '/' + chips.length + ') — one Tab stop, arrows to move');
+      }
+
+      function setupFieldPanelRoving() {
+        // re-assert the single-tab-stop invariant after every re-render
+        updateTabIndexes();
+      }
+
+      root.addEventListener('keydown', (e) => {
+        const chip = e.target.closest && e.target.closest('.dx-area-field.dx-area-box');
+        if (!chip) return;
+        const chips = getChips();
+        const idx = chips.indexOf(chip);
+        if (idx >= 0) focusedIndex = idx;
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); focusChip(focusedIndex + 1); }
+        else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); focusChip(focusedIndex - 1); }
+        else if (e.key === 'Home') { e.preventDefault(); focusChip(0); }
+        else if (e.key === 'End') { e.preventDefault(); focusChip(getChips().length - 1); }
+      }, true);
+
+      root.addEventListener('focusin', (e) => {
+        const chip = e.target.closest && e.target.closest('.dx-area-field.dx-area-box');
+        if (chip) {
+          const i = getChips().indexOf(chip);
+          if (i >= 0) { focusedIndex = i; updateTabIndexes(); }
+        }
+      });
+
+      setTimeout(() => {
+        const ds = pivotGrid.getDataSource();
+        ds.expandHeaderItem('row', ['North America']);
+        ds.expandHeaderItem('column', [2013]);
+        setupFieldPanelRoving();
+      }, 0);
+    });
+  </script>
+</body>
+</html>
