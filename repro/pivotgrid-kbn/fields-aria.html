@@ -22,14 +22,14 @@
 </head>
 <body>
   <a href="index.html">← ко всем демкам</a>
-  <h1>4. Поля областей: стрелочная навигация (#4452 / PR #34259) + ARIA (#4454 / PR #34271)</h1>
+  <h1>4. Поля областей: стрелочная навигация (#4452 / PR #34350) + ARIA (#4454 / PR #34341)</h1>
 
   <div class="what">
     <b>Что сделано.</b> Чипы полей («Region», «Amount»…) в панели полей пивота и в попапе Field Chooser получили:
     <ul>
       <li><b>Roving tabindex</b> — одна tab-остановка на область; первое (или последнее сфокусированное) поле имеет <code>tabindex="0"</code>, остальные <code>-1</code>;</li>
       <li><b>Стрелочную навигацию</b> — <kbd>↓</kbd>/<kbd>→</kbd> следующее поле, <kbd>↑</kbd>/<kbd>←</kbd> предыдущее, в пределах своей области (в RTL ←/→ следуют визуальному направлению);</li>
-      <li><b>ARIA-семантику по образцу CardView</b> — контейнер полей: <code>role="menubar"</code> + <code>aria-label</code> с именем области («Row Fields»…); каждый чип: <code>role="menuitem"</code> + составной <code>aria-label</code>: «Field name Region, Header filter applied, Sorted in ascending order» (части появляются по фактическому состоянию).</li>
+      <li><b>ARIA-семантику по образцу CardView</b> — контейнер полей: <code>role="menubar"</code> + <code>aria-label</code> с именем области («Row Fields»…); каждый чип: <code>role="menuitem"</code> + составной <code>aria-label</code>: «Field: Region, Header filter applied, Sort order: ascending» (части появляются по фактическому состоянию).</li>
     </ul>
   </div>
 
@@ -40,24 +40,24 @@
       <li>Внутри области: <kbd>→</kbd>/<kbd>↓</kbd> — следующее поле, <kbd>←</kbd>/<kbd>↑</kbd> — предыдущее. На краю области фокус стоит на месте.</li>
       <li>Уйти стрелкой на второе поле → <kbd>Shift+Tab</kbd> → <kbd>Tab</kbd>: фокус вернулся на <b>него же</b> (roving), а не на первое.</li>
       <li><kbd>Enter</kbd>/<kbd>Space</kbd> на поле row/column/filter — переключает сортировку, фокус на месте; <kbd>Alt+↓</kbd> — открывает header filter.</li>
-      <li>В DevTools (Elements → Accessibility): у строки области — <code>role="menubar"</code> и <code>aria-label</code> («Row Fields» и т.п.); у чипа — <code>role="menuitem"</code> и label вида <code>Field name Region, Sorted in ascending order</code>.</li>
-      <li>Переключить сортировку поля Enter'ом — label меняется на <code>…Sorted in descending order</code> (чипы ре-рендерятся).</li>
+      <li>В DevTools (Elements → Accessibility): у строки области — <code>role="menubar"</code> и <code>aria-label</code> («Row Fields» и т.п.); у чипа — <code>role="menuitem"</code> и label вида <code>Field: Region, Sort order: ascending</code>.</li>
+      <li>Переключить сортировку поля Enter'ом — label меняется на <code>…Sort order: descending</code> (чипы ре-рендерятся).</li>
       <li>Применить header filter (<kbd>Alt+↓</kbd>, выбрать значение, OK) — в label добавляется <code>Header filter applied</code>.</li>
     </ol>
     <strong>Field Chooser (кнопка в правом верхнем углу грида):</strong>
     <ol>
       <li>Открыть попап — те же роли: контейнер каждой области <code>role="menubar"</code>, чипы <code>role="menuitem"</code>; стрелки и roving работают так же.</li>
       <li>Перетащить <b>все</b> поля из какой-нибудь области (например, из Filter Fields в Row Fields) — у опустевшего контейнера роль <code>menubar</code> снимается (menubar без пунктов — невалидная ARIA); в панели пустая область показывает обычный текст-плейсхолдер без ролей.</li>
-      <li>Скринридером (VoiceOver: <kbd>Cmd+F5</kbd>): при фокусе на чипе объявляется «Field name …, Sorted in …, menu item», при входе в область — имя области.</li>
+      <li>Скринридером (VoiceOver: <kbd>Cmd+F5</kbd>): при фокусе на чипе объявляется «Field: …, Sort order: …, menu item», при входе в область — имя области.</li>
     </ol>
   </div>
 
   <div class="note">
-    Тексты label'ов — предложение для техписателей (ключи <code>dxPivotGrid-ariaFieldItem*</code> в en.json, формулировки — дословный паттерн CardView):
-    «Field name {0}», «Header filter applied», «Sorted in ascending order», «Sorted in descending order».
+    Тексты label'ов — предложение для техписателей (ключи <code>dxPivotGrid-ariaField*</code> в en.json, формулировки — дословный паттерн CardView):
+    «Field: {0}», «Header filter applied», «Sort order: ascending», «Sort order: descending» (тексты финализированы в ревью #34341).
     Известное ограничение: drag-клон чипа при перетаскивании сохраняет <code>role="menuitem"</code> (CardView на время драга роль снимает).
-    PR: <a href="https://github.com/DevExpress/DevExtreme/pull/34259">#34259</a> (навигация, ready for review) →
-    <a href="https://github.com/DevExpress/DevExtreme/pull/34271">#34271</a> (ARIA, draft до мерджа родителя).
+    PR: <a href="https://github.com/DevExpress/DevExtreme/pull/34350">#34350</a> (навигация, влит в main) →
+    <a href="https://github.com/DevExpress/DevExtreme/pull/34341">#34341</a> (ARIA, в ревью).
   </div>
 
   <div class="dx-viewport demo-container">

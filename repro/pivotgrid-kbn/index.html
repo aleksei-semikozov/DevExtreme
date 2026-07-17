@@ -22,19 +22,20 @@
 <body>
   <h1>PivotGrid — Keyboard Navigation (roving tabindex)</h1>
   <p class="prs">
-    Сборка от 2026-07-10 (вечер) из ветки <code>pivotgrid-kbn-fields-aria-attrs</code> (head <code>2c9c204f</code>):
-    заголовки колонок и строк (issues #4477/#4478) <b>уже влиты в 26_1</b> squash-коммитом
-    <a href="https://github.com/DevExpress/DevExtreme/pull/34204">#34204</a> (<code>6f5947b9</code>);
-    поверх — <a href="https://github.com/DevExpress/DevExtreme/pull/34259">#34259</a> (стрелки по полям областей, issue #4452, ready for review) →
-    <a href="https://github.com/DevExpress/DevExtreme/pull/34271">#34271</a> (ARIA для полей, issue #4454, draft).
-    База 26_1 включает ARIA-роли ячеек (<a href="https://github.com/DevExpress/DevExtreme/pull/34220">#34220</a>).
+    Сборка от 2026-07-17 из head PR <a href="https://github.com/DevExpress/DevExtreme/pull/34341">#34341</a>
+    (<code>pivotgrid-kbn-fields-aria-attrs-main</code>) + актуальный <code>main</code>: включает влитые в main порты
+    <a href="https://github.com/DevExpress/DevExtreme/pull/34349">#34349</a> (стрелки: заголовки),
+    <a href="https://github.com/DevExpress/DevExtreme/pull/34350">#34350</a> (стрелки: поля областей),
+    <a href="https://github.com/DevExpress/DevExtreme/pull/34351">#34351</a> (контекстное меню с клавиатуры)
+    и ARIA-роли ячеек (<a href="https://github.com/DevExpress/DevExtreme/pull/34220">#34220</a>).
   </p>
 
   <div class="cards">
     <a class="card" href="column-headers.html"><b>1. Заголовки колонок</b><span>Стрелки по уровням и внутри уровня, единый tab stop, Enter/Space — влито в 26_1</span></a>
     <a class="card" href="row-headers.html"><b>2. Заголовки строк</b><span>Стрелки по строкам и уровням вложенности (rowspan) — влито в 26_1</span></a>
     <a class="card" href="virtual-scrolling.html"><b>3. Virtual scrolling</b><span>Фокус едет со скроллом и переживает ререндер</span></a>
-    <a class="card" href="fields-aria.html"><b>4. Поля областей: стрелки + ARIA</b><span>Roving tabindex по чипам, menubar/menuitem, составные aria-label — PR #34259 + #34271</span></a>
+    <a class="card" href="fields-aria.html"><b>4. Поля областей: стрелки + ARIA</b><span>Roving tabindex по чипам, menubar/menuitem, составные aria-label — PR #34350 + #34341</span></a>
+    <a class="card" href="a11y-4196.html" style="border-color:#218bff"><b>5. Приёмка эпика #4196 ★</b><span>Полный must-have чек-лист a11y со статусами и результатами локальной проверки (axe, jest, клавиатура)</span></a>
   </div>
 
   <h2>Что проверять (общий QA-чеклист)</h2>
