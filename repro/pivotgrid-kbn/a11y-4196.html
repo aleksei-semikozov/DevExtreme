@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>PivotGrid A11y — приёмка эпика #4196</title>
+  <title>PivotGrid — Accessibility test</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" type="text/css" href="dx.fluent.blue.light.css" />
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -10,88 +10,11 @@
   <script src="data.js"></script>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 24px; max-width: 1100px; margin: 0 auto; color: #1f2328; }
-    .what { padding: 12px 16px; background: #ddf4ff; border-left: 4px solid #218bff; margin-bottom: 16px; line-height: 1.5; font-size: 14px; }
-    .howto { padding: 12px 16px; background: #dafbe1; border-left: 4px solid #1a7f37; margin-bottom: 16px; line-height: 1.55; font-size: 14px; }
-    .howto ol { margin: 6px 0 0; padding-left: 20px; }
-    .howto li { margin: 4px 0; }
-    table.cl { border-collapse: collapse; font-size: 13.5px; margin: 14px 0 20px; width: 100%; }
-    table.cl th, table.cl td { border: 1px solid #d0d7de; padding: 7px 10px; text-align: left; vertical-align: top; line-height: 1.45; }
-    table.cl th { background: #f6f8fa; }
-    .ok { color: #1a7f37; font-weight: 600; white-space: nowrap; }
-    .new { background: #fff8c5; }
-    .note { padding: 10px 14px; background: #f6f8fa; border-left: 4px solid #8b949e; border-radius: 4px; font-size: 13px; margin: 14px 0; }
-    kbd { background: #f6f8fa; border: 1px solid #d0d7de; border-bottom-width: 2px; border-radius: 4px; padding: 1px 5px; font-size: 12px; }
-    code { background: #f6f8fa; padding: 1px 5px; border-radius: 4px; font-size: 12.5px; }
-    h1 { font-size: 23px; } h2 { font-size: 18px; margin-top: 26px; }
+    h1 { font-size: 20px; font-weight: 600; margin: 0 0 20px; }
   </style>
 </head>
 <body>
-  <a href="index.html">← ко всем демкам</a>
-  <h1>PivotGrid A11y — приёмка эпика <a href="https://github.com/DevExpress/devextreme-private/issues/4196">#4196</a></h1>
-
-  <div class="what">
-    Сборка от <b>2026-07-17 (вечер)</b>: head PR <a href="https://github.com/DevExpress/DevExtreme/pull/34341">#34341</a> + main +
-    <b>PR <a href="https://github.com/DevExpress/DevExtreme/pull/34375">#34375</a> целиком</b> (все 4 этапа):
-    axe-тесты, <code>aria-description</code> на областях полей, контекстное меню чипов с клавиатуры,
-    <b>NEW: ассоциация ячеек данных с заголовками через <code>aria-describedby</code></b>.
-    С этой сборкой закрыты <b>все must-have пункты эпика</b>.
-  </div>
-
-  <h2>Как тестировать руками</h2>
-
-  <div class="howto">
-    <b>А. Клавиатура (без скринридера, 3 минуты)</b>
-    <ol>
-      <li><kbd>Tab</kbd> с адресной строки: кнопка Field Chooser → по одной остановке на область полей (filter/data/column/row) → область заголовков колонок → область строк → первая ячейка данных. Никаких «лишних» остановок на каждой иконке.</li>
-      <li>На чипе поля: <kbd>Enter</kbd>/<kbd>Space</kbd> — сортировка (стрелка на чипе разворачивается); <kbd>Alt+↓</kbd> — открылся header filter, <kbd>Esc</kbd> — фокус вернулся на чип.</li>
-      <li>На чипе поля: <kbd>Shift+F10</kbd> (mac: <kbd>fn+Shift+F10</kbd>) — контекстное меню у чипа («Show Field Chooser»), <kbd>Esc</kbd> — фокус вернулся на чип. То же на ячейке заголовка колонок (там ещё Expand All/Collapse All).</li>
-      <li>В заголовках: стрелки ходят по ячейкам, <kbd>Enter</kbd> на свёрнутой — разворачивает, фокус на месте; уйти <kbd>Shift+Tab</kbd> и вернуться <kbd>Tab</kbd> — фокус на той же ячейке (roving).</li>
-      <li>Открыть Field Chooser (Enter на кнопке) → внутри те же стрелки/Enter/Alt+↓; <kbd>Esc</kbd> — попап закрылся, фокус на кнопке.</li>
-    </ol>
-    <b>Б. DevTools → Accessibility (что «скажет» любой ридер, 2 минуты)</b>
-    <ol>
-      <li>Выделить чип в Elements → панель Accessibility: <b>Name</b> = «Field: Country, Sort order: ascending», <b>Role</b> = menuitem; у таблицы области — Role = menubar, Name = «Row Fields», <b>Description</b> = «Press Enter or Space to sort by the field, Alt + Down arrow…».</li>
-      <li><span class="new">NEW:</span> выделить любую ячейку данных (`td` в области данных) → у неё <code>aria-describedby</code>; в Accessibility-панели <b>Description</b> = путь заголовков, например «Africa Cairo 2015 Q1». Развернуть группу — у новых ячеек описание уже с уточнённым путём.</li>
-    </ol>
-    <b>В. VoiceOver (mac, 5 минут)</b>
-    <ol>
-      <li><kbd>Cmd+F5</kbd> включить; чтобы <b>видеть</b> текст — <kbd>VO+F8</kbd> → Visuals → Show caption panel (VO = Ctrl+Option).</li>
-      <li>Фокус на чип: «Field: Country, Sort order: ascending, menu item», при входе в область — «Row Fields, menu bar» + description про клавиши. <kbd>Enter</kbd> — label перечитан с «descending».</li>
-      <li><span class="new">NEW:</span> дойти <kbd>Tab</kbd>'ом до ячейки данных: VO объявит значение и следом описание — путь по строке и колонке («Africa Cairo … 2015 Q1»).</li>
-      <li>Контекстное меню по-VoiceOver'овски: <kbd>VO+Shift+M</kbd> на чипе/ячейке.</li>
-    </ol>
-    Замечания складывайте в корзинку (feedback-таблица из анонса). NVDA/JAWS-прогон — на Windows, поведение должно совпадать с пунктом Б.
-  </div>
-
-  <h2>Must-have чек-лист из #4196 — итог</h2>
-  <table class="cl">
-    <tr><th style="width:34%">Пункт</th><th style="width:9%">Статус</th><th>Реализация</th></tr>
-    <tr><td>Expand-иконки недоступны с клавиатуры (KBN)</td><td class="ok">OK</td><td><kbd>Enter</kbd>/<kbd>Space</kbd> на ячейке заголовка, <code>aria-expanded</code>, фокус сохраняется; иконки — <code>tabindex="-1"</code> (единый tab stop).</td></tr>
-    <tr><td>Сортировка колонок с клавиатуры</td><td class="ok">OK</td><td><kbd>Enter</kbd>/<kbd>Space</kbd> на чипе; состояние в label «Sort order: …».</td></tr>
-    <tr><td>Содержимое Field Chooser недоступно с клавиатуры</td><td class="ok">OK</td><td>Roving + стрелки в областях, dxTreeView со своей навигацией, фокус возвращается на кнопку при закрытии.</td></tr>
-    <tr><td>Header filter не открывается с клавиатуры</td><td class="ok">OK</td><td><kbd>Alt+↓</kbd> на чипе, фокус в попап и обратно.</td></tr>
-    <tr><td>Field chooser визуально не фокусируется</td><td class="ok">OK</td><td>Видимая обводка чипов/кнопки/ячеек (<code>td:focus-visible</code>).</td></tr>
-    <tr><td>Некорректное описание при фокусе PivotGrid</td><td class="ok">OK</td><td>Корень: <code>role="group"</code> + «Pivot grid»; grid-обёртка: <code>role="grid"</code> + <code>aria-owns</code> + row/colcount.</td></tr>
-    <tr><td>Elements must only use supported ARIA attributes (axe)</td><td class="ok">OK</td><td>axe 4.11 aria-правила: 0 нарушений (+ теперь есть e2e axe-сьют в CI).</td></tr>
-    <tr class="new"><td>Table headers must refer to data cells</td><td class="ok">OK</td><td><b>NEW (PR #34375):</b> каждая ячейка данных — <code>aria-describedby</code> на цепочку заголовков строки и колонки (учтены colspan/rowspan-группы и виртуальный скролл). Проверено: 100% ячеек связаны, 0 висячих id, axe чист.</td></tr>
-    <tr><td>Scrollable region must have keyboard access (axe, KBN)</td><td class="ok">OK</td><td>Фокусируемая первая ячейка данных; scrollable-region-focusable: 0 нарушений.</td></tr>
-    <tr><td>Header filter: в aria-label нет имени колонки</td><td class="ok">OK</td><td>Имя поля и факт фильтра в составном label чипа («Field: Country, Header filter applied…»).</td></tr>
-    <tr><td>Color contrast (axe)</td><td class="ok">OK</td><td>axe color-contrast (fluent.blue.light): 0 нарушений в виджете.</td></tr>
-  </table>
-
-  <h2>Сверх must-have (PR #34375)</h2>
-  <table class="cl">
-    <tr><th style="width:34%">Что</th><th>Комментарий</th></tr>
-    <tr><td>aria-description на областях полей</td><td>Подсказка о клавишах на каждом menubar-контейнере (панель и попап chooser'а); снимается у пустых областей. Первый такой паттерн в наших гридах.</td></tr>
-    <tr><td>Контекстное меню чипов с клавиатуры</td><td><kbd>Shift+F10</kbd>/клавиша ≣ Menu — паритет с правым кликом; в попапе chooser'а меню нет и мышью — там сознательный no-op.</td></tr>
-    <tr><td>axe-тесты в CI</td><td><code>tests/accessibility/pivotGrid.ts</code>: базовый рендер, chooser, header filter, контекстное меню.</td></tr>
-  </table>
-
-  <div class="note">
-    Известные мелочи (не блокеры): нет <code>aria-sort</code> на чипах (состояние в label); drag-клон чипа сохраняет <code>role="menuitem"</code>;
-    несортированные sortable-поля объявляют «Sort order: ascending». Тексты — черновик до техрайтеров.
-  </div>
-
+  <h1>PivotGrid — Accessibility test</h1>
   <div id="pivotgrid"></div>
 
   <script>
