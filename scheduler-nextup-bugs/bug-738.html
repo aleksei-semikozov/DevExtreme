@@ -39,12 +39,12 @@
   <div class="panel"><div class="grid">
     <div class="steps">
       <h2>How to reproduce</h2>
-      <ol><li>Look at the all-day row with several narrow recurring appointments.</li><li>Observe the recurrence icon and the ellipsis (…) / next-day arrow placement.</li></ol>
+      <ol><li>Look at the all-day row. Columns are narrow (week view grouped by 3 rooms), so titles truncate to &#x27;…&#x27;.</li><li>Room A — a single-day recurring appointment: the ↻ recurrence icon sits ON TOP of the ellipsised title.</li><li>Room B (Sat) / Room C (Mon) — appointments that cross the week boundary: the continue arrow AND the ↻ recurrence icon appear together and collide.</li></ol>
       <div class="ea">
-        <div class="exp"><b>Expected:</b> Ellipsis and recurrence icon occupy distinct positions in the all-day row (cf. Outlook). The next-day arrow may coexist with the recurrence icon.</div>
-        <div class="act"><b>Actual:</b> The recurrence icon overlaps the ellipsis.</div>
+        <div class="exp"><b>Expected:</b> Ellipsis, recurrence icon and next-day arrow occupy distinct positions in the all-day row (cf. Outlook / month view).</div>
+        <div class="act"><b>Actual:</b> The recurrence icon overlays the ellipsised title; where a continue arrow is also present, the two icons overlap each other.</div>
       </div>
-      <div class="ea"><div style="background:#e9ecfb;border:1px solid #c8d0f5;padding:8px 12px;border-radius:7px;font-size:12.5px;">Tagged BC + Good First Issue — needs a designer to research the target layout before a fix.</div></div>
+      <div class="ea"><div style="background:#e9ecfb;border:1px solid #c8d0f5;padding:8px 12px;border-radius:7px;font-size:12.5px;">Root cause: in week/all-day CSS (_index.scss:205-216) right padding is reserved only for .dx-scheduler-appointment-reduced, not for .dx-scheduler-appointment-recurrence — unlike month view (_index.scss:352-358), so the absolute-positioned recurrence icon (right:5px) covers the ellipsis. Overlap depends on column WIDTH, not text length. Tagged BC + Good First Issue.</div></div>
       <div class="links">
         Tracker: <a href="https://github.com/DevExpress/devextreme-private/issues/738" target="_blank">#738</a> · <a href="https://codepen.io/Ember2890/pen/MYWVooa?editors=1010" target="_blank">QA CodePen</a>
       </div>
@@ -60,14 +60,28 @@ window.addEventListener('error', function(e) {
   var l=document.getElementById('log'); if(l) l.textContent += 'Console error: '+e.message+'\n';
 });
 
+    var rooms = [
+      { id: 1, text: 'Room A', color: '#1e90ff' },
+      { id: 2, text: 'Room B', color: '#ff9747' },
+      { id: 3, text: 'Room C', color: '#32c5a0' },
+    ];
     var data = [
-      { text: 'Standup', startDate: new Date(2021,3,26,0), endDate: new Date(2021,3,26,23,59), allDay: true, recurrenceRule: 'FREQ=DAILY' },
-      { text: 'Review', startDate: new Date(2021,3,26,0), endDate: new Date(2021,3,26,23,59), allDay: true, recurrenceRule: 'FREQ=DAILY' },
-      { text: 'Sync meeting long title', startDate: new Date(2021,3,26,0), endDate: new Date(2021,3,27,23,59), allDay: true, recurrenceRule: 'FREQ=WEEKLY' },
+      // (1) recurrence icon OVER the ellipsis: single-day, not reduced, long title
+      { text: 'Quarterly all-hands planning and budget review', roomId: 1,
+        startDate: new Date(2021,3,27), endDate: new Date(2021,3,27), allDay: true, recurrenceRule: 'FREQ=DAILY' },
+      // (2) HEAD: ends after the visible week -> right arrow + recurrence icon collide
+      { text: 'Company offsite conference in the mountains', roomId: 2,
+        startDate: new Date(2021,4,1), endDate: new Date(2021,4,3), allDay: true, recurrenceRule: 'FREQ=WEEKLY;BYDAY=SA' },
+      // (3) TAIL: starts before the visible week -> back arrow + recurrence icon over ellipsis
+      { text: 'Regional sales roadshow across multiple cities', roomId: 3,
+        startDate: new Date(2021,3,23), endDate: new Date(2021,3,26), allDay: true, recurrenceRule: 'FREQ=WEEKLY;BYDAY=FR' },
     ];
     new DevExpress.ui.dxScheduler(document.getElementById('scheduler'), {
       dataSource: data, views: ['week'], currentView: 'week',
-      currentDate: new Date(2021,3,26), startDayHour: 8, endDayHour: 12, height: 560,
+      currentDate: new Date(2021,3,27), width: 1150, height: 560,
+      startDayHour: 9, endDayHour: 18,
+      groups: ['roomId'],
+      resources: [{ fieldExpr: 'roomId', dataSource: rooms, label: 'Room' }],
     });
 </script>
 </body>
