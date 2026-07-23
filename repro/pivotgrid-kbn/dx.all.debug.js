@@ -1,7 +1,7 @@
 /*!
 * DevExtreme (dx.all.js)
 * Version: 26.2.0
-* Build date: Fri Jul 17 2026
+* Build date: Thu Jul 23 2026
 *
 * Copyright (c) 2012 - 2026 Developer Express Inc. ALL RIGHTS RESERVED
 * Read about DevExtreme licensing here: https://js.devexpress.com/Licensing/
@@ -111524,89 +111524,6 @@ exports.WidgetMock = WidgetMock;
 
 /***/ },
 
-/***/ 32247
-(__unused_webpack_module, exports, __webpack_require__) {
-
-
-
-Object.defineProperty(exports, "__esModule", ({
-  value: true
-}));
-exports.describeDataCellsWithHeaders = describeDataCellsWithHeaders;
-var _guid = _interopRequireDefault(__webpack_require__(19427));
-var _table_cell_navigation = __webpack_require__(52373);
-function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
-const ensureId = cell => {
-  if (!cell.id) {
-    cell.id = `dx-${new _guid.default()}`;
-  }
-  return cell.id;
-};
-const getUniqueChainIds = cells => {
-  const chain = [];
-  cells.forEach(cell => {
-    if (cell && !chain.includes(cell)) {
-      chain.push(cell);
-    }
-  });
-  return chain.map(ensureId).join(' ');
-};
-// The aria index attributes are affine to the rendered position (a constant
-// virtual-scrolling offset per render), so a single sampled cell is enough to
-// translate matrix positions into aria index keys.
-const getColumnChains = section => {
-  const chains = new Map();
-  const matrix = section ? (0, _table_cell_navigation.buildCellMatrix)(section) : [];
-  const leafRow = matrix[matrix.length - 1] ?? [];
-  const sampleCell = leafRow.find(cell => cell === null || cell === void 0 ? void 0 : cell.hasAttribute('aria-colindex'));
-  if (!sampleCell) {
-    return chains;
-  }
-  const offset = Number(sampleCell.getAttribute('aria-colindex')) - leafRow.indexOf(sampleCell);
-  leafRow.forEach((_, columnIndex) => {
-    chains.set(String(columnIndex + offset), getUniqueChainIds(matrix.map(row => row[columnIndex])));
-  });
-  return chains;
-};
-const getRowChains = section => {
-  const chains = new Map();
-  const matrix = section ? (0, _table_cell_navigation.buildCellMatrix)(section) : [];
-  const sampleCell = matrix.flat().find(cell => cell === null || cell === void 0 ? void 0 : cell.hasAttribute('aria-rowindex'));
-  if (!sampleCell) {
-    return chains;
-  }
-  const sampleRow = sampleCell.parentElement.sectionRowIndex;
-  const offset = Number(sampleCell.getAttribute('aria-rowindex')) - sampleRow;
-  matrix.forEach((row, rowIndex) => {
-    chains.set(String(rowIndex + offset), getUniqueChainIds(row));
-  });
-  return chains;
-};
-// Associates every data cell with the row and column header cells covering it
-// via aria-describedby. The header areas live in separate tables, so the
-// native headers/id mechanism is not applicable; aria-describedby keeps the
-// cell value as the accessible name and announces the header path as the
-// description.
-function describeDataCellsWithHeaders(columnsSection, rowsSection, dataSection) {
-  if (!dataSection) {
-    return;
-  }
-  const columnChains = getColumnChains(columnsSection);
-  const rowChains = getRowChains(rowsSection);
-  Array.from(dataSection.rows).forEach(row => {
-    Array.from(row.cells).forEach(cell => {
-      const description = [rowChains.get(cell.getAttribute('aria-rowindex') ?? ''), columnChains.get(cell.getAttribute('aria-colindex') ?? '')].filter(ids => !!ids).join(' ');
-      if (description) {
-        cell.setAttribute('aria-describedby', description);
-      } else {
-        cell.removeAttribute('aria-describedby');
-      }
-    });
-  });
-}
-
-/***/ },
-
 /***/ 96273
 (__unused_webpack_module, exports, __webpack_require__) {
 
@@ -115204,7 +115121,7 @@ var _default = exports["default"] = {
 Object.defineProperty(exports, "__esModule", ({
   value: true
 }));
-exports.getFieldsAreaA11yDescription = exports.getFieldItemA11yLabel = void 0;
+exports.getFieldsAreaA11yLabel = exports.getFieldsAreaA11yDescription = exports.getFieldItemA11yLabel = void 0;
 var _message = _interopRequireDefault(__webpack_require__(4671));
 var _const = __webpack_require__(73944);
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
@@ -115227,7 +115144,13 @@ const getSortingLabel = sortOrder => {
   }
 };
 const getFieldsAreaA11yDescription = () => _message.default.format(I18N_KEYS.fieldsAreaDescription);
+// The keyboard instructions are folded into the area's aria-label rather than
+// exposed via aria-description: aria-description is an ARIA 1.3 draft attribute
+// that screen readers do not read reliably, whereas the label composition
+// mirrors how DataGrid/TreeList surface such instructions.
 exports.getFieldsAreaA11yDescription = getFieldsAreaA11yDescription;
+const getFieldsAreaA11yLabel = areaLabel => `${areaLabel}. ${getFieldsAreaA11yDescription()}`;
+exports.getFieldsAreaA11yLabel = getFieldsAreaA11yLabel;
 const getFieldItemA11yLabel = (caption, _ref) => {
   let {
     sortOrder,
@@ -115832,7 +115755,7 @@ class FieldChooser extends _m_field_chooser_base.FieldChooserBase {
     // A menubar without menu items is invalid ARIA, so an empty area stays
     // without the role until fields are dropped into it.
     const hasFields = !!$container.children().length;
-    $container.attr('role', hasFields ? 'menubar' : null).attr('aria-label', hasFields ? that.option(`texts.${area}Fields`) : null).attr('aria-description', hasFields ? (0, _a11y.getFieldsAreaA11yDescription)() : null);
+    $container.attr('role', hasFields ? 'menubar' : null).attr('aria-label', hasFields ? (0, _a11y.getFieldsAreaA11yLabel)(that.option(`texts.${area}Fields`)) : null);
   }
   _renderArea(container, area) {
     const that = this;
@@ -116646,7 +116569,7 @@ class FieldsArea extends _m_area_item.AreaItem {
     if (!isVisible) {
       // The reused table element may carry the menubar role from the previous
       // render, so it is reset even though the hidden area skips rendering.
-      tableElement.attr('role', 'presentation').removeAttr('aria-label').removeAttr('aria-description');
+      tableElement.attr('role', 'presentation').removeAttr('aria-label');
       return;
     }
     (0, _iterator.each)(data, (index, field) => {
@@ -116666,13 +116589,13 @@ class FieldsArea extends _m_area_item.AreaItem {
       // element (it is invalid on a table row); thead/tr/td are kept out of
       // the accessibility tree so the field items become the menubar's items.
       row.attr('role', 'presentation');
-      tableElement.attr('role', 'menubar').attr('aria-label', this._getAreaLabel()).attr('aria-description', (0, _a11y.getFieldsAreaA11yDescription)());
+      tableElement.attr('role', 'menubar').attr('aria-label', (0, _a11y.getFieldsAreaA11yLabel)(this._getAreaLabel()));
     } else {
       // A menubar without menu items is invalid ARIA, so an empty area keeps
       // the plain placeholder text and the table stays presentational. The
       // role is reset explicitly because the table element is reused across
       // re-renders.
-      tableElement.attr('role', 'presentation').removeAttr('aria-label').removeAttr('aria-description');
+      tableElement.attr('role', 'presentation').removeAttr('aria-label');
       (0, _renderer.default)('<td>').append((0, _renderer.default)(DIV).addClass('dx-empty-area-text').text(this.option(`fieldPanel.texts.${area}FieldArea`))).appendTo(row);
     }
     if (that._shouldCreateButton()) {
@@ -117752,7 +117675,6 @@ var _accessibility = __webpack_require__(16191);
 var _themes = __webpack_require__(52071);
 var _widget = _interopRequireDefault(__webpack_require__(89275));
 var _m_utils = _interopRequireDefault(__webpack_require__(53226));
-var _data_cell_description = __webpack_require__(32247);
 var _m_chart_integration = __webpack_require__(67705);
 var _m_data_area = _interopRequireDefault(__webpack_require__(31045));
 var _m_data_controller = _interopRequireDefault(__webpack_require__(18509));
@@ -118933,7 +118855,6 @@ class PivotGrid extends _widget.default {
     const $gridElement = dataArea.tableElement().parent();
     const tableIds = [columnsArea.tableElement().attr('id'), rowsArea.tableElement().attr('id'), dataArea.tableElement().attr('id')].filter(_type.isDefined).join(' ');
     $gridElement.attr('role', 'grid').attr('aria-owns', tableIds).attr('aria-rowcount', this._dataController.totalRowCount()).attr('aria-colcount', this._dataController.totalColumnCount());
-    (0, _data_cell_description.describeDataCellsWithHeaders)(columnsArea.headElement().get(0), rowsArea.tableElement().children('tbody').get(0), dataArea.tableElement().children('tbody').get(0));
   }
   _update(isFirstDrawing) {
     const that = this;

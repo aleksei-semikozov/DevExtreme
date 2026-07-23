@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>PivotGrid A11y — что НЕ чиним и почему (для защиты)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" type="text/css" href="dx.fluent.blue.light.css" />
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="dx.all.debug.js"></script>
+  <script src="data.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 24px; max-width: 1000px; margin: 0 auto; color: #1f2328; line-height: 1.5; }
+    h1 { font-size: 22px; } h2 { font-size: 17px; margin-top: 26px; }
+    .intro { padding: 12px 16px; background: #ddf4ff; border-left: 4px solid #218bff; margin-bottom: 18px; font-size: 14px; }
+    .item { border: 1px solid #d0d7de; border-radius: 8px; padding: 14px 16px; margin: 14px 0; }
+    .item h2 { margin-top: 0; }
+    .tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; vertical-align: middle; margin-left: 8px; }
+    .shared { background: #ddf4ff; color: #0969da; }
+    .bydesign { background: #dafbe1; color: #1a7f37; }
+    .cosmetic { background: #fff8c5; color: #9a6700; }
+    .scope { background: #eee; color: #57606a; }
+    .row { margin: 7px 0; font-size: 14px; }
+    .row b { color: #1a1a1a; }
+    .say { background: #f6f8fa; border-left: 3px solid #1a7f37; padding: 8px 12px; margin-top: 8px; font-size: 13.5px; }
+    kbd { background: #f6f8fa; border: 1px solid #d0d7de; border-bottom-width: 2px; border-radius: 4px; padding: 1px 5px; font-size: 12px; }
+    code { background: #f6f8fa; padding: 1px 5px; border-radius: 4px; font-size: 12.5px; }
+    #pivotgrid { margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h1>PivotGrid A11y — что мы НЕ чиним и почему</h1>
+
+  <div class="intro">
+    Это замечания из тестирования, по которым позиция команды — <b>не менять</b> (либо это поведение общих виджетов и всех гридов, либо by-design, либо косметика/вне scope этой итерации).
+    Под каждым — <b>суть</b>, <b>почему это не баг PivotGrid</b> (с пруфом, как ведут себя DataGrid/CardView), и <b>что сказать/показать на защите</b>.
+    Грид для проверки — внизу страницы. Пруфы по коду — по запросу.
+  </div>
+
+  <div class="item">
+    <h2>Фокус-ордер: кнопка Field Chooser получает фокус раньше полей <span class="tag bydesign">by design</span></h2>
+    <div class="row"><b>Суть (Andrew):</b> при <kbd>Tab</kbd> с адресной строки фокус сперва встаёт на кнопку Field Chooser (справа вверху), потом на первое поле (Country).</div>
+    <div class="row"><b>Почему не баг:</b> тулбар с кнопкой рендерится в DOM <b>раньше</b> контента, и это единый established-паттерн всех гридов. В DataGrid вьюхи рендерятся строго в порядке <code>headerPanel → columnHeaders → rows</code>, поэтому кнопка column chooser там тоже первая в tab-порядке. Менять порядок только в PivotGrid — сломать консистентность со всей линейкой.</div>
+    <div class="say"><b>На защите:</b> «Toolbar-before-content — established pattern DataGrid; кнопка column chooser в DataGrid тоже первая. Открой любой DataGrid-демо с column chooser и нажми Tab — поведение идентично».</div>
+  </div>
+
+  <div class="item">
+    <h2>У Field Chooser нет обводки фокуса, как у ячеек <span class="tag shared">общее с DataGrid</span></h2>
+    <div class="row"><b>Суть (Aliyar):</b> кнопка Field Chooser не получает outline-рамку, как у ячеек — непонятно, когда она в фокусе.</div>
+    <div class="row"><b>Почему не баг PivotGrid:</b> кнопка — обычный <code>dxButton</code>, её фокус индицируется <b>фоном/тенью</b> через тему (<code>.dx-state-focused</code>), как у всех кнопок и как у кнопки column chooser в DataGrid. Ячейки же используют новый <code>:focus-visible</code> outline. Разный визуал индикации — это уровень темы, а не PivotGrid; кнопка column chooser в DataGrid ведёт себя точно так же (без ring, только фон).</div>
+    <div class="say"><b>На защите:</b> «Индикация фокуса кнопки — фон темы, идентично кнопке column chooser в DataGrid. Отдельная outline-рамка для кнопок — задача на тему/линейку, не на PivotGrid. Фокус виден (меняется фон), просто не рамкой».</div>
+  </div>
+
+  <div class="item">
+    <h2>«Не войти в чек-лист / меню с клавиатуры» после Alt+↓ и Shift+F10 <span class="tag shared">общий виджет</span></h2>
+    <div class="row"><b>Суть (Sveta):</b> <kbd>Alt+↓</kbd> открывает header filter, но «нельзя переместить фокус в чек-лист»; аналогично «не сфокусировать пункт Show Field Chooser» в контекстном меню.</div>
+    <div class="row"><b>Реальность (проверено):</b> фокус <b>уже переходит</b> в открытый попап — но на контейнер списка/меню, а <b>первый пункт не подсвечивается</b>. Достаточно нажать <kbd>↓</kbd> — подсветится первый пункт, дальше <kbd>↑</kbd>/<kbd>↓</kbd> навигируют, <kbd>Space</kbd>/<kbd>Enter</kbd> выбирают. То есть «невозможно» — неверно; это про <b>обнаруживаемость</b>.</div>
+    <div class="row"><b>Почему не баг PivotGrid:</b> и header filter, и контекстное меню — <b>общие виджеты</b> (HeaderFilterView / dxList / dxContextMenu). PivotGrid их не форкает. Отсутствие авто-префокуса первого пункта при клавиатурном открытии — поведение этих виджетов, одинаковое в DataGrid/TreeList/CardView.</div>
+    <div class="say"><b>На защите:</b> «Фокус входит в список (проверяемо), нужен <kbd>↓</kbd> для первого пункта. Это поведение общего header-filter/context-menu, идентично в DataGrid. Авто-префокус первого пункта — задача на общие виджеты, а не PivotGrid». <i>(Можно завести отдельный тикет на общие виджеты, если решим улучшать.)</i></div>
+  </div>
+
+  <div class="item">
+    <h2>Контекстное меню поля почти пустое (только «Show Field Chooser») <span class="tag bydesign">by design, обсуждаемо</span></h2>
+    <div class="row"><b>Суть (Sveta):</b> у контекстного меню <b>поля</b> единственный пункт — «Show Field Chooser», и это странно.</div>
+    <div class="row"><b>Почему так:</b> на ячейке-заголовке (строка/колонка) меню полноценное — Expand All / Collapse All / сортировка по summary / Show Field Chooser. У поля же осмысленный пункт один. Ценность <kbd>Shift+F10</kbd> на поле — в <b>консистентности</b>: любой фокусируемый элемент реагирует на клавишу контекстного меню (как правый клик), а состав меню определяется контекстом.</div>
+    <div class="say"><b>На защите:</b> «Меню контекстное — состав зависит от элемента; на поле осмыслен один пункт. Клавиатурный вызов даём для консистентности с правым кликом. Если считаем пункт лишним для поля — можем убрать вызов на полях, это дёшево». <i>(Готов сделать, если решим.)</i></div>
+  </div>
+
+  <div class="item">
+    <h2>Симулированный скролл не оперируется клавиатурой <span class="tag shared">платформенное</span></h2>
+    <div class="row"><b>Суть (Aliyar, macOS Chrome):</b> симулированные скроллбары нельзя двигать клавиатурой.</div>
+    <div class="row"><b>Почему не баг PivotGrid:</b> это поведение общего <code>dxScrollable</code> во всех компонентах DevExtreme. Пункт эпика «Scrollable region must have keyboard access» закрыт тем, что регион <b>достижим</b> (первая ячейка данных фокусируема, стрелки в заголовках двигают фокус). Полноценный keyboard-скролл симулированных скроллбаров — платформенная задача на dxScrollable, не на PivotGrid.</div>
+    <div class="say"><b>На защите:</b> «Регион доступен с клавиатуры (фокусируемая ячейка + стрелочная навигация заголовков). Оперирование симулированного скроллбара — общий dxScrollable, одинаково во всех гридах».</div>
+  </div>
+
+  <div class="item">
+    <h2>Нет стрелочной навигации по ячейкам данных <span class="tag scope">вне scope итерации</span></h2>
+    <div class="row"><b>Суть (Aliyar):</b> внутри области данных стрелки не двигают фокус по ячейкам.</div>
+    <div class="row"><b>Статус:</b> навигация по data-ячейкам <b>не планировалась</b> в этой итерации (подтвердила Светлана). По дизайну фокус даём там, где есть контролы (заголовки, поля); в области данных фокусируема только первая ячейка — как точка входа.</div>
+    <div class="say"><b>На защите:</b> «Out of scope этой итерации, подтверждено. Осознанное решение: навигация там, где есть интерактивные элементы».</div>
+  </div>
+
+  <div class="item">
+    <h2>Firefox: обводка первого поля обрезана слева <span class="tag cosmetic">косметика, FF-only</span></h2>
+    <div class="row"><b>Суть (Sveta, Firefox 152):</b> у первого поля (Country) фокусная рамка обрезана с левого края.</div>
+    <div class="row"><b>Реальность:</b> Firefox-специфичная отрисовка <code>outline-offset:-2px</code> на <code>&lt;td&gt;</code>. В Chrome и Safari рамка целая (проверено). Фокус работает корректно — дефект чисто визуальный, 1–2px слева, только в FF.</div>
+    <div class="row"><b>Оценка:</b> косметика низкого приоритета; при желании лечится заменой <code>outline</code> на inset <code>box-shadow</code> (кросс-браузерно). Не функциональная проблема.</div>
+    <div class="say"><b>На защите:</b> «Косметический FF-рендер, фокус работает; в Chrome/Safari рамка целая. Готовы поправить на box-shadow, если приоритезируем — но это не блокер».</div>
+  </div>
+
+  <h2>Грид для проверки</h2>
+  <div id="pivotgrid"></div>
+
+  <script>
+    $(function () {
+      $('#pivotgrid').dxPivotGrid({
+        width: 1000, allowSorting: true, allowSortingBySummary: true, allowFiltering: true,
+        allowExpandAll: true, showBorders: true,
+        fieldPanel: { visible: true }, fieldChooser: { enabled: true, height: 500 },
+        scrolling: { mode: 'standard' },
+        dataSource: { fields: [
+          { dataField: 'country', area: 'filter' },
+          { caption: 'Region', dataField: 'region', area: 'row' },
+          { caption: 'City', dataField: 'city', area: 'row' },
+          { dataField: 'country', caption: 'Country', area: 'column' },
+          { dataField: 'date', dataType: 'date', area: 'column' },
+          { caption: 'Sales', dataField: 'amount', dataType: 'number', summaryType: 'sum', area: 'data' },
+        ], store: sales },
+      });
+    });
+  </script>
+</body>
+</html>

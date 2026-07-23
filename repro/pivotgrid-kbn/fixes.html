@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>PivotGrid A11y — фиксы и как проверить</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" type="text/css" href="dx.fluent.blue.light.css" />
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="dx.all.debug.js"></script>
+  <script src="data.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 24px; max-width: 1000px; margin: 0 auto; color: #1f2328; line-height: 1.5; }
+    h1 { font-size: 22px; } h2 { font-size: 17px; margin-top: 0; }
+    .intro { padding: 12px 16px; background: #ddf4ff; border-left: 4px solid #218bff; margin-bottom: 18px; font-size: 14px; }
+    .item { border: 1px solid #d0d7de; border-radius: 8px; padding: 14px 16px; margin: 14px 0; }
+    .tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; vertical-align: middle; margin-left: 8px; }
+    .fixed { background: #dafbe1; color: #1a7f37; }
+    .confirm { background: #fff8c5; color: #9a6700; }
+    .row { margin: 7px 0; font-size: 14px; }
+    .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 8px 0; }
+    .ba > div { padding: 8px 12px; border-radius: 6px; font-size: 13px; }
+    .before { background: #ffebe9; border-left: 3px solid #cf222e; }
+    .after { background: #dafbe1; border-left: 3px solid #1a7f37; }
+    .how { background: #f6f8fa; border-left: 3px solid #218bff; padding: 8px 12px; margin-top: 8px; font-size: 13.5px; }
+    .nvda { border: 2px solid #8250df; border-radius: 8px; padding: 16px; margin: 20px 0; background: #faf5ff; }
+    .nvda h2 { color: #6639ba; }
+    kbd { background: #fff; border: 1px solid #d0d7de; border-bottom-width: 2px; border-radius: 4px; padding: 1px 5px; font-size: 12px; }
+    code { background: #eef1f4; padding: 1px 5px; border-radius: 4px; font-size: 12.5px; }
+    ol li, ul li { margin: 4px 0; font-size: 13.5px; }
+    #pivotgrid { margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h1>PivotGrid A11y — что починили и как это проверить</h1>
+
+  <div class="intro">
+    Сборка с фиксами (после тестирования). Ниже — <b>что было → что стало</b>, как убедиться <b>без скринридера</b> (через DevTools → Accessibility) и <b>со скринридером</b> (NVDA — гайд в конце страницы).
+    Грид для проверки — внизу. Начни с DevTools-способа: он показывает «что скажет любой ридер», не требует Windows.
+  </div>
+
+  <div class="item">
+    <h2>#4 — Подсказка о клавишах теперь читается <span class="tag fixed">FIXED</span></h2>
+    <div class="row"><b>Проблема (Andrew):</b> инструкция о клавишах висела в атрибуте <code>aria-description</code>. Это черновик ARIA 1.3 — NVDA/JAWS его не читают, подсказка «немая».</div>
+    <div class="ba">
+      <div class="before"><b>Было:</b> <code>role=menubar</code>, <code>aria-label="Row Fields"</code>, <code>aria-description="Press Enter…"</code> — description <b>не озвучивается</b>.</div>
+      <div class="after"><b>Стало:</b> <code>role=menubar</code>, <code>aria-label="Row Fields. Press Enter or Space to sort…, Shift + F10…"</code> — инструкция вложена в <b>имя</b> области (как в TreeList/DataGrid), <code>aria-description</code> убран.</div>
+    </div>
+    <div class="how"><b>Проверить (DevTools):</b> выдели таблицу области полей (например Row Fields) → вкладка <b>Accessibility</b> → поле <b>Name</b> теперь содержит и название области, и инструкцию по клавишам. Раньше в Name было только «Row Fields», а инструкция — в Description (не читалась).</div>
+  </div>
+
+  <div class="item">
+    <h2>#5 — Заголовки больше не читаются дважды <span class="tag fixed">FIXED</span></h2>
+    <div class="row"><b>Проблема (Andrew):</b> заголовки строк/колонок NVDA читал <b>дважды</b>.</div>
+    <div class="row"><b>Причина:</b> мы дополнительно вешали на каждую ячейку данных <code>aria-describedby</code> со ссылками на заголовки. Но NVDA <b>уже</b> строит связь ячейка↔заголовок из grid-модели (<code>role=grid</code> + <code>aria-colindex</code> + <code>role=columnheader</code>). Наш атрибут дублировал её → двойное чтение.</div>
+    <div class="ba">
+      <div class="before"><b>Было:</b> у каждой data-ячейки <code>aria-describedby</code> → заголовки (плюс grid-модель) = связь задаётся дважды.</div>
+      <div class="after"><b>Стало:</b> <code>aria-describedby</code> с ячеек убран. Связь заголовок↔ячейка — <b>только</b> через grid-модель, ровно как в DataGrid (там data-ячейки тоже без describedby).</div>
+    </div>
+    <div class="how"><b>Проверить (DevTools):</b> выдели любую ячейку данных → в Accessibility у неё больше <b>нет</b> длинного <code>aria-describedby</code>. <b>На NVDA</b> (гайд ниже): при переходе на ячейку заголовок строки/колонки звучит <b>один раз</b>.</div>
+  </div>
+
+  <div class="item">
+    <h2>#6 — Заголовок строки озвучивается как чужая колонка (AUS) <span class="tag confirm">подтверждённый баг — нужно твоё подтверждение на NVDA</span></h2>
+    <div class="row"><b>Проблема (Andrew):</b> при табличной навигации NVDA называет row-заголовок принадлежащим колонке данных (например AUS).</div>
+    <div class="row"><b>Причина:</b> в grid-модели row-заголовки <b>не имеют</b> <code>aria-colindex</code>, а колонки данных нумеруются с 1 → в «сетке» NVDA колонки row-заголовков схлопываются с data-колонками. Это модель ролей ячеек (пришла с базовой задачей #34220), не поздние правки.</div>
+    <div class="row"><b>Предлагаемый фикс:</b> зарезервировать индексы под колонки row-заголовков — row-заголовки получают <code>aria-colindex</code> 1..k, а данные начинают с k+1 (и <code>aria-colcount</code> учитывает k). Тогда «сетка» не схлопывается.</div>
+    <div class="how"><b>Что подтвердить на NVDA:</b> в табличной навигации (<kbd>Ctrl+Alt+←/→/↑/↓</kbd>) встань на row-заголовок (Africa/Asia…) и послушай, какую колонку называет NVDA. Если чужую (AUS и т.п.) — баг подтверждён, делаем фикс индексов. <i>(Фикс ещё не в этой сборке — сначала твоё подтверждение.)</i></div>
+  </div>
+
+  <div class="nvda">
+    <h2>🎧 Как проверить на NVDA (для базового QA)</h2>
+    <div class="row"><b>Важно:</b> NVDA существует <b>только под Windows</b>. Нужен ПК/ВМ с Windows (или удалённая сессия — Assistiv Labs / BrowserStack). На маке NVDA не запустится (там встроенный VoiceOver, но эксперты слушают именно NVDA).</div>
+    <ol>
+      <li><b>Поставить:</b> скачать бесплатно с <code>nvaccess.org</code>, установить, запустить. NVDA сразу начинает читать.</li>
+      <li><b>Модификатор NVDA:</b> по умолчанию это <kbd>Insert</kbd>. На ноутбуках/маковских клавиатурах Insert часто нет → в NVDA menu → Preferences → Settings → Keyboard включить <b>Caps Lock</b> как NVDA-модификатор.</li>
+      <li><b>Заглушить речь</b> в любой момент — левый <kbd>Ctrl</kbd>.</li>
+      <li><b>Браузер:</b> Chrome или Firefox (с ними у NVDA лучшая интеграция).</li>
+      <li>Открыть эту страницу, <kbd>Tab</kbd> в грид.</li>
+    </ol>
+    <div class="row"><b>Что слушать по пунктам:</b></div>
+    <ul>
+      <li><b>#4:</b> войди <kbd>Tab</kbd>'ом в область полей — NVDA должен прочитать имя области <b>вместе с инструкцией</b> о клавишах (Enter/Space/Alt+↓/Shift+F10).</li>
+      <li><b>#5:</b> перейди на ячейку данных — заголовок строки и колонки должны прозвучать <b>по одному разу</b> (не дважды).</li>
+      <li><b>#6:</b> табличной навигацией (<kbd>Ctrl+Alt+стрелки</kbd>) встань на row-заголовок — проверь, <b>правильную</b> ли колонку называет NVDA. Если чужую — это баг #6 (подтверди, тогда чиним индексы).</li>
+    </ul>
+    <div class="row" style="margin-top:8px"><b>Режимы NVDA:</b> на странице по умолчанию <i>Browse mode</i> (курсор чтения, стрелки ходят по содержимому). Для взаимодействия с гридом NVDA сам переключается в <i>Focus mode</i>, либо переключить вручную <kbd>NVDA+Пробел</kbd>. Табличная навигация — <kbd>Ctrl+Alt+стрелки</kbd>.</div>
+  </div>
+
+  <h2>Грид для проверки</h2>
+  <div id="pivotgrid"></div>
+
+  <script>
+    $(function () {
+      $('#pivotgrid').dxPivotGrid({
+        width: 1000, allowSorting: true, allowSortingBySummary: true, allowFiltering: true,
+        allowExpandAll: true, showBorders: true,
+        fieldPanel: { visible: true }, fieldChooser: { enabled: true, height: 500 },
+        scrolling: { mode: 'standard' },
+        dataSource: { fields: [
+          { dataField: 'country', area: 'filter' },
+          { caption: 'Region', dataField: 'region', area: 'row' },
+          { caption: 'City', dataField: 'city', area: 'row' },
+          { dataField: 'country', caption: 'Country', area: 'column' },
+          { dataField: 'date', dataType: 'date', area: 'column' },
+          { caption: 'Sales', dataField: 'amount', dataType: 'number', summaryType: 'sum', area: 'data' },
+        ], store: sales },
+      });
+    });
+  </script>
+</body>
+</html>
