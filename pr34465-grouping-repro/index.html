@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PR #34465 — визуальные находки по multilevel grouping</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #1a1a1a;
+    --muted: #5c5c5c;
+    --card: #f6f7f9;
+    --card-br: #e2e4e8;
+    --code-bg: #f0f1f4;
+    --accent: #0b66c3;
+    --ok: #1a7f37;
+    --bad: #c9330f;
+    --warn: #b26a00;
+
+    /* Точные значения из generic-темы (PR head 30431804bf) */
+    --left-col: 100px;                          /* $scheduler-left-column-width */
+    --sch-border: 1px solid rgba(0,0,0,.22);    /* $scheduler-base-border + color */
+
+    --d0: #cfe3ff;   /* уровень 0 */
+    --d1: #d6f0dc;   /* уровень 1 */
+    --leaf: #fbe6c4; /* лист */
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#14161a; --fg:#e8eaed; --muted:#9aa0a8; --card:#1c1f25; --card-br:#2c3038;
+      --code-bg:#0f1114; --accent:#5aa2f0; --ok:#4ec86f; --bad:#ff7a57; --warn:#e0a44a;
+      --sch-border:1px solid rgba(255,255,255,.24);
+      --d0:#25405f; --d1:#22402c; --leaf:#4a3a1f;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#14161a; --fg:#e8eaed; --muted:#9aa0a8; --card:#1c1f25; --card-br:#2c3038;
+    --code-bg:#0f1114; --accent:#5aa2f0; --ok:#4ec86f; --bad:#ff7a57; --warn:#e0a44a;
+    --sch-border:1px solid rgba(255,255,255,.24);
+    --d0:#25405f; --d1:#22402c; --leaf:#4a3a1f;
+  }
+  :root[data-theme="light"]{
+    --bg:#fff; --fg:#1a1a1a; --muted:#5c5c5c; --card:#f6f7f9; --card-br:#e2e4e8;
+    --code-bg:#f0f1f4; --accent:#0b66c3; --ok:#1a7f37; --bad:#c9330f; --warn:#b26a00;
+    --sch-border:1px solid rgba(0,0,0,.22);
+    --d0:#cfe3ff; --d1:#d6f0dc; --leaf:#fbe6c4;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  h2 { font-size: 20px; margin: 40px 0 10px; padding-top: 14px; border-top: 1px solid var(--card-br); }
+  h3 { font-size: 15px; margin: 18px 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  p { margin: 8px 0; }
+  a { color: var(--accent); }
+  .lead { color: var(--muted); font-size: 15px; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px;
+    background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+  pre { background: var(--code-bg); border: 1px solid var(--card-br); border-radius: 8px;
+    padding: 12px 14px; overflow-x: auto; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12.5px; line-height: 1.5; }
+  .tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+    vertical-align: middle; margin-left: 6px; }
+  .t-high { background: color-mix(in srgb, var(--bad) 18%, transparent); color: var(--bad); }
+  .t-med  { background: color-mix(in srgb, var(--warn) 20%, transparent); color: var(--warn); }
+  .t-low  { background: color-mix(in srgb, var(--muted) 22%, transparent); color: var(--muted); }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin: 14px 0; }
+  @media (max-width: 720px) { .grid2 { grid-template-columns: 1fr; } }
+  .panelcard { border: 1px solid var(--card-br); border-radius: 10px; overflow: hidden; background: var(--card); }
+  .panelcard > .cap { padding: 8px 12px; font-weight: 700; font-size: 13px; display:flex; align-items:center; gap:8px;
+    border-bottom: 1px solid var(--card-br); }
+  .cap .dot { width: 9px; height: 9px; border-radius: 50%; }
+  .cap.bad .dot { background: var(--bad); } .cap.ok .dot { background: var(--ok); }
+  .stage { padding: 16px; display: flex; }
+
+  .note { border-left: 3px solid var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent);
+    padding: 10px 14px; border-radius: 0 8px 8px 0; margin: 14px 0; font-size: 14px; }
+  .note.bad { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 8%, transparent); }
+  .note.warn { border-color: var(--warn); background: color-mix(in srgb, var(--warn) 9%, transparent); }
+
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 13.5px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--card-br); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  td code { white-space: nowrap; }
+
+  .theme-toggle { position: fixed; top: 14px; right: 14px; border: 1px solid var(--card-br); background: var(--card);
+    color: var(--fg); border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 13px; }
+
+  /* =========================================================================
+     ТОЧНЫЕ ПРАВИЛА ИЗ PR (packages/devextreme-scss/.../base/scheduler/views/_index.scss)
+     Миксин flex-container($dir,$wrap) → display:flex; flex-flow:$dir $wrap;
+     ========================================================================= */
+  .sch { height: 340px; width: 100%; color: #12314f; }
+  @media (prefers-color-scheme: dark){ .sch { color: #dfeaff; } }
+  :root[data-theme="dark"] .sch { color:#dfeaff; }
+
+  .dx-scheduler-group-flex-container {
+    flex: 0 0 100%;
+    min-height: 100%;
+    display: flex;
+    height: 100%;
+  }
+  /* база (строки 306-333): ВСЕ вложенные строки — column */
+  .dx-scheduler-group-flex-container .dx-scheduler-group-row {
+    display: flex; flex-flow: column nowrap;     /* @include flex-container(column, nowrap) */
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+  .dx-scheduler-group-flex-container .dx-scheduler-group-row .dx-scheduler-group-header {
+    display: flex; flex-flow: row nowrap;
+    flex: 1 1 0;
+    padding: 0 5px;
+    height: auto;
+    width: var(--left-col);
+    justify-content: flex-start;
+    align-items: center;
+    overflow: hidden;
+    border: none;
+    border-top: var(--sch-border);
+  }
+  /* иерархический (строки 337-384) */
+  .dx-scheduler-group-flex-container-hierarchical { flex-direction: column; }
+  .dx-scheduler-group-flex-container-hierarchical > .dx-scheduler-group-row {
+    display: flex; flex-flow: row nowrap;          /* ТОЛЬКО прямые потомки (>) */
+    flex: 1 1 0;
+    width: 100%;
+    min-width: 0;
+  }
+  .dx-scheduler-group-flex-container-hierarchical > .dx-scheduler-group-row .dx-scheduler-group-header {
+    display: flex; flex-flow: row nowrap;
+    flex: 0 0 auto;
+    padding: 0 5px;
+    height: 100%;
+    width: var(--left-col);
+    align-items: center;
+    overflow: hidden;
+    border: none;
+    border-top: var(--sch-border);
+  }
+  .dx-scheduler-group-flex-container-hierarchical > .dx-scheduler-group-row .dx-scheduler-group-header.dx-scheduler-group-header-leaf {
+    flex: 1 1 auto;
+    width: auto;
+    border-right: var(--sch-border);
+  }
+  .dx-scheduler-group-flex-container-hierarchical > .dx-scheduler-group-row .dx-scheduler-group-flex-container {
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    width: auto;
+  }
+  .dx-scheduler-group-flex-container-hierarchical > .dx-scheduler-group-row > .dx-scheduler-group-header.dx-scheduler-group-header-leaf:only-child {
+    flex: 0 0 auto;
+    width: var(--left-col);
+    min-width: var(--left-col);
+  }
+
+  /* Раскраска по глубине, чтобы структура читалась */
+  .dx-scheduler-group-header { border-left: var(--sch-border); border-right: var(--sch-border); }
+  .lvl0 > .dx-scheduler-group-header { background: var(--d0); font-weight: 700; }
+  .lvl1 > .dx-scheduler-group-header { background: var(--d1); font-weight: 600; }
+  .isleaf > .dx-scheduler-group-header { background: var(--leaf); }
+  .dx-scheduler-group-header-content { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* ==== ФИКС: распространить row-раскладку на вложенные строки любой глубины ==== */
+  .demo-fixed .dx-scheduler-group-flex-container-hierarchical .dx-scheduler-group-row {
+    flex-flow: row nowrap;
+  }
+  .demo-fixed .dx-scheduler-group-flex-container-hierarchical .dx-scheduler-group-flex-container {
+    flex-direction: column;
+  }
+  /* ==== ФИКС #2: короткий лист занимает всю ширину ==== */
+  .demo-fixed2 .dx-scheduler-group-flex-container-hierarchical > .dx-scheduler-group-row > .dx-scheduler-group-header.dx-scheduler-group-header-leaf:only-child {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+  }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeBtn">◐ тема</button>
+<div class="wrap">
+
+  <h1>PR #34465 — визуальная проверка находок</h1>
+  <p class="lead">
+    Scheduler: Multilevel grouping — новый рендеринг заголовков.
+    Ниже — <strong>дословные CSS-правила из PR</strong> (<code>base/scheduler/views/_index.scss</code>, коммит <code>30431804bf</code>),
+    применённые к <strong>реальной DOM-структуре</strong>, которую генерирует
+    <code>GroupPanelVerticalNode</code>. Это не полный виджет, а изолированное воспроизведение
+    механики раскладки: «как сейчас в PR» рядом с «как было бы с фиксом».
+  </p>
+
+  <!-- ================= FINDING #1 ================= -->
+  <h2>#1 · Вложенные не-листовые строки теряют горизонтальную раскладку при 3+ уровнях <span class="tag t-high">HIGH</span></h2>
+  <p>
+    Базовое правило применяет <code>flex-direction: column</code> к <em>любой</em> вложенной строке
+    (селектор-потомок), а иерархический оверрайд возвращает <code>row</code> только строкам
+    <strong>нулевого уровня</strong> — через дочерний комбинатор <code>&gt;</code>:
+  </p>
+  <pre>/* _index.scss:307  — потомок: срабатывает на ВСЕХ уровнях */
+.dx-scheduler-group-flex-container .dx-scheduler-group-row { flex-flow: column nowrap; }
+
+/* _index.scss:340  — только ПРЯМЫЕ потомки (&gt;): уровень 0 */
+.dx-scheduler-group-flex-container-hierarchical &gt; .dx-scheduler-group-row { flex-flow: row nowrap; }</pre>
+  <p>
+    У обоих селекторов специфичность одинаковая (2 класса), но иерархический блок идёт
+    позже → на уровне 0 побеждает <code>row</code>. Для строк уровня 1+ иерархического правила нет,
+    остаётся <code>column</code> базового → заголовок узла встаёт <strong>над</strong> детьми, а не сбоку.
+    Срабатывает при <code>maxDepth &gt; 1</code>, то есть и на обычной декартовой группировке по 3 ресурсам
+    (<code>group_panel_vertical.tsx</code>).
+  </p>
+  <p class="lead">Дерево: <code>Регион → Здание → Комната</code> (равномерная глубина 3).</p>
+  <div class="grid2">
+    <div class="panelcard">
+      <div class="cap bad"><span class="dot"></span>Как в PR (уровень 1 = column)</div>
+      <div class="stage"><div class="sch" id="p1_pr"></div></div>
+    </div>
+    <div class="panelcard">
+      <div class="cap ok"><span class="dot"></span>С фиксом (row на всех уровнях)</div>
+      <div class="stage"><div class="sch demo-fixed" id="p1_fix"></div></div>
+    </div>
+  </div>
+  <div class="note bad">
+    Слева заголовки «Здание N1/N2/S1» — это широкие полосы <em>над</em> своими комнатами (сломанная вложенность).
+    Справа они стоят колонкой слева от комнат, как и ожидается от иерархического заголовка.
+  </div>
+
+  <!-- ================= FINDING #2 ================= -->
+  <h2>#2 · «Короткий» лист при неравномерной глубине зажат в ширину левой колонки <span class="tag t-med">MED</span></h2>
+  <p>
+    Ветка мельче самой глубокой (здание без комнат) рендерится как единственный заголовок в строке
+    → срабатывает правило <code>:only-child</code> и фиксирует ширину в <code>$scheduler-left-column-width</code>:
+  </p>
+  <pre>/* _index.scss:379 */
+.dx-scheduler-group-flex-container-hierarchical &gt; .dx-scheduler-group-row
+  &gt; .dx-scheduler-group-header.dx-scheduler-group-header-leaf:only-child {
+  flex: 0 0 auto; width: 100px; min-width: 100px;
+}</pre>
+  <p class="lead">Дерево: <code>Здание A → (Комната A1, A2)</code> и <code>Здание B</code> (без комнат).</p>
+  <div class="grid2">
+    <div class="panelcard">
+      <div class="cap bad"><span class="dot"></span>Как в PR (B зажат в 100px)</div>
+      <div class="stage"><div class="sch" id="p2_pr"></div></div>
+    </div>
+    <div class="panelcard">
+      <div class="cap ok"><span class="dot"></span>Вариант: B на всю ширину</div>
+      <div class="stage"><div class="sch demo-fixed2" id="p2_fix"></div></div>
+    </div>
+  </div>
+  <div class="note warn">
+    Слева «Здание B» — узкий блок в 100px с пустотой справа. Спорно с точки зрения дизайна
+    (возможно, так и задумано), поэтому severity — MED: стоит просто посмотреть и решить.
+  </div>
+
+  <!-- ================= a11y ================= -->
+  <h2>#3 / #4 · Доступность (не визуально — по DOM) <span class="tag t-med">MED</span></h2>
+  <p>DOM, который выдаёт <code>GroupPanelVerticalNode</code> (строки 51–52):</p>
+  <pre>&lt;div class="dx-scheduler-group-header ..."
+     title={node.text}
+     role="rowheader"          <span style="opacity:.7">// #4: role без предка role=row/grid/table → связь недействительна для скринридеров</span>
+     aria-label={node.text}&gt;  <span style="opacity:.7">// #3: жёстко перекрывает доступное имя из resourceCellTemplate</span>
+  {cellTemplate ? &lt;PublicTemplate .../&gt; : &lt;div class="...-content"&gt;{node.text}&lt;/div&gt;}
+&lt;/div&gt;</pre>
+  <ul>
+    <li><strong>#3</strong> — <code>aria-label={node.text}</code> задан безусловно: при кастомном
+      <code>resourceCellTemplate</code> доступное имя всё равно = сырой текст ресурса. Ставить только без шаблона.</li>
+    <li><strong>#4</strong> — <code>role="rowheader"</code> на <code>&lt;div&gt;</code> без предка
+      <code>role="row"/"rowgroup"/"grid"/"table"</code> не образует заголовочной связи. Либо добавить роли контейнерам, либо убрать.</li>
+  </ul>
+
+  <!-- ================= остальные ================= -->
+  <h2>Полный список находок</h2>
+  <table>
+    <thead><tr><th>#</th><th>Severity</th><th>Файл</th><th>Суть</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><span class="tag t-high">HIGH</span></td><td><code>_index.scss:340</code></td><td>Вложенные не-листовые строки остаются <code>column</code> при 3+ уровнях (см. выше — блокер).</td></tr>
+      <tr><td>2</td><td><span class="tag t-med">MED</span></td><td><code>_index.scss:379</code></td><td>Короткий лист зажат в 100px при неравномерной глубине.</td></tr>
+      <tr><td>3</td><td><span class="tag t-med">MED</span></td><td><code>group_panel_vertical_node.tsx:52</code></td><td><code>aria-label</code> перекрывает имя из шаблона.</td></tr>
+      <tr><td>4</td><td><span class="tag t-med">MED</span></td><td><code>group_panel_vertical_node.tsx:51</code></td><td><code>role="rowheader"</code> без контекста row/grid/table.</td></tr>
+      <tr><td>5</td><td><span class="tag t-med">MED</span></td><td><code>base.ts · getTimelineGroupPanelRows</code></td><td>Иерархический timeline разворачивается в строки корень→лист — нужна проверка на живом виджете (статически не воспроизвести).</td></tr>
+      <tr><td>6</td><td><span class="tag t-low">LOW</span></td><td><code>base.ts · getTimelineGroupPanelRows</code></td><td>Латентное двойное применение <code>groupByDate</code> (сейчас недостижимо, но защита непоследовательна).</td></tr>
+      <tr><td>7</td><td><span class="tag t-low">LOW</span></td><td><code>group_panel_tree.ts:7</code></td><td><code>String(getKeyHash(id))</code>: пустой объект → коллизия ключа, <code>Object.create(null)</code> → throw.</td></tr>
+    </tbody>
+  </table>
+  <div class="note">
+    #5 и #6 — про timeline и требуют собранного виджета с иерархическим ресурсом; здесь честно не
+    подделываю их «фейковой» раскладкой. #7 — экзотический edge (id как объект без прототипа).
+  </div>
+
+  <p class="lead" style="margin-top:28px">
+    Источник данных: PR head <code>30431804bf</code> (ветка <code>feature/scheduler-multilevel-grouping/update-header-rendering-test</code>).
+    CSS перенесён дословно, DOM повторяет вывод компонентов <code>group_panel_vertical.tsx</code> / <code>group_panel_vertical_node.tsx</code>.
+  </p>
+</div>
+
+<script>
+  // --- переключатель темы ---
+  document.getElementById('themeBtn').addEventListener('click', () => {
+    const r = document.documentElement;
+    const cur = r.getAttribute('data-theme')
+      || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    r.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+  });
+
+  // --- построение DOM ровно как GroupPanelVerticalNode ---
+  // node: { text, leafCount, children:[], leaf? }
+  function makeNode(node, depth) {
+    const isLeaf = !node.children || node.children.length === 0;
+    const row = document.createElement('div');
+    row.className = 'dx-scheduler-group-row lvl' + depth + (isLeaf ? ' isleaf' : '');
+    row.style.flexGrow = node.leafCount;         // style={{ flex-grow: node.leafCount }}
+
+    const header = document.createElement('div');
+    header.className = 'dx-scheduler-group-header' + (isLeaf ? ' dx-scheduler-group-header-leaf' : '');
+    header.setAttribute('role', 'rowheader');
+    header.setAttribute('title', node.text);
+    header.setAttribute('aria-label', node.text);
+    const content = document.createElement('div');
+    content.className = 'dx-scheduler-group-header-content';
+    content.textContent = node.text;
+    header.appendChild(content);
+    row.appendChild(header);
+
+    if (!isLeaf) {
+      const box = document.createElement('div');
+      box.className = 'dx-scheduler-group-flex-container';
+      node.children.forEach(ch => box.appendChild(makeNode(ch, depth + 1)));
+      row.appendChild(box);
+    }
+    return row;
+  }
+
+  function render(elId, tree) {
+    const el = document.getElementById(elId);
+    const outer = document.createElement('div');
+    outer.className = 'dx-scheduler-group-flex-container dx-scheduler-group-flex-container-hierarchical';
+    tree.forEach(n => outer.appendChild(makeNode(n, 0)));
+    el.appendChild(outer);
+  }
+
+  const leaf = (text) => ({ text, leafCount: 1, children: [] });
+
+  // #1: равномерная глубина 3 — Регион → Здание → Комната
+  const tree3 = [
+    { text: 'Регион Север', leafCount: 3, children: [
+      { text: 'Здание N1', leafCount: 2, children: [ leaf('Комн. 101'), leaf('Комн. 102') ] },
+      { text: 'Здание N2', leafCount: 1, children: [ leaf('Комн. 201') ] },
+    ]},
+    { text: 'Регион Юг', leafCount: 2, children: [
+      { text: 'Здание S1', leafCount: 2, children: [ leaf('Комн. 301'), leaf('Комн. 302') ] },
+    ]},
+  ];
+  render('p1_pr', tree3);
+  render('p1_fix', tree3);
+
+  // #2: неравномерная глубина 2 — Здание B без комнат
+  const tree2 = [
+    { text: 'Здание A', leafCount: 2, children: [ leaf('Комната A1'), leaf('Комната A2') ] },
+    { text: 'Здание B', leafCount: 1, children: [] },
+  ];
+  render('p2_pr', tree2);
+  render('p2_fix', tree2);
+</script>
+</body>
+</html>
