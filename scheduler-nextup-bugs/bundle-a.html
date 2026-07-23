@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scheduler — Next Up decisions (bundle A)</title>
+<style>
+  :root { --bg:#f7f8fa; --card:#fff; --bd:#e2e6ee; --ink:#1a1f2b; --ink2:#4a5265; --ink3:#737b8f;
+          --accent:#4457c9; --ok:#1c6b3f; --okbg:#e2f3e9; --okbd:#b6ddc6;
+          --warn:#8a5a00; --warnbg:#fbf1de; --warnbd:#e6d3a3;
+          --fix:#2b3ea8; --fixbg:#e9ecfb; --fixbd:#c8d0f5; }
+  * { box-sizing:border-box; }
+  body { font-family: system-ui, "Segoe UI", Roboto, sans-serif; margin:0; background:var(--bg); color:var(--ink); line-height:1.55; }
+  .wrap { max-width:900px; margin:0 auto; padding:40px 24px 70px; }
+  .eyebrow { font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--accent); font-weight:600; margin:0 0 6px; }
+  h1 { font-size:27px; margin:0 0 8px; letter-spacing:-0.02em; }
+  .lede { color:var(--ink2); max-width:72ch; margin:0 0 8px; }
+  .meta { color:var(--ink3); font-size:13px; margin:0 0 22px; }
+  .meta a { color:var(--accent); }
+
+  table.summary { width:100%; border-collapse:collapse; margin:6px 0 30px; font-size:13.5px; background:var(--card);
+                  border:1px solid var(--bd); border-radius:9px; overflow:hidden; }
+  table.summary th, table.summary td { text-align:left; padding:10px 13px; border-bottom:1px solid var(--bd); vertical-align:top; }
+  table.summary th { background:#eef1f6; color:var(--ink3); font-size:11.5px; letter-spacing:.06em; text-transform:uppercase; }
+  table.summary tr:last-child td { border-bottom:none; }
+  table.summary td.n { font-family: ui-monospace, Menlo, monospace; font-weight:600; color:var(--accent); white-space:nowrap; }
+
+  .post { background:var(--card); border:1px solid var(--bd); border-radius:11px; padding:22px 24px 20px; margin:0 0 26px; }
+  .post h2 { font-size:18px; margin:0 0 4px; letter-spacing:-0.01em; line-height:1.35; }
+  .verdict { display:inline-block; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; letter-spacing:.04em;
+             text-transform:uppercase; margin:0 0 12px; }
+  .verdict.wf { color:var(--ok); background:var(--okbg); border:1px solid var(--okbd); }
+  .verdict.wfr { color:var(--warn); background:var(--warnbg); border:1px solid var(--warnbd); }
+  .verdict.fix { color:var(--fix); background:var(--fixbg); border:1px solid var(--fixbd); }
+  .aud { font-size:12px; color:var(--ink3); margin:0 0 14px; }
+  .post h3 { font-size:12.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink3); margin:18px 0 6px; }
+  .post p { margin:0 0 10px; color:var(--ink2); }
+  .post p.body-ink { color:var(--ink); }
+  .post ul { margin:0 0 10px; padding-left:20px; color:var(--ink2); }
+  .post li { margin:3px 0; }
+  code { font-family: ui-monospace, Menlo, monospace; font-size:12.5px; background:#eef1f6; padding:1px 5px; border-radius:4px; }
+  .cta { display:inline-flex; align-items:center; gap:7px; margin-top:6px; font-size:13.5px; font-weight:600; text-decoration:none;
+         color:#fff; background:var(--accent); padding:8px 15px; border-radius:8px; }
+  .cta:hover { background:#3647ac; }
+  .src { font-size:12.5px; color:var(--ink3); }
+  .src code { background:#f0f2f7; }
+  footer { margin-top:34px; padding-top:16px; border-top:1px solid var(--bd); color:var(--ink3); font-size:12.5px; }
+  footer a { color:var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Scheduler Squad · Next Up triage · July 2026</p>
+  <h1>Three bug decisions — for PM ruling</h1>
+  <p class="lede">Three open Scheduler bugs parked in <b>Next&nbsp;Up</b>, each reproduced live and analysed to root cause.
+     Two are proposed <b>Won't&nbsp;Fix</b>; one is proposed <b>Fix</b>. Read the write-up, open the live repro, then set the verdict.</p>
+  <p class="meta">Live repros run a real DevExtreme Scheduler (v26.1, Fluent Blue Light). Hub: <a href="index.html">all Next Up repros</a>.</p>
+
+  <table class="summary">
+    <tr><th>Issue</th><th>Summary</th><th>Proposed verdict</th></tr>
+    <tr><td class="n">#738</td><td>Recurrence icon overlaps the truncated title (and the "continues" arrow) in narrow all-day cells</td><td>Won't Fix — cosmetic</td></tr>
+    <tr><td class="n">#1699</td><td>Appointment resizes one cell into the neighbouring resource group (horizontal grouping)</td><td>Won't Fix — needs your ruling on H/V inconsistency</td></tr>
+    <tr><td class="n">#1834</td><td>Wrong day name in timeline views at the DST spring-forward boundary</td><td>Fix — correctness defect</td></tr>
+  </table>
+
+  <!-- ============================ 738 ============================ -->
+  <div class="post">
+    <span class="verdict wf">Won't Fix — cosmetic</span>
+    <h2>[Won't Fix] #738 — Scheduler — Recurrence icon overlaps the truncated title in narrow all-day cells</h2>
+    <p class="aud">Designers · PMs · Support · Developers</p>
+
+    <h3>What's the issue?</h3>
+    <p>In the week / work-week / day views, when an all-day appointment is too narrow to show its full text, the title is
+       truncated with an ellipsis. If that appointment also carries a <b>recurrence</b> rule, its recurrence icon is drawn
+       <b>on top of the ellipsis</b> instead of beside it. For the head/tail segments of a multi-day appointment the
+       "continues" arrow can collide with the recurrence icon in the same corner.</p>
+    <p class="src">Root cause: in the base theme the all-day block reserves right-padding
+       (<code>$scheduler-appointment-reduced-content-padding: 40px</code>) only for
+       <code>.dx-scheduler-appointment-reduced</code> (the continuation/"reduced" icon), <b>not</b> for
+       <code>.dx-scheduler-appointment-recurrence-icon</code> — see
+       <code>devextreme-scss/.../scheduler/_index.scss:208-216</code>. The month view already reserves this space
+       (<code>_index.scss:666-672</code>), which is why month renders correctly.</p>
+
+    <h3>Why don't we want to fix it?</h3>
+    <ul>
+      <li><b>Pure cosmetic.</b> The appointment stays fully interactive — click, tooltip and editing all work; only two glyphs overlap visually.</li>
+      <li><b>Narrow edge only.</b> It appears only when the column is too narrow to show the text <em>and</em> the appointment is recurring; widening columns or reducing grouping removes it.</li>
+      <li><b>Month view is already correct</b>, so this is not a systemic layout problem.</li>
+      <li><b>High cost, low value.</b> A real fix means reserving padding and repositioning <em>every</em> icon combination (reduced + recurrence + "continues" arrow), touching markup/a11y, and re-baselining scheduler screenshots across all themes — disproportionate to a minor overlap in a rare configuration.</li>
+    </ul>
+
+    <h3>Workarounds</h3>
+    <ul>
+      <li>Give all-day cells more width (fewer horizontal groups / wider container) so the title doesn't truncate.</li>
+      <li>Use an <code>appointmentTemplate</code> / <code>appointmentTooltipTemplate</code> to control icon placement or surface the recurrence state your own way.</li>
+    </ul>
+    <a class="cta" href="bug-738.html" target="_blank" rel="noopener">Open live repro → bug-738.html</a>
+  </div>
+
+  <!-- ============================ 1699 ============================ -->
+  <div class="post">
+    <span class="verdict wfr">Won't Fix — needs PM ruling</span>
+    <h2>[Won't Fix] #1699 — Scheduler — Appointment can be resized one cell past its resource group (horizontal grouping)</h2>
+    <p class="aud">Designers · PMs · Support · Developers</p>
+
+    <h3>What's the issue?</h3>
+    <p>With <b>horizontal resource grouping</b>, resizing an appointment lets its drag preview extend exactly <b>one cell</b>
+       into the neighbouring resource group before snapping back. The persisted appointment is <b>not</b> corrupted — it stays
+       within its own group; only the resize preview overshoots by a single cell.</p>
+    <p class="src">Resize bounds come from <code>getResizableAppointmentArea</code> /
+       <code>getGroupBounds</code> in <code>m_subscribes.ts:150-177</code>. The horizontal/month branch returns group
+       bounds that are one cell wider than the group; the vertical branch returns tight bounds.</p>
+
+    <h3>Why don't we want to fix it? <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--warn)">(pending your ruling)</span></h3>
+    <ul>
+      <li><b>Maximum overshoot is one cell, and it is preview-only.</b> The committed result is always correct — an appointment cannot actually be dropped into the wrong group, so there is no data-integrity impact.</li>
+      <li><b>But there is a genuine H/V inconsistency</b> worth a decision: horizontal grouping permits the 1-cell overshoot while vertical grouping does not. The core question is <b>which behaviour is canonical</b> — do we tighten horizontal to match vertical, or accept the 1-cell slop?</li>
+      <li>If we align them, the fix is modest (correct the horizontal group bounds in <code>m_subscribes.ts</code> and re-baseline the resize e2e), but it is code + tests we'd only spend for a visual nicety.</li>
+    </ul>
+    <p class="body-ink"><b>Recommendation:</b> Won't&nbsp;Fix — unless you consider the horizontal-vs-vertical inconsistency worth aligning, in which case reclassify as a small fix.</p>
+
+    <h3>Workarounds</h3>
+    <ul>
+      <li>None required for correctness — the appointment cannot be committed outside its group.</li>
+    </ul>
+    <a class="cta" href="bug-1699.html" target="_blank" rel="noopener">Open live repro → bug-1699.html</a>
+  </div>
+
+  <!-- ============================ 1834 ============================ -->
+  <div class="post">
+    <span class="verdict fix">Fix recommended — correctness</span>
+    <h2>#1834 — Scheduler — Wrong day name in timeline views on DST spring-forward</h2>
+    <p class="aud">Designers · PMs · Support · Developers</p>
+
+    <h3>What's the issue?</h3>
+    <p>In the timeline views (<code>timelineMonth</code> / <code>timelineDay</code>), under a timezone that observes DST, the
+       day headers around the <b>spring-forward</b> boundary show the wrong weekday. Confirmed with Playwright
+       (<code>timezoneId: 'Europe/Belgrade'</code>, <code>currentDate: '2024-03-31'</code>, <code>offset: 120</code>):
+       <b>31 March is labelled 'Sat' instead of 'Sun'</b>, and 'Sat' appears twice in the header row.</p>
+    <p>Note: the fact that there is <b>no 2:00 AM slot</b> that day is <b>correct</b> — the clocks jump 02:00 → 03:00. Only the
+       day <em>name</em> is defective.</p>
+    <p class="src">Root cause: <code>getDateByCellIndices</code> (<code>view_data_generator.ts:605+</code>) builds each cell's date
+       by adding a <b>fixed 24-hour stride</b> to <code>startViewDate</code> (<code>getMillisecondsOffset</code> →
+       <code>interval * cellIndex</code>, where <code>interval = toMs('day')</code> for timeline month). The spring-forward
+       civil day is only 23&nbsp;hours, so the accumulated milliseconds drift by one hour and a cell lands in the
+       <em>previous</em> civil day — producing the duplicated 'Sat'. The existing DST-correction branch
+       (<code>isStartViewDateDuringDST</code> / <code>getTimezonesDifference</code>) doesn't cover this timeline path.</p>
+
+    <h3>Why fix it (rather than Won't Fix)?</h3>
+    <ul>
+      <li><b>It's a correctness defect.</b> A wrong weekday label reads as a plain bug to any user, no matter how narrow the trigger — "Won't Fix" is a weak stance for an incorrect date.</li>
+      <li><b>Contained blast radius and cheap to lock down.</b> The fix is local to the timeline date generation, and the issue's own TODO already calls for a Jest snapshot of all visible dates — exactly the guard we'd add.</li>
+    </ul>
+
+    <h3>Recommended fix</h3>
+    <ul>
+      <li>In <code>getDateByCellIndices</code>, step the per-cell date in <b>calendar-day units</b> (or apply the timezone-difference correction) for the timeline path, instead of a fixed millisecond stride, so the day boundary is honoured across the DST change.</li>
+      <li>Add a Jest snapshot of the visible day names for <code>tz = Europe/Belgrade</code> around 2024-03-31 (and an autumn fall-back case) to prevent regressions.</li>
+    </ul>
+    <p class="src">Card estimate: 5.</p>
+    <a class="cta" href="bug-1834.html" target="_blank" rel="noopener">Open live repro → bug-1834.html</a>
+  </div>
+
+  <footer>
+    Next steps once ruled: close <b>#738</b> and (if agreed) <b>#1699</b> as Won't Fix with a link to this page and the repro;
+    move <b>#1834</b> into the fix pipeline. Hub: <a href="index.html">all Next Up repros</a>.
+  </footer>
+</div>
+</body>
+</html>
