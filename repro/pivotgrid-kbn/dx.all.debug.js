@@ -118928,7 +118928,55 @@ class PivotGrid extends _widget.default {
   _setAriaGridAttributes(dataArea, rowsArea, columnsArea) {
     const $gridElement = dataArea.tableElement().parent();
     const tableIds = [columnsArea.tableElement().attr('id'), rowsArea.tableElement().attr('id'), dataArea.tableElement().attr('id')].filter(_type.isDefined).join(' ');
-    $gridElement.attr('role', 'grid').attr('aria-owns', tableIds).attr('aria-rowcount', this._dataController.totalRowCount()).attr('aria-colcount', this._dataController.totalColumnCount());
+    // Row headers occupy the leading columns of the grid; give them their own
+    // aria-colindex range and shift the data/column indexes accordingly, so a
+    // screen reader does not read a row header as belonging to a data column.
+    const rowHeaderColumnCount = this._reserveRowHeaderColumns(dataArea, rowsArea, columnsArea);
+    $gridElement.attr('role', 'grid').attr('aria-owns', tableIds).attr('aria-rowcount', this._dataController.totalRowCount()).attr('aria-colcount', this._dataController.totalColumnCount() + rowHeaderColumnCount);
+  }
+  _reserveRowHeaderColumns(dataArea, rowsArea, columnsArea) {
+    const rowsBody = rowsArea.tableElement().children('tbody').get(0);
+    const matrix = rowsBody ? (0, _table_cell_navigation.buildCellMatrix)(rowsBody) : [];
+    // Place each row-header cell into its column (1-based); the depth is the
+    // rightmost header column, ignoring filler cells that carry no role.
+    let rowHeaderColumnCount = 0;
+    const indexed = new Set();
+    matrix.forEach(row => {
+      row.forEach((cell, columnIndex) => {
+        if (!cell || !cell.getAttribute('role')) {
+          return;
+        }
+        // The depth counts every column a header covers (colspan for collapsed
+        // levels); the colindex is the header's leftmost column.
+        rowHeaderColumnCount = Math.max(rowHeaderColumnCount, columnIndex + 1);
+        if (!indexed.has(cell)) {
+          indexed.add(cell);
+          cell.setAttribute('aria-colindex', String(columnIndex + 1));
+        }
+      });
+    });
+    if (!rowHeaderColumnCount) {
+      return 0;
+    }
+    // Shift the column-header/data cells past the reserved row-header columns.
+    // The original index is cached so repeated calls (e.g. after resize) stay
+    // idempotent instead of shifting the same cells again.
+    const shifted = new Set();
+    [columnsArea, dataArea].forEach(area => {
+      area.tableElement().find('td[aria-colindex]').each((_, td) => {
+        if (shifted.has(td)) {
+          return;
+        }
+        shifted.add(td);
+        let base = td.getAttribute('data-dx-base-colindex');
+        if (base === null) {
+          base = td.getAttribute('aria-colindex');
+          td.setAttribute('data-dx-base-colindex', base);
+        }
+        td.setAttribute('aria-colindex', String(Number(base) + rowHeaderColumnCount));
+      });
+    });
+    return rowHeaderColumnCount;
   }
   _update(isFirstDrawing) {
     const that = this;
