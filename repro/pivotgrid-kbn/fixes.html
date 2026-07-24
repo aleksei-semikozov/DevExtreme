@@ -15,7 +15,6 @@
     .item { border: 1px solid #d0d7de; border-radius: 8px; padding: 14px 16px; margin: 14px 0; }
     .tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; vertical-align: middle; margin-left: 8px; }
     .fixed { background: #dafbe1; color: #1a7f37; }
-    .confirm { background: #fff8c5; color: #9a6700; }
     .row { margin: 7px 0; font-size: 14px; }
     .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 8px 0; }
     .ba > div { padding: 8px 12px; border-radius: 6px; font-size: 13px; }
@@ -34,56 +33,64 @@
   <h1>PivotGrid A11y — что починили и как это проверить</h1>
 
   <div class="intro">
-    Сборка с фиксами (после тестирования). Ниже — <b>что было → что стало</b>, как убедиться <b>без скринридера</b> (через DevTools → Accessibility) и <b>со скринридером</b> (NVDA — гайд в конце страницы).
-    Грид для проверки — внизу. Начни с DevTools-способа: он показывает «что скажет любой ридер», не требует Windows.
+    Сборка со всеми фиксами (PR <a href="https://github.com/DevExpress/DevExtreme/pull/34375">#34375</a>). Ниже — <b>что было → что стало</b>, как убедиться <b>без скринридера</b> (DevTools → Accessibility, показывает «что скажет любой ридер», Windows не нужен) и <b>со скринридером</b> (NVDA — гайд в конце). Грид для проверки — внизу.
   </div>
 
   <div class="item">
     <h2>#4 — Подсказка о клавишах теперь читается <span class="tag fixed">FIXED</span></h2>
-    <div class="row"><b>Проблема (Andrew):</b> инструкция о клавишах висела в атрибуте <code>aria-description</code>. Это черновик ARIA 1.3 — NVDA/JAWS его не читают, подсказка «немая».</div>
+    <div class="row"><b>Проблема:</b> инструкция о клавишах висела в <code>aria-description</code> (черновик ARIA 1.3) — NVDA/JAWS её не читают.</div>
     <div class="ba">
-      <div class="before"><b>Было:</b> <code>role=menubar</code>, <code>aria-label="Row Fields"</code>, <code>aria-description="Press Enter…"</code> — description <b>не озвучивается</b>.</div>
-      <div class="after"><b>Стало:</b> <code>role=menubar</code>, <code>aria-label="Row Fields. Press Enter or Space to sort…, Shift + F10…"</code> — инструкция вложена в <b>имя</b> области (как в TreeList/DataGrid), <code>aria-description</code> убран.</div>
+      <div class="before"><b>Было:</b> <code>aria-label="Row Fields"</code> + <code>aria-description="Press Enter…"</code> — description не озвучивается.</div>
+      <div class="after"><b>Стало:</b> <code>aria-label="Row Fields. Press Enter or Space to sort…, Shift + F10…"</code> — инструкция в имени области (паттерн TreeList/DataGrid), <code>aria-description</code> убран.</div>
     </div>
-    <div class="how"><b>Проверить (DevTools):</b> выдели таблицу области полей (например Row Fields) → вкладка <b>Accessibility</b> → поле <b>Name</b> теперь содержит и название области, и инструкцию по клавишам. Раньше в Name было только «Row Fields», а инструкция — в Description (не читалась).</div>
+    <div class="how"><b>Проверить (DevTools):</b> выдели таблицу области полей → <b>Accessibility</b> → <b>Name</b> содержит и название области, и инструкцию.</div>
   </div>
 
   <div class="item">
     <h2>#5 — Заголовки больше не читаются дважды <span class="tag fixed">FIXED</span></h2>
-    <div class="row"><b>Проблема (Andrew):</b> заголовки строк/колонок NVDA читал <b>дважды</b>.</div>
-    <div class="row"><b>Причина:</b> мы дополнительно вешали на каждую ячейку данных <code>aria-describedby</code> со ссылками на заголовки. Но NVDA <b>уже</b> строит связь ячейка↔заголовок из grid-модели (<code>role=grid</code> + <code>aria-colindex</code> + <code>role=columnheader</code>). Наш атрибут дублировал её → двойное чтение.</div>
+    <div class="row"><b>Проблема:</b> заголовки строк/колонок NVDA читал дважды — мы вешали на каждую ячейку данных <code>aria-describedby</code>, дублировавший связь, которую grid-модель (<code>role=grid</code> + <code>aria-colindex</code> + <code>role=columnheader</code>) даёт и так.</div>
     <div class="ba">
-      <div class="before"><b>Было:</b> у каждой data-ячейки <code>aria-describedby</code> → заголовки (плюс grid-модель) = связь задаётся дважды.</div>
-      <div class="after"><b>Стало:</b> <code>aria-describedby</code> с ячеек убран. Связь заголовок↔ячейка — <b>только</b> через grid-модель, ровно как в DataGrid (там data-ячейки тоже без describedby).</div>
+      <div class="before"><b>Было:</b> у каждой data-ячейки <code>aria-describedby</code> → заголовки, поверх grid-модели = связь дважды.</div>
+      <div class="after"><b>Стало:</b> <code>aria-describedby</code> с ячеек убран; связь только через grid-модель, как в DataGrid.</div>
     </div>
-    <div class="how"><b>Проверить (DevTools):</b> выдели любую ячейку данных → в Accessibility у неё больше <b>нет</b> длинного <code>aria-describedby</code>. <b>На NVDA</b> (гайд ниже): при переходе на ячейку заголовок строки/колонки звучит <b>один раз</b>.</div>
+    <div class="how"><b>Проверить (DevTools):</b> у ячейки данных больше <b>нет</b> длинного <code>aria-describedby</code>.</div>
   </div>
 
   <div class="item">
-    <h2>#6 — Заголовок строки озвучивается как чужая колонка (AUS) <span class="tag confirm">подтверждённый баг — нужно твоё подтверждение на NVDA</span></h2>
-    <div class="row"><b>Проблема (Andrew):</b> при табличной навигации NVDA называет row-заголовок принадлежащим колонке данных (например AUS).</div>
-    <div class="row"><b>Причина:</b> в grid-модели row-заголовки <b>не имеют</b> <code>aria-colindex</code>, а колонки данных нумеруются с 1 → в «сетке» NVDA колонки row-заголовков схлопываются с data-колонками. Это модель ролей ячеек (пришла с базовой задачей #34220), не поздние правки.</div>
-    <div class="row"><b>Предлагаемый фикс:</b> зарезервировать индексы под колонки row-заголовков — row-заголовки получают <code>aria-colindex</code> 1..k, а данные начинают с k+1 (и <code>aria-colcount</code> учитывает k). Тогда «сетка» не схлопывается.</div>
-    <div class="how"><b>Что подтвердить на NVDA:</b> в табличной навигации (<kbd>Ctrl+Alt+←/→/↑/↓</kbd>) встань на row-заголовок (Africa/Asia…) и послушай, какую колонку называет NVDA. Если чужую (AUS и т.п.) — баг подтверждён, делаем фикс индексов. <i>(Фикс ещё не в этой сборке — сначала твоё подтверждение.)</i></div>
+    <h2>#6 — Заголовок строки больше не читается как чужая колонка (AUS) <span class="tag fixed">FIXED</span></h2>
+    <div class="row"><b>Проблема (Andrew, NVDA):</b> row-заголовки имели <code>aria-rowindex</code>, но не имели <code>aria-colindex</code>, а data-колонки нумеровались с 1 → в grid-модели колонки row-заголовков схлопывались с data-колонками, и NVDA приклеивал row-заголовок к колонке данных.</div>
+    <div class="ba">
+      <div class="before"><b>Было:</b> row-заголовки без <code>aria-colindex</code>; data и column-заголовки — colindex 1..16; <code>aria-colcount=16</code>.</div>
+      <div class="after"><b>Стало:</b> row-заголовки заняли ведущие колонки <code>aria-colindex</code> 1–2 (по числу уровней), data/column сдвинуты на 3..18, <code>aria-colcount=18</code>. Коллизий нет.</div>
+    </div>
+    <div class="how"><b>Проверить (DevTools):</b> row-заголовок «Africa» → <code>aria-colindex=1</code> (раньше атрибута не было); разверни его → City-ячейки (Cairo/Pretoria) получат <code>aria-colindex=2</code>; ячейка данных → <code>aria-colindex</code> начинается с <b>3</b>; у <code>role=grid</code> <code>aria-colcount=18</code>.</div>
+  </div>
+
+  <div class="item">
+    <h2>Заголовок ячейки больше не произносится дважды («Africa Africa») <span class="tag fixed">FIXED</span></h2>
+    <div class="row"><b>Проблема (найдено на Mac):</b> у разворачиваемой ячейки-заголовка внутри лежали и кнопка-разворот с <code>aria-label=подпись</code>, и текст подписи → имя ячейки склеивалось в «Africa Africa».</div>
+    <div class="ba">
+      <div class="before"><b>Было:</b> имя ячейки = подпись кнопки + текст = <code>«Africa Africa»</code>.</div>
+      <div class="after"><b>Стало:</b> текст подписи помечен <code>aria-hidden</code> (кнопка уже несёт подпись) → имя ячейки = <code>«Africa»</code> один раз.</div>
+    </div>
+    <div class="how"><b>Проверить (Mac, Accessibility Inspector или DevTools):</b> у ячейки-заголовка поле <b>Label/Name</b> = «Africa» (без второго «Africa»).</div>
   </div>
 
   <div class="nvda">
     <h2>🎧 Как проверить на NVDA (для базового QA)</h2>
-    <div class="row"><b>Важно:</b> NVDA существует <b>только под Windows</b>. Нужен ПК/ВМ с Windows (или удалённая сессия — Assistiv Labs / BrowserStack). На маке NVDA не запустится (там встроенный VoiceOver, но эксперты слушают именно NVDA).</div>
+    <div class="row"><b>Важно:</b> NVDA только под <b>Windows</b> (ПК/ВМ, либо удалённо Assistiv Labs / BrowserStack). На маке — VoiceOver (<kbd>Cmd+F5</kbd>) или Xcode Accessibility Inspector, но эксперты слушают именно NVDA.</div>
     <ol>
-      <li><b>Поставить:</b> скачать бесплатно с <code>nvaccess.org</code>, установить, запустить. NVDA сразу начинает читать.</li>
-      <li><b>Модификатор NVDA:</b> по умолчанию это <kbd>Insert</kbd>. На ноутбуках/маковских клавиатурах Insert часто нет → в NVDA menu → Preferences → Settings → Keyboard включить <b>Caps Lock</b> как NVDA-модификатор.</li>
-      <li><b>Заглушить речь</b> в любой момент — левый <kbd>Ctrl</kbd>.</li>
-      <li><b>Браузер:</b> Chrome или Firefox (с ними у NVDA лучшая интеграция).</li>
-      <li>Открыть эту страницу, <kbd>Tab</kbd> в грид.</li>
+      <li><b>Поставить:</b> бесплатно с <code>nvaccess.org</code>, запустить.</li>
+      <li><b>Модификатор:</b> по умолчанию <kbd>Insert</kbd>; на ноутбуках включить <b>Caps Lock</b> как модификатор (Settings → Keyboard).</li>
+      <li><b>Заглушить речь</b> — левый <kbd>Ctrl</kbd>. <b>Браузер</b> — Chrome/Firefox.</li>
     </ol>
-    <div class="row"><b>Что слушать по пунктам:</b></div>
+    <div class="row"><b>Что слушать:</b></div>
     <ul>
-      <li><b>#4:</b> войди <kbd>Tab</kbd>'ом в область полей — NVDA должен прочитать имя области <b>вместе с инструкцией</b> о клавишах (Enter/Space/Alt+↓/Shift+F10).</li>
-      <li><b>#5:</b> перейди на ячейку данных — заголовок строки и колонки должны прозвучать <b>по одному разу</b> (не дважды).</li>
-      <li><b>#6:</b> табличной навигацией (<kbd>Ctrl+Alt+стрелки</kbd>) встань на row-заголовок — проверь, <b>правильную</b> ли колонку называет NVDA. Если чужую — это баг #6 (подтверди, тогда чиним индексы).</li>
+      <li><b>#4:</b> вход <kbd>Tab</kbd>'ом в область полей — имя области <b>с инструкцией</b> о клавишах.</li>
+      <li><b>#5:</b> ячейка данных — заголовки строки/колонки <b>по одному разу</b>.</li>
+      <li><b>#6:</b> табличная навигация <kbd>Ctrl+Alt+стрелки</kbd> на row-заголовок — называется <b>правильная</b> колонка (не «AUS»).</li>
+      <li><b>Заголовки:</b> на ячейке-заголовке подпись звучит <b>один раз</b> («Africa», не «Africa Africa»).</li>
     </ul>
-    <div class="row" style="margin-top:8px"><b>Режимы NVDA:</b> на странице по умолчанию <i>Browse mode</i> (курсор чтения, стрелки ходят по содержимому). Для взаимодействия с гридом NVDA сам переключается в <i>Focus mode</i>, либо переключить вручную <kbd>NVDA+Пробел</kbd>. Табличная навигация — <kbd>Ctrl+Alt+стрелки</kbd>.</div>
   </div>
 
   <h2>Грид для проверки</h2>
