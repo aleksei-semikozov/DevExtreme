@@ -111814,12 +111814,7 @@ class AreaItem {
             div.setAttribute('aria-label', encodeHtml ? ariaLabel : (0, _renderer.default)('<div>').html(ariaLabel).text());
             div.setAttribute('aria-expanded', String(cell.expanded));
             div.setAttribute('tabindex', isCellNavigationEnabled ? '-1' : '0');
-            // The expand button is already labelled with the caption, so the
-            // caption text is hidden from assistive tech; otherwise the header
-            // cell's name repeats the caption twice (e.g. "Africa Africa").
             span.setAttribute('aria-hidden', 'true');
-            // With cell navigation the cell itself is the focus target, so it
-            // must expose the expanded state to assistive technologies.
             if (isCellNavigationEnabled) {
               td.setAttribute('aria-expanded', String(cell.expanded));
             }
@@ -115195,7 +115190,7 @@ var _default = exports["default"] = {
 Object.defineProperty(exports, "__esModule", ({
   value: true
 }));
-exports.getFieldsAreaA11yLabel = exports.getFieldsAreaA11yDescription = exports.getFieldItemA11yLabel = void 0;
+exports.getFieldsHotkeysA11yLabel = exports.getFieldsHotkeysA11yDescription = exports.getFieldItemA11yLabel = void 0;
 var _message = _interopRequireDefault(__webpack_require__(4671));
 var _const = __webpack_require__(73944);
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
@@ -115217,13 +115212,13 @@ const getSortingLabel = sortOrder => {
       return null;
   }
 };
-const getFieldsAreaA11yDescription = () => _message.default.format(I18N_KEYS.fieldsAreaDescription);
-exports.getFieldsAreaA11yDescription = getFieldsAreaA11yDescription;
-const getFieldsAreaA11yLabel = areaLabel => {
-  const description = getFieldsAreaA11yDescription();
-  return areaLabel ? `${areaLabel}. ${description}` : description;
+const getFieldsHotkeysA11yDescription = () => _message.default.format(I18N_KEYS.fieldsAreaDescription);
+exports.getFieldsHotkeysA11yDescription = getFieldsHotkeysA11yDescription;
+const getFieldsHotkeysA11yLabel = baseLabel => {
+  const description = getFieldsHotkeysA11yDescription();
+  return baseLabel ? `${baseLabel}. ${description}` : description;
 };
-exports.getFieldsAreaA11yLabel = getFieldsAreaA11yLabel;
+exports.getFieldsHotkeysA11yLabel = getFieldsHotkeysA11yLabel;
 const getFieldItemA11yLabel = (caption, _ref) => {
   let {
     sortOrder,
@@ -115586,7 +115581,7 @@ class FieldChooser extends _m_field_chooser_base.FieldChooserBase {
     const $container = (0, _renderer.default)(DIV).addClass(_const.CLASSES.fieldChooser.container).appendTo($element);
     const layout = that.option('layout');
     super._initMarkup();
-    $element.addClass(_const.CLASSES.fieldChooser.self).addClass(_const.CLASSES.pivotGrid.fieldsContainer);
+    $element.addClass(_const.CLASSES.fieldChooser.self).addClass(_const.CLASSES.pivotGrid.fieldsContainer).attr('role', 'group').attr('aria-label', (0, _a11y.getFieldsHotkeysA11yLabel)(_message.default.format('dxPivotGrid-fieldChooserTitle')));
     that._dataChangedHandlers = [];
     const dataSource = this._dataSource;
     const currentState = that.option('applyChangesMode') !== 'instantly' && dataSource && dataSource.state();
@@ -115828,7 +115823,7 @@ class FieldChooser extends _m_field_chooser_base.FieldChooserBase {
     // A menubar without menu items is invalid ARIA, so an empty area stays
     // without the role until fields are dropped into it.
     const hasFields = !!$container.children().length;
-    $container.attr('role', hasFields ? 'menubar' : null).attr('aria-label', hasFields ? (0, _a11y.getFieldsAreaA11yLabel)(that.option(`texts.${area}Fields`)) : null);
+    $container.attr('role', hasFields ? 'menubar' : null).attr('aria-label', hasFields ? that.option(`texts.${area}Fields`) : null);
   }
   _renderArea(container, area) {
     const that = this;
@@ -116530,7 +116525,6 @@ var _button = _interopRequireDefault(__webpack_require__(64973));
 var _ui = _interopRequireDefault(__webpack_require__(10720));
 var _capitalize = __webpack_require__(72928);
 var _m_area_item = __webpack_require__(96273);
-var _a11y = __webpack_require__(43163);
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 const DIV = '<div>';
 const AREA_DRAG_CLASS = 'dx-pivotgrid-drag-action';
@@ -116660,7 +116654,7 @@ class FieldsArea extends _m_area_item.AreaItem {
       // element (it is invalid on a table row); thead/tr/td are kept out of
       // the accessibility tree so the field items become the menubar's items.
       row.attr('role', 'presentation');
-      tableElement.attr('role', 'menubar').attr('aria-label', (0, _a11y.getFieldsAreaA11yLabel)(this._getAreaLabel()));
+      tableElement.attr('role', 'menubar').attr('aria-label', this._getAreaLabel());
     } else {
       // A menubar without menu items is invalid ARIA, so an empty area keeps
       // the plain placeholder text and the table stays presentational. The
@@ -117750,6 +117744,7 @@ var _m_chart_integration = __webpack_require__(67705);
 var _m_data_area = _interopRequireDefault(__webpack_require__(31045));
 var _m_data_controller = _interopRequireDefault(__webpack_require__(18509));
 var _m_export = __webpack_require__(12867);
+var _a11y = __webpack_require__(43163);
 var _m_field_chooser = __webpack_require__(62989);
 var _m_field_chooser_base = __webpack_require__(70317);
 var _m_fields_area = __webpack_require__(2997);
@@ -118604,8 +118599,6 @@ class PivotGrid extends _widget.default {
     if (!this._contextMenu) {
       return;
     }
-    // Suppress the browser's native context menu so it does not compete with
-    // the widget menu opened from the keyboard.
     e.preventDefault();
     // The internal _show is called instead of the public show() because only
     // _show accepts the initiating event that onPositioning builds items from.
@@ -118853,7 +118846,7 @@ class PivotGrid extends _widget.default {
   _initMarkup() {
     const that = this;
     super._initMarkup();
-    that.$element().addClass(PIVOTGRID_CLASS).attr('role', 'group').attr('aria-label', _message.default.format('dxPivotGrid-ariaLabel'));
+    that.$element().addClass(PIVOTGRID_CLASS).attr('role', 'group').attr('aria-label', (0, _a11y.getFieldsHotkeysA11yLabel)(_message.default.format('dxPivotGrid-ariaLabel')));
   }
   _renderContentImpl() {
     const that = this;
@@ -118928,17 +118921,12 @@ class PivotGrid extends _widget.default {
   _setAriaGridAttributes(dataArea, rowsArea, columnsArea) {
     const $gridElement = dataArea.tableElement().parent();
     const tableIds = [columnsArea.tableElement().attr('id'), rowsArea.tableElement().attr('id'), dataArea.tableElement().attr('id')].filter(_type.isDefined).join(' ');
-    // Row headers occupy the leading columns of the grid; give them their own
-    // aria-colindex range and shift the data/column indexes accordingly, so a
-    // screen reader does not read a row header as belonging to a data column.
     const rowHeaderColumnCount = this._reserveRowHeaderColumns(dataArea, rowsArea, columnsArea);
     $gridElement.attr('role', 'grid').attr('aria-owns', tableIds).attr('aria-rowcount', this._dataController.totalRowCount()).attr('aria-colcount', this._dataController.totalColumnCount() + rowHeaderColumnCount);
   }
   _reserveRowHeaderColumns(dataArea, rowsArea, columnsArea) {
     const rowsBody = rowsArea.tableElement().children('tbody').get(0);
     const matrix = rowsBody ? (0, _table_cell_navigation.buildCellMatrix)(rowsBody) : [];
-    // Place each row-header cell into its column (1-based); the depth is the
-    // rightmost header column, ignoring filler cells that carry no role.
     let rowHeaderColumnCount = 0;
     const indexed = new Set();
     matrix.forEach(row => {
@@ -118946,8 +118934,6 @@ class PivotGrid extends _widget.default {
         if (!cell || !cell.getAttribute('role')) {
           return;
         }
-        // The depth counts every column a header covers (colspan for collapsed
-        // levels); the colindex is the header's leftmost column.
         rowHeaderColumnCount = Math.max(rowHeaderColumnCount, columnIndex + 1);
         if (!indexed.has(cell)) {
           indexed.add(cell);
@@ -118958,9 +118944,6 @@ class PivotGrid extends _widget.default {
     if (!rowHeaderColumnCount) {
       return 0;
     }
-    // Shift the column-header/data cells past the reserved row-header columns.
-    // The original index is cached so repeated calls (e.g. after resize) stay
-    // idempotent instead of shifting the same cells again.
     const shifted = new Set();
     [columnsArea, dataArea].forEach(area => {
       area.tableElement().find('td[aria-colindex]').each((_, td) => {
