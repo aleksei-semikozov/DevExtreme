@@ -1,7 +1,7 @@
 /*!
 * DevExtreme (dx.all.js)
 * Version: 26.2.0
-* Build date: Thu Jul 23 2026
+* Build date: Fri Jul 24 2026
 *
 * Copyright (c) 2012 - 2026 Developer Express Inc. ALL RIGHTS RESERVED
 * Read about DevExtreme licensing here: https://js.devexpress.com/Licensing/
@@ -23458,6 +23458,8 @@ const defaultMessages = exports.defaultMessages = {
     "dxFilterBuilder-filterAriaItemField": "Item field",
     "dxFilterBuilder-filterAriaItemOperation": "Item operation",
     "dxFilterBuilder-filterAriaItemValue": "Item value",
+    "dxHtmlEditor-editorAriaLabel": "Editor content",
+    "dxHtmlEditor-ariaEscapeInstruction": "Press Ctrl + Shift + Up arrow or Ctrl + Shift + Down arrow to move focus out of the editing area",
     "dxHtmlEditor-dialogColorCaption": "Change Font Color",
     "dxHtmlEditor-dialogBackgroundCaption": "Change Background Color",
     "dxHtmlEditor-dialogLinkCaption": "Add Link",
@@ -33290,6 +33292,52 @@ const dateUtilsTs = exports.dateUtilsTs = {
 
 /***/ },
 
+/***/ 82312
+(__unused_webpack_module, exports, __webpack_require__) {
+
+
+
+Object.defineProperty(exports, "__esModule", ({
+  value: true
+}));
+exports.getFirstFocusableElement = getFirstFocusableElement;
+exports.getNextFocusableElement = getNextFocusableElement;
+exports.getPreviousFocusableElement = getPreviousFocusableElement;
+var _dom_adapter = _interopRequireDefault(__webpack_require__(64960));
+var _m_selectors = __webpack_require__(62238);
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+const DOCUMENT_POSITION_PRECEDING = 2;
+const DOCUMENT_POSITION_FOLLOWING = 4;
+function getFirstFocusableElement(root) {
+  if (!root) {
+    return null;
+  }
+  const candidates = Array.from(root.querySelectorAll(_m_selectors.ALL_FOCUSABLE_ELEMENTS_SELECTOR));
+  return candidates.find(candidate => (0, _m_selectors.isElementVisible)(candidate)) ?? null;
+}
+function getFocusableElementsOutside(containerNode, doc) {
+  return Array.from(doc.querySelectorAll(_m_selectors.ALL_FOCUSABLE_ELEMENTS_SELECTOR)).filter(element => !containerNode.contains(element) && (0, _m_selectors.isElementVisible)(element));
+}
+function getNextFocusableElement(containerNode) {
+  let doc = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : _dom_adapter.default.getDocument();
+  return getFocusableElementsOutside(containerNode, doc).find(element => {
+    const position = containerNode.compareDocumentPosition(element);
+    // eslint-disable-next-line no-bitwise
+    return Boolean(position & DOCUMENT_POSITION_FOLLOWING);
+  }) ?? null;
+}
+function getPreviousFocusableElement(containerNode) {
+  let doc = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : _dom_adapter.default.getDocument();
+  const precedingElements = getFocusableElementsOutside(containerNode, doc).filter(element => {
+    const position = containerNode.compareDocumentPosition(element);
+    // eslint-disable-next-line no-bitwise
+    return Boolean(position & DOCUMENT_POSITION_PRECEDING);
+  });
+  return precedingElements[precedingElements.length - 1] ?? null;
+}
+
+/***/ },
+
 /***/ 14136
 (__unused_webpack_module, exports, __webpack_require__) {
 
@@ -37283,10 +37331,14 @@ exports.SelectionFilterCreator = SelectionFilterCreator;
 Object.defineProperty(exports, "__esModule", ({
   value: true
 }));
-exports.tabbable = exports.focused = exports.focusable = exports["default"] = void 0;
+exports.tabbable = exports.isElementVisible = exports.focused = exports.focusable = exports["default"] = exports.ALL_FOCUSABLE_ELEMENTS_SELECTOR = void 0;
 var _dom_adapter = _interopRequireDefault(__webpack_require__(64960));
 var _renderer = _interopRequireDefault(__webpack_require__(64553));
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+const notInert = ':not([inert]):not([inert] *)';
+const notNegTabIndex = ':not([tabindex^="-"])';
+const notDisabled = ':not(:disabled)';
+const ALL_FOCUSABLE_ELEMENTS_SELECTOR = exports.ALL_FOCUSABLE_ELEMENTS_SELECTOR = [`a[href]${notInert}${notNegTabIndex}`, `area[href]${notInert}${notNegTabIndex}`, `input:not([type="hidden"]):not([type="radio"])${notInert}${notNegTabIndex}${notDisabled}`, `input[type="radio"]${notInert}${notNegTabIndex}${notDisabled}`, `select${notInert}${notNegTabIndex}${notDisabled}`, `textarea${notInert}${notNegTabIndex}${notDisabled}`, `button${notInert}${notNegTabIndex}${notDisabled}`, `details${notInert} > summary:first-of-type${notNegTabIndex}`, `iframe${notInert}${notNegTabIndex}`, `audio[controls]${notInert}${notNegTabIndex}`, `video[controls]${notInert}${notNegTabIndex}`, `[contenteditable]${notInert}${notNegTabIndex}`, `[tabindex]${notInert}${notNegTabIndex}`].join(',');
 const focusableFn = (element, tabIndex) => {
   if (!visible(element)) {
     return false;
@@ -37313,6 +37365,8 @@ function visible(element) {
   const $element = (0, _renderer.default)(element);
   return $element.is(':visible') && $element.css('visibility') !== 'hidden' && $element.parents().css('visibility') !== 'hidden';
 }
+const isElementVisible = element => visible(element);
+exports.isElementVisible = isElementVisible;
 const focusable = (index, element) => focusableFn(element, (0, _renderer.default)(element).attr('tabIndex'));
 exports.focusable = focusable;
 const tabbable = (index, element) => {
@@ -37331,7 +37385,9 @@ exports.focused = focused;
 var _default = exports["default"] = {
   focusable,
   tabbable,
-  focused
+  focused,
+  isElementVisible,
+  ALL_FOCUSABLE_ELEMENTS_SELECTOR
 };
 
 /***/ },
@@ -38845,9 +38901,9 @@ class Component extends _class.default.inherit({}) {
   }
   _getDefaultOptions() {
     return {
-      onInitialized: null,
-      onOptionChanged: null,
-      onDisposing: null,
+      onInitialized: undefined,
+      onOptionChanged: undefined,
+      onDisposing: undefined,
       defaultOptionsRules: null
     };
   }
@@ -39733,7 +39789,7 @@ class Widget extends _dom_component.default {
       visible: true,
       hint: undefined,
       activeStateEnabled: false,
-      onContentReady: null,
+      onContentReady: undefined,
       hoverStateEnabled: false,
       focusStateEnabled: false,
       tabIndex: 0,
@@ -56888,9 +56944,8 @@ const data = Base => class FocusDataControllerExtender extends _m_focus.focusMod
     return d.promise();
   }
   _calculateGlobalRowIndexByGroupedData(key) {
-    const that = this;
-    const dataSource = that._dataSource;
-    const filter = that._generateFilterByKey(key);
+    const dataSource = this._dataSource;
+    const filter = this._generateFilterByKey(key);
     // @ts-expect-error
     const deferred = new _deferred.Deferred();
     const isGroupKey = Array.isArray(key);
@@ -56899,29 +56954,32 @@ const data = Base => class FocusDataControllerExtender extends _m_focus.focusMod
       return deferred.resolve(-1).promise();
     }
     if (!dataSource._grouping._updatePagingOptions) {
-      that._calculateGlobalRowIndexByFlatData(key, null, true).done(deferred.resolve).fail(deferred.reject);
+      this._calculateGlobalRowIndexByFlatData(key, null, true).done(deferred.resolve).fail(deferred.reject);
       return deferred;
     }
     dataSource.load({
-      filter: that._concatWithCombinedFilter(filter),
+      filter: this._concatWithCombinedFilter(filter),
       group
     }).done(data => {
       const hasData = (0, _type.isDefined)(data) && data.length > 0;
-      if (!hasData) {
+      if (this._dataSource !== dataSource || !hasData) {
         return deferred.resolve(-1).promise();
       }
-      const groupPath = that._getGroupPath(data, group.length);
-      that._expandGroupByPath(that, groupPath, 0).done(() => {
-        that._calculateExpandedRowGlobalIndex(deferred, key, groupPath, group);
+      const groupPath = this._getGroupPath(data, group.length);
+      this._expandGroupByPath(this, groupPath, 0).done(() => {
+        this._calculateExpandedRowGlobalIndex(deferred, key, groupPath, group, dataSource);
       }).fail(deferred.reject);
     }).fail(deferred.reject);
     return deferred.promise();
   }
-  _calculateExpandedRowGlobalIndex(deferred, key, groupPath, group) {
+  _calculateExpandedRowGlobalIndex(deferred, key, groupPath, group, dataSource) {
+    if (this._dataSource !== dataSource) {
+      deferred.resolve(-1);
+      return;
+    }
     const groupFilter = (0, _m_utils.createGroupFilter)(groupPath, {
       group
     });
-    const dataSource = this._dataSource;
     const scrollingMode = this.option('scrolling.mode');
     const isVirtualScrolling = scrollingMode === 'virtual' || scrollingMode === 'infinite';
     const pageSize = dataSource.pageSize();
@@ -75921,9 +75979,10 @@ class EditingControllerImpl extends _m_modules.default.ViewController {
       return deferred;
     }
   }
-  _createInsertInfo() {
+  _createInsertInfo(parentKey) {
     return {
-      [_const.INSERT_INDEX]: this._getInsertIndex()
+      [_const.INSERT_INDEX]: this._getInsertIndex(),
+      parentKey
     };
   }
   _addInsertInfo(change, parentKey) {
@@ -75936,7 +75995,7 @@ class EditingControllerImpl extends _m_modules.default.ViewController {
     insertInfo = (_this$_getInternalDat4 = this._getInternalData(key)) === null || _this$_getInternalDat4 === void 0 ? void 0 : _this$_getInternalDat4.insertInfo;
     if (!(0, _type.isDefined)(insertInfo)) {
       const insertAfterOrBeforeKey = this._getInsertAfterOrBeforeKey(change);
-      insertInfo = this._createInsertInfo();
+      insertInfo = this._createInsertInfo(parentKey);
       if (!(0, _type.isDefined)(insertAfterOrBeforeKey)) {
         this._setInsertAfterOrBeforeKey(change, parentKey);
       }
@@ -77178,8 +77237,8 @@ class EditingControllerImpl extends _m_modules.default.ViewController {
     const isEditableByRowState = isRowEditing && !!column.allowEditing;
     const needsEditorTemplate = !!column.showEditorAlways || column.setCellValue && (isEditableByRowState || isCellEditing);
     if (needsEditorTemplate && isEditableRowType && !column.command) {
-      const allowUpdating = !!this.allowUpdating(options);
-      const canModifyCell = (allowUpdating || isRowEditing || !!(row !== null && row !== void 0 && row.isNewRow)) && !!column.allowEditing;
+      const allowUpdating = this.allowUpdating(options);
+      const canModifyCell = (allowUpdating || isRowEditing) && !!column.allowEditing;
       const isEditable = (canModifyCell || isCellEditing) && (isRowEditing || !isRowMode);
       if (isEditable) {
         // eslint-disable-next-line @typescript-eslint/init-declarations
@@ -77343,19 +77402,22 @@ class EditingControllerImpl extends _m_modules.default.ViewController {
    */
   _beforeCancelEditData() {}
   _allowEditAction(actionName, options) {
-    let allowEditAction = this.option(`editing.${actionName}`);
-    if ((0, _type.isFunction)(allowEditAction)) {
-      allowEditAction = allowEditAction({
-        component: this.component,
-        row: options.row
-      });
-    }
-    return allowEditAction;
+    var _this$option;
+    const allowEditAction = (_this$option = this.option('editing')) === null || _this$option === void 0 ? void 0 : _this$option[actionName];
+    return (0, _type.isFunction)(allowEditAction) ? allowEditAction({
+      component: this.component,
+      row: options.row
+    }) : !!allowEditAction;
   }
   allowUpdating(options, eventName) {
+    var _options$row2;
+    let allowEditingForNewRows = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : true;
+    if (allowEditingForNewRows && (_options$row2 = options.row) !== null && _options$row2 !== void 0 && _options$row2.isNewRow) {
+      return true;
+    }
     const startEditAction = this.option('editing.startEditAction') ?? _const.DEFAULT_START_EDIT_ACTION;
-    const needCallback = arguments.length > 1 ? startEditAction === eventName || eventName === 'down' : true;
-    return needCallback && this._allowEditAction('allowUpdating', options);
+    const isStartEditEvent = !(0, _type.isDefined)(eventName) || eventName === startEditAction || eventName === 'down';
+    return isStartEditEvent && this._allowEditAction('allowUpdating', options);
   }
   allowDeleting(options) {
     return this._allowEditAction('allowDeleting', options);
@@ -77532,7 +77594,7 @@ const rowsView = Base => class RowsViewEditingExtender extends Base {
     const row = this._dataController.items()[e.rowIndex];
     const allowUpdating = editingController.allowUpdating({
       row
-    }, eventName) || row && row.isNewRow;
+    }, eventName);
     const column = this._columnsController.getVisibleColumns()[columnIndex];
     const isEditedCell = editingController.isEditCell(e.rowIndex, columnIndex);
     const allowEditing = allowUpdating && column && (column.allowEditing || isEditedCell);
@@ -81199,11 +81261,11 @@ const getConditionFromHeaderFilter = function (column) {
   } = column;
   if (!filterValues) return null;
   if (filterValues.length === 1 && canSyncHeaderFilterWithFilterRow(column) && !Array.isArray(filterValues[0])) {
-    column.filterType === FILTER_TYPES_EXCLUDE ? selectedOperation = '<>' : selectedOperation = '=';
+    selectedOperation = column.filterType === FILTER_TYPES_EXCLUDE ? '<>' : '=';
     // eslint-disable-next-line prefer-destructuring
     value = filterValues[0];
   } else {
-    column.filterType === FILTER_TYPES_EXCLUDE ? selectedOperation = 'noneof' : selectedOperation = 'anyof';
+    selectedOperation = column.filterType === FILTER_TYPES_EXCLUDE ? 'noneof' : 'anyof';
     value = filterValues;
   }
   return [getColumnIdentifier(column), selectedOperation, value];
@@ -81217,7 +81279,7 @@ const updateFilterRowCondition = function (columnsController, column, condition)
   let selectedFilterOperation = condition === null || condition === void 0 ? void 0 : condition[1];
   const filterValue = condition === null || condition === void 0 ? void 0 : condition[2];
   const filterOperations = column.filterOperations || column.defaultFilterOperations;
-  const selectedOperationExists = !filterOperations || filterOperations.indexOf(selectedFilterOperation) >= 0;
+  const selectedOperationExists = !filterOperations || filterOperations.includes(selectedFilterOperation);
   const defaultOperationSelected = selectedFilterOperation === column.defaultFilterOperation;
   const builtInOperationSelected = FILTER_ROW_OPERATIONS.includes(selectedFilterOperation);
   const filterValueNotNullOrEmpty = filterValue !== null && filterValue !== '';
@@ -81227,12 +81289,16 @@ const updateFilterRowCondition = function (columnsController, column, condition)
     }
     filterRowOptions = {
       filterValue,
-      selectedFilterOperation
+      selectedFilterOperation,
+      bufferedFilterValue: undefined,
+      bufferedSelectedFilterOperation: undefined
     };
   } else {
     filterRowOptions = {
       filterValue: undefined,
-      selectedFilterOperation: undefined
+      selectedFilterOperation: undefined,
+      bufferedFilterValue: undefined,
+      bufferedSelectedFilterOperation: undefined
     };
   }
   columnsController.columnOption(getColumnIdentifier(column), filterRowOptions);
@@ -81254,11 +81320,10 @@ class FilterSyncController extends _m_modules.default.Controller {
     return ['getCustomFilterOperations'];
   }
   syncFilterValue() {
-    const that = this;
     const columns = this._columnsController.getFilteringColumns();
     this._skipSyncColumnOptions = true;
     columns.forEach(column => {
-      const filterConditions = (0, _m_utils.getMatchedConditions)(that.option('filterValue'), getColumnIdentifier(column));
+      const filterConditions = (0, _m_utils.getMatchedConditions)(this.option('filterValue'), getColumnIdentifier(column));
       if (filterConditions.length === 1) {
         const filterCondition = filterConditions[0];
         updateHeaderFilterCondition(this._columnsController, column, filterCondition);
@@ -82052,27 +82117,34 @@ const data = Base => class FocusDataControllerExtender extends Base {
     return this._calculateGlobalRowIndexByFlatData(key);
   }
   _calculateGlobalRowIndexByFlatData(key, groupFilter, useGroup) {
-    const that = this;
     // @ts-expect-error
     const deferred = new _deferred.Deferred();
-    const dataSource = that._dataSource;
+    const dataSource = this._dataSource;
     if (Array.isArray(key) || (0, _m_editing_utils.isNewRowTempKey)(key)) {
       return deferred.resolve(-1).promise();
     }
-    let filter = that._generateFilterByKey(key);
+    let filter = this._generateFilterByKey(key);
     dataSource.load({
-      filter: that._concatWithCombinedFilter(filter),
+      filter: this._concatWithCombinedFilter(filter),
       skip: 0,
       take: 1
     }).done(data => {
+      if (this._dataSource !== dataSource) {
+        deferred.resolve(-1);
+        return;
+      }
       if (data.length > 0) {
-        filter = that._generateOperationFilterByKey(key, data[0], useGroup);
+        filter = this._generateOperationFilterByKey(key, data[0], useGroup);
         dataSource.load({
-          filter: that._concatWithCombinedFilter(filter, groupFilter),
+          filter: this._concatWithCombinedFilter(filter, groupFilter),
           skip: 0,
           take: 1,
           requireTotalCount: true
         }).done((_, extra) => {
+          if (this._dataSource !== dataSource) {
+            deferred.resolve(-1);
+            return;
+          }
           deferred.resolve(extra.totalCount);
         });
       } else {
@@ -84820,7 +84892,7 @@ class KeyboardNavigationController extends _m_keyboard_navigation_core.KeyboardN
     const isRowData = !row || row.rowType === 'data';
     return this._editingController.allowUpdating({
       row
-    }) ? isRowData : !!(row !== null && row !== void 0 && row.isNewRow);
+    }) && isRowData;
   }
   /**
    * Checks whether native browser tab behavior should be used.
@@ -85270,7 +85342,7 @@ class KeyboardNavigationController extends _m_keyboard_navigation_core.KeyboardN
     const row = this._dataController.items()[rowIndex];
     return this._editingController.allowUpdating({
       row
-    }, 'click');
+    }, 'click', false);
   }
   // #endregion Pointer_Event_Handler
   // #region Focusing
@@ -94009,7 +94081,8 @@ Object.defineProperty(exports, "__esModule", ({
 }));
 exports.CLASSES = void 0;
 const CLASSES = exports.CLASSES = {
-  firstCell: 'first-cell'
+  firstCell: 'first-cell',
+  scrollerSpacing: 'scroller-spacing'
 };
 
 /***/ },
@@ -95202,13 +95275,8 @@ class ColumnsView extends (0, _m_column_state_mixin.ColumnStateMixin)(_m_modules
    * @extended: column_fixing
    */
   setScrollerSpacing(width) {
-    const that = this;
-    const $element = that.element();
-    const rtlEnabled = that.option('rtlEnabled');
-    $element && $element.css({
-      paddingLeft: rtlEnabled ? width : '',
-      paddingRight: !rtlEnabled ? width : ''
-    });
+    const $element = this.element();
+    $element === null || $element === void 0 || $element.toggleClass(this.addWidgetPrefix(_const.CLASSES.scrollerSpacing), !!width).css('paddingInlineEnd', width ? `${width}px` : '');
   }
   isScrollbarVisible(isHorizontal) {
     const $element = this.element();
@@ -96101,9 +96169,6 @@ const ROW_INSERTED_ANIMATION_CLASS = 'row-inserted-animation';
 const CONTENT_FIXED_CLASS = 'content-fixed';
 const ROW_LINES_CLASS = exports.ROW_LINES_CLASS = 'dx-row-lines';
 const LOADPANEL_HIDE_TIMEOUT = 200;
-function getMaxHorizontalScrollOffset(scrollable) {
-  return scrollable ? Math.round(scrollable.scrollWidth() - scrollable.clientWidth()) : 0;
-}
 function isGroupRow(_ref) {
   let {
     rowType,
@@ -96363,24 +96428,24 @@ class RowsView extends _m_columns_view.ColumnsView {
    * @extended: column_fixing, virtual_column, virtual_scrolling
    */
   _handleScroll(e) {
-    const that = this;
-    const rtlEnabled = that.option('rtlEnabled');
+    const {
+      top,
+      left
+    } = e.scrollOffset;
+    const rtlEnabled = this.option('rtlEnabled');
     const isNativeScrolling = e.component.option('useNative');
-    that._scrollTop = e.scrollOffset.top;
-    that._scrollLeft = e.scrollOffset.left;
-    let scrollLeft = e.scrollOffset.left;
+    const isHorizontalScrollbarVisible = this.isScrollbarVisible(true);
+    this._scrollTop = top;
+    this._scrollLeft = rtlEnabled && !isHorizontalScrollbarVisible ? -1 : left;
     if (rtlEnabled) {
-      this._scrollRight = getMaxHorizontalScrollOffset(e.component) - this._scrollLeft;
-      if (isNativeScrolling) {
-        scrollLeft = -this._scrollRight;
-      }
-      if (!this.isScrollbarVisible(true)) {
-        this._scrollLeft = -1;
-      }
+      var _this$_scrollableCont;
+      const maxHorizontalScrollOffset = (0, _utils.getMaxHorizontalScrollOffset)((_this$_scrollableCont = this._scrollableContainer) === null || _this$_scrollableCont === void 0 ? void 0 : _this$_scrollableCont.get(0));
+      this._scrollRight = maxHorizontalScrollOffset - left;
     }
-    that.scrollChanged.fire(Object.assign({}, e.scrollOffset, {
+    const scrollLeft = rtlEnabled && isNativeScrolling ? -this._scrollRight : left;
+    this.scrollChanged.fire(Object.assign({}, e.scrollOffset, {
       left: scrollLeft
-    }), that.name);
+    }), this.name);
   }
   _renderScrollableCore($element) {
     const that = this;
@@ -97058,7 +97123,8 @@ class RowsView extends _m_columns_view.ColumnsView {
     const scrollLeft = scrollable && scrollable.scrollOffset().left;
     const rtlEnabled = this.option('rtlEnabled');
     if (rtlEnabled) {
-      const maxHorizontalScrollOffset = getMaxHorizontalScrollOffset(scrollable);
+      var _this$_scrollableCont2;
+      const maxHorizontalScrollOffset = (0, _utils.getMaxHorizontalScrollOffset)((_this$_scrollableCont2 = this._scrollableContainer) === null || _this$_scrollableCont2 === void 0 ? void 0 : _this$_scrollableCont2.get(0));
       const scrollRight = maxHorizontalScrollOffset - scrollLeft;
       if (scrollRight !== this._scrollRight) {
         this._scrollLeft = maxHorizontalScrollOffset - this._scrollRight;
@@ -97346,12 +97412,14 @@ const rowsModule = exports.rowsModule = {
 Object.defineProperty(exports, "__esModule", ({
   value: true
 }));
-exports.getCellText = void 0;
+exports.getMaxHorizontalScrollOffset = exports.getCellText = void 0;
 var _const = __webpack_require__(92806);
 var _m_utils = _interopRequireDefault(__webpack_require__(53226));
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 const getCellText = (column, displayValue) => !column.command || column.type === _const.AI_COLUMN_NAME ? _m_utils.default.formatValue(displayValue, column) : '';
 exports.getCellText = getCellText;
+const getMaxHorizontalScrollOffset = container => container ? Math.round(container.scrollWidth - container.clientWidth) : 0;
+exports.getMaxHorizontalScrollOffset = getMaxHorizontalScrollOffset;
 
 /***/ },
 
@@ -108225,18 +108293,20 @@ exports.getColumnLayoutKey = getColumnLayoutKey;
 /***/ },
 
 /***/ 14930
-(__unused_webpack_module, exports) {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 
 Object.defineProperty(exports, "__esModule", ({
   value: true
 }));
-exports.ALL_FOCUSABLE_ELEMENTS_SELECTOR = void 0;
-const notInert = ':not([inert]):not([inert] *)';
-const notNegTabIndex = ':not([tabindex^="-"])';
-const notDisabled = ':not(:disabled)';
-const ALL_FOCUSABLE_ELEMENTS_SELECTOR = exports.ALL_FOCUSABLE_ELEMENTS_SELECTOR = [`a[href]${notInert}${notNegTabIndex}`, `area[href]${notInert}${notNegTabIndex}`, `input:not([type="hidden"]):not([type="radio"])${notInert}${notNegTabIndex}${notDisabled}`, `input[type="radio"]${notInert}${notNegTabIndex}${notDisabled}`, `select${notInert}${notNegTabIndex}${notDisabled}`, `textarea${notInert}${notNegTabIndex}${notDisabled}`, `button${notInert}${notNegTabIndex}${notDisabled}`, `details${notInert} > summary:first-of-type${notNegTabIndex}`, `iframe${notInert}${notNegTabIndex}`, `audio[controls]${notInert}${notNegTabIndex}`, `video[controls]${notInert}${notNegTabIndex}`, `[contenteditable]${notInert}${notNegTabIndex}`, `[tabindex]${notInert}${notNegTabIndex}`].join(',');
+Object.defineProperty(exports, "ALL_FOCUSABLE_ELEMENTS_SELECTOR", ({
+  enumerable: true,
+  get: function () {
+    return _m_selectors.ALL_FOCUSABLE_ELEMENTS_SELECTOR;
+  }
+}));
+var _m_selectors = __webpack_require__(62238);
 
 /***/ },
 
@@ -111744,6 +111814,10 @@ class AreaItem {
             div.setAttribute('aria-label', encodeHtml ? ariaLabel : (0, _renderer.default)('<div>').html(ariaLabel).text());
             div.setAttribute('aria-expanded', String(cell.expanded));
             div.setAttribute('tabindex', isCellNavigationEnabled ? '-1' : '0');
+            // The expand button is already labelled with the caption, so the
+            // caption text is hidden from assistive tech; otherwise the header
+            // cell's name repeats the caption twice (e.g. "Africa Africa").
+            span.setAttribute('aria-hidden', 'true');
             // With cell navigation the cell itself is the focus target, so it
             // must expose the expanded state to assistive technologies.
             if (isCellNavigationEnabled) {
@@ -115144,12 +115218,11 @@ const getSortingLabel = sortOrder => {
   }
 };
 const getFieldsAreaA11yDescription = () => _message.default.format(I18N_KEYS.fieldsAreaDescription);
-// The keyboard instructions are folded into the area's aria-label rather than
-// exposed via aria-description: aria-description is an ARIA 1.3 draft attribute
-// that screen readers do not read reliably, whereas the label composition
-// mirrors how DataGrid/TreeList surface such instructions.
 exports.getFieldsAreaA11yDescription = getFieldsAreaA11yDescription;
-const getFieldsAreaA11yLabel = areaLabel => `${areaLabel}. ${getFieldsAreaA11yDescription()}`;
+const getFieldsAreaA11yLabel = areaLabel => {
+  const description = getFieldsAreaA11yDescription();
+  return areaLabel ? `${areaLabel}. ${description}` : description;
+};
 exports.getFieldsAreaA11yLabel = getFieldsAreaA11yLabel;
 const getFieldItemA11yLabel = (caption, _ref) => {
   let {
@@ -115383,7 +115456,7 @@ class FieldChooser extends _m_field_chooser_base.FieldChooserBase {
       layout: 0,
       dataSource: null,
       encodeHtml: true,
-      onContextMenuPreparing: null,
+      onContextMenuPreparing: undefined,
       allowSearch: false,
       searchTimeout: 500,
       texts: {
@@ -115885,7 +115958,7 @@ function isFieldNavigationEvent(e) {
   return e.type === 'keydown' && FIELD_NAVIGATION_DELTAS[e.key] !== undefined && !e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey;
 }
 function isContextMenuKeyEvent(e) {
-  return e.type === 'keydown' && (e.key === 'ContextMenu' || e.shiftKey && e.key === 'F10');
+  return e.type === 'keydown' && !e.repeat && (e.key === 'ContextMenu' || e.shiftKey && e.key === 'F10');
 }
 class HeaderFilterView extends _m_header_filter_core.HeaderFilterView {
   _getSearchExpr(options, headerFilterOptions) {
@@ -115942,7 +116015,7 @@ class FieldChooserBase extends mixinWidget {
     return Object.assign({}, super._getDefaultOptions(), {
       allowFieldDragging: true,
       applyChangesMode: 'instantly',
-      state: null,
+      state: undefined,
       onFieldContextMenuKeyDown: null,
       headerFilter: {
         width: 252,
@@ -115996,8 +116069,6 @@ class FieldChooserBase extends mixinWidget {
       case 'applyChangesMode':
       case 'remoteSort':
       case 'onFieldContextMenuKeyDown':
-        // The context menu handler is read from the options on each keydown,
-        // so a runtime change requires no re-render.
         break;
       case 'state':
         if (this._skipStateChange || !this._dataSource) {
@@ -117777,7 +117848,7 @@ class PivotGrid extends _widget.default {
         height: 600,
         applyChangesMode: 'instantly'
       },
-      onContextMenuPreparing: null,
+      onContextMenuPreparing: undefined,
       allowSorting: false,
       allowSortingBySummary: false,
       allowFiltering: false,
@@ -117830,12 +117901,12 @@ class PivotGrid extends _widget.default {
         exportToExcel: _message.default.format('dxDataGrid-exportToExcel'),
         dataNotAvailable: _message.default.format('dxPivotGrid-dataNotAvailable')
       },
-      onCellClick: null,
-      onCellPrepared: null,
+      onCellClick: undefined,
+      onCellPrepared: undefined,
       showBorders: false,
       stateStoring: {
         enabled: false,
-        storageKey: null,
+        storageKey: undefined,
         type: 'localStorage',
         customLoad: null,
         customSave: null,
@@ -117843,7 +117914,7 @@ class PivotGrid extends _widget.default {
       },
       onExpandValueChanging: null,
       renderCellCountLimit: 20000,
-      onExporting: null,
+      onExporting: undefined,
       headerFilter: {
         width: 252,
         height: 325,
@@ -118533,6 +118604,9 @@ class PivotGrid extends _widget.default {
     if (!this._contextMenu) {
       return;
     }
+    // Suppress the browser's native context menu so it does not compete with
+    // the widget menu opened from the keyboard.
+    e.preventDefault();
     // The internal _show is called instead of the public show() because only
     // _show accepts the initiating event that onPositioning builds items from.
     this._contextMenu._show(e);
@@ -122923,20 +122997,19 @@ class EditingController extends _m_editing.editingModule.controllers.editing {
       super._setInsertAfterOrBeforeKey.apply(this, arguments);
     }
   }
-  _getLoadedRowIndex(items, change) {
+  _getLoadedRowIndex(items, change, isProcessedItems) {
+    var _this$_getInternalDat;
     const dataSourceAdapter = this._dataController.dataSource();
-    const parentKey = dataSourceAdapter === null || dataSourceAdapter === void 0 ? void 0 : dataSourceAdapter.parentKeyOf(change.data);
+    const insertParentKey = (_this$_getInternalDat = this._getInternalData(change.key)) === null || _this$_getInternalDat === void 0 || (_this$_getInternalDat = _this$_getInternalDat.insertInfo) === null || _this$_getInternalDat === void 0 ? void 0 : _this$_getInternalDat.parentKey;
+    const parentKey = insertParentKey !== undefined ? insertParentKey : dataSourceAdapter === null || dataSourceAdapter === void 0 ? void 0 : dataSourceAdapter.parentKeyOf(change.data);
     if (parentKey !== undefined && parentKey !== this.option('rootValue')) {
       const rowIndex = _m_utils.default.getIndexByKey(parentKey, items);
       // @ts-expect-error
-      if (rowIndex >= 0 && this._dataController.isRowExpanded(parentKey)) {
-        // @ts-expect-error
-        return super._getLoadedRowIndex.apply(this, arguments);
+      if (!(rowIndex >= 0 && this._dataController.isRowExpanded(parentKey))) {
+        return -1;
       }
-      return -1;
     }
-    // @ts-expect-error
-    return super._getLoadedRowIndex.apply(this, arguments);
+    return super._getLoadedRowIndex(items, change, isProcessedItems);
   }
   _isEditColumnVisible() {
     // @ts-expect-error
@@ -123244,18 +123317,21 @@ const data = Base => class TreeListDataControllerExtender extends _m_focus.focus
     return d.promise();
   }
   getPageIndexByKey(key) {
-    const that = this;
-    const dataSource = that._dataSource;
+    const dataSource = this._dataSource;
     // @ts-expect-error
     const d = new _deferred.Deferred();
-    that.expandAscendants(key).done(() => {
+    this.expandAscendants(key).done(() => {
       dataSource.load({
         parentIds: []
       }).done(nodes => {
-        const offset = findIndex(nodes, node => that.keyOf(node.data) === key);
+        if (this._dataSource !== dataSource) {
+          d.resolve(-1);
+          return;
+        }
+        const offset = findIndex(nodes, node => this.keyOf(node.data) === key);
         let pageIndex = -1;
         if (offset >= 0) {
-          pageIndex = Math.floor(offset / that.pageSize());
+          pageIndex = Math.floor(offset / this.pageSize());
         }
         d.resolve(pageIndex);
       }).fail(d.reject);
@@ -157840,7 +157916,6 @@ class Accordion extends _collection_widget.default {
     return Object.assign({}, super._getDefaultOptions(), {
       hoverStateEnabled: true,
       itemTitleTemplate: 'title',
-      // @ts-expect-error ts-error
       onItemTitleClick: null,
       selectedIndex: 0,
       collapsible: false,
@@ -158252,7 +158327,6 @@ class ActionSheet extends _collection_widget.default {
       showTitle: true,
       showCancelButton: true,
       cancelText: _message.default.format('Cancel'),
-      // @ts-expect-error ts-error
       onCancelClick: null,
       visible: false,
       noDataText: '',
@@ -159848,10 +159922,8 @@ class ButtonGroup extends _widget.default {
       keyExpr: 'text',
       items: [],
       buttonTemplate: 'content',
-      // @ts-expect-error ts-error
-      onSelectionChanged: null,
-      // @ts-expect-error ts-error
-      onItemClick: null
+      onSelectionChanged: undefined,
+      onItemClick: undefined
     });
   }
   _init() {
@@ -167700,12 +167772,12 @@ class CollectionWidget extends _widget.default {
       loopItemFocus: true,
       items: [],
       itemTemplate: 'item',
-      onItemRendered: null,
-      onItemClick: null,
-      onItemHold: null,
+      onItemRendered: undefined,
+      onItemClick: undefined,
+      onItemHold: undefined,
       itemHoldTimeout: 750,
-      onItemContextMenu: null,
-      onFocusedItemChanged: null,
+      onItemContextMenu: undefined,
+      onFocusedItemChanged: undefined,
       noDataText: _message.default.format('dxCollectionWidget-noDataText'),
       encodeNoDataText: false,
       dataSource: null,
@@ -168796,11 +168868,11 @@ class CollectionWidget extends _collection_widget.default {
       selectedIndex: NOT_EXISTING_INDEX,
       focusOnSelectedItem: true,
       selectedItem: null,
-      onSelectionChanging: null,
-      onSelectionChanged: null,
-      onItemReordered: null,
-      onItemDeleting: null,
-      onItemDeleted: null
+      onSelectionChanging: undefined,
+      onSelectionChanged: undefined,
+      onItemReordered: undefined,
+      onItemDeleting: undefined,
+      onItemDeleted: undefined
     });
   }
   _init() {
@@ -170518,7 +170590,6 @@ class ColorBox extends _drop_down_editor.default {
       editAlphaChannel: false,
       applyValueMode: 'useButtons',
       keyStep: 1,
-      // @ts-expect-error fieldTemplate is deprecated --- IGNORE ---
       fieldTemplate: null,
       buttonsLocation: 'bottom after'
     });
@@ -171702,12 +171773,12 @@ class ContextMenu extends _menu_base.default {
         at: 'top left',
         my: 'top left'
       },
-      onShowing: null,
-      onShown: null,
+      onShowing: undefined,
+      onShown: undefined,
       onSubmenuCreated: null,
-      onHiding: null,
-      onHidden: null,
-      onPositioning: null,
+      onHiding: undefined,
+      onHidden: undefined,
+      onPositioning: undefined,
       submenuDirection: 'auto',
       visible: false,
       target: undefined,
@@ -173411,10 +173482,8 @@ class DateBox extends _drop_down_editor.default {
       type: 'date',
       showAnalogClock: true,
       value: null,
-      // @ts-expect-error ts-error
       displayFormat: null,
       interval: 30,
-      // @ts-expect-error ts-error
       disabledDates: null,
       pickerType: PICKER_TYPE.calendar,
       invalidDateMessage: _message.default.format('dxDateBox-validation-datetime'),
@@ -176575,7 +176644,7 @@ class DateBoxStrategy extends _class.default.inherit({}) {
     };
   }
   getDisplayFormat(displayFormat) {
-    return displayFormat;
+    return displayFormat || 'shortdate';
   }
   supportedKeys() {
     return {};
@@ -177522,7 +177591,7 @@ class DateRangeBox extends _editor.default {
       onKeyUp: null,
       onOpened: null,
       onPaste: null,
-      onValueChanged: null,
+      onValueChanged: undefined,
       openOnFieldClick: true,
       opened: false,
       pickerType: 'calendar',
@@ -183116,11 +183185,11 @@ class Diagram extends _widget.default {
       export: {
         fileName: 'Diagram'
       },
-      onItemClick: null,
-      onItemDblClick: null,
-      onSelectionChanged: null,
-      onRequestEditOperation: null,
-      onRequestLayoutUpdate: null
+      onItemClick: undefined,
+      onItemDblClick: undefined,
+      onSelectionChanged: undefined,
+      onRequestEditOperation: undefined,
+      onRequestLayoutUpdate: undefined
     });
   }
   _raiseDataChangeAction() {
@@ -185804,9 +185873,7 @@ class Drawer extends _widget.default {
     return Object.assign({}, super._getDefaultOptions(), {
       position: 'left',
       opened: false,
-      // @ts-expect-error ts-error
       minSize: null,
-      // @ts-expect-error ts-error
       maxSize: null,
       shading: false,
       template: PANEL_TEMPLATE_NAME,
@@ -187070,6 +187137,10 @@ class DropDownBox extends _drop_down_editor.default {
         return (0, _utils.getElementMaxHeightByWindow)(this.$element(), popupLocation);
       }
     });
+  }
+  _popupShowingHandler() {
+    super._popupShowingHandler();
+    this._updatePopupWidth();
   }
   _popupShownHandler() {
     super._popupShownHandler();
@@ -190196,7 +190267,7 @@ class Editor extends _widget.default {
     return Object.assign({}, super._getDefaultOptions(), {
       value: null,
       name: '',
-      onValueChanged: null,
+      onValueChanged: undefined,
       readOnly: false,
       isValid: true,
       validationError: null,
@@ -199754,16 +199825,16 @@ class FileUploader extends _editor.default {
       uploadMethod: 'POST',
       uploadHeaders: {},
       uploadCustomData: {},
-      onBeforeSend: null,
-      onUploadStarted: null,
-      onUploaded: null,
-      onFilesUploaded: null,
+      onBeforeSend: undefined,
+      onUploadStarted: undefined,
+      onUploaded: undefined,
+      onFilesUploaded: undefined,
       onFileValidationError: null,
-      onProgress: null,
-      onUploadError: null,
-      onUploadAborted: null,
-      onDropZoneEnter: null,
-      onDropZoneLeave: null,
+      onProgress: undefined,
+      onUploadError: undefined,
+      onUploadAborted: undefined,
+      onDropZoneEnter: undefined,
+      onDropZoneLeave: undefined,
       onCancelButtonClick: null,
       onFileLimitReached: undefined,
       allowedFileExtensions: [],
@@ -202265,12 +202336,9 @@ class Form extends _widget.default {
       screenByWidth: _window.defaultScreenFactorFunc,
       labelLocation: 'left',
       readOnly: false,
-      // @ts-expect-error ts-error
-      onFieldDataChanged: null,
-      // @ts-expect-error ts-error
-      customizeItem: null,
-      // @ts-expect-error ts-error
-      onEditorEnterKey: null,
+      onFieldDataChanged: undefined,
+      customizeItem: undefined,
+      onEditorEnterKey: undefined,
       minColWidth: 200,
       alignItemLabels: true,
       alignItemLabelsInAllGroups: true,
@@ -202287,10 +202355,8 @@ class Form extends _widget.default {
       stylingMode: (0, _config.default)().editorStylingMode,
       labelMode: 'outside',
       isDirty: false,
-      // @ts-expect-error ts-error
-      onSmartPasting: null,
-      // @ts-expect-error ts-error
-      onSmartPasted: null
+      onSmartPasting: undefined,
+      onSmartPasted: undefined
     });
   }
   _defaultOptionsRules() {
@@ -203764,17 +203830,13 @@ class LayoutManager extends _widget.default {
       readOnly: false,
       colCount: 1,
       labelLocation: 'left',
-      // @ts-expect-error ts-error
-      onFieldDataChanged: null,
-      // @ts-expect-error ts-error
-      onEditorEnterKey: null,
-      // @ts-expect-error ts-error
-      customizeItem: null,
+      onFieldDataChanged: undefined,
+      onEditorEnterKey: undefined,
+      customizeItem: undefined,
       alignItemLabels: true,
       minColWidth: MIN_COLUMN_WIDTH,
       showRequiredMark: true,
-      // @ts-expect-error ts-error
-      screenByWidth: null,
+      screenByWidth: undefined,
       showOptionalMark: false,
       requiredMark: '*',
       labelMode: 'outside',
@@ -208657,31 +208719,31 @@ const GanttHelper = exports.GanttHelper = {
       taskTitlePosition: 'inside',
       firstDayOfWeek: undefined,
       selectedRowKey: undefined,
-      onSelectionChanged: null,
-      onTaskClick: null,
-      onTaskDblClick: null,
-      onTaskInserting: null,
-      onTaskInserted: null,
-      onTaskDeleting: null,
-      onTaskDeleted: null,
-      onTaskUpdating: null,
-      onTaskUpdated: null,
-      onTaskMoving: null,
-      onTaskEditDialogShowing: null,
-      onDependencyInserting: null,
-      onDependencyInserted: null,
-      onDependencyDeleting: null,
-      onDependencyDeleted: null,
-      onResourceInserting: null,
-      onResourceInserted: null,
-      onResourceDeleting: null,
-      onResourceDeleted: null,
-      onResourceAssigning: null,
-      onResourceAssigned: null,
-      onResourceUnassigning: null,
-      onResourceUnassigned: null,
-      onCustomCommand: null,
-      onContextMenuPreparing: null,
+      onSelectionChanged: undefined,
+      onTaskClick: undefined,
+      onTaskDblClick: undefined,
+      onTaskInserting: undefined,
+      onTaskInserted: undefined,
+      onTaskDeleting: undefined,
+      onTaskDeleted: undefined,
+      onTaskUpdating: undefined,
+      onTaskUpdated: undefined,
+      onTaskMoving: undefined,
+      onTaskEditDialogShowing: undefined,
+      onDependencyInserting: undefined,
+      onDependencyInserted: undefined,
+      onDependencyDeleting: undefined,
+      onDependencyDeleted: undefined,
+      onResourceInserting: undefined,
+      onResourceInserted: undefined,
+      onResourceDeleting: undefined,
+      onResourceDeleted: undefined,
+      onResourceAssigning: undefined,
+      onResourceAssigned: undefined,
+      onResourceUnassigning: undefined,
+      onResourceUnassigned: undefined,
+      onCustomCommand: undefined,
+      onContextMenuPreparing: undefined,
       allowSelection: true,
       showRowLines: true,
       stripLines: undefined,
@@ -212872,6 +212934,7 @@ var _index = __webpack_require__(98834);
 var _component_registrator = _interopRequireDefault(__webpack_require__(92848));
 var _config = _interopRequireDefault(__webpack_require__(66636));
 var _devices = _interopRequireDefault(__webpack_require__(65951));
+var _dom_adapter = _interopRequireDefault(__webpack_require__(64960));
 var _element = __webpack_require__(61404);
 var _renderer = _interopRequireDefault(__webpack_require__(64553));
 var _empty_template = __webpack_require__(48650);
@@ -212880,6 +212943,7 @@ var _common = __webpack_require__(17781);
 var _deferred = __webpack_require__(87739);
 var _extend = __webpack_require__(52576);
 var _type = __webpack_require__(11528);
+var _focus = __webpack_require__(82312);
 var _editor = _interopRequireDefault(__webpack_require__(24768));
 var _m_converterController = _interopRequireDefault(__webpack_require__(16723));
 var _m_quill_importer = __webpack_require__(58283);
@@ -212908,29 +212972,19 @@ class HtmlEditor extends _editor.default {
     // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
     const stylingMode = editorStylingMode || 'outlined';
     return Object.assign({}, super._getDefaultOptions(), {
-      // @ts-expect-error undefined is not allowed
-      aiIntegration: null,
+      aiIntegration: undefined,
       allowSoftLineBreak: false,
-      // @ts-expect-error undefined is not allowed
-      converter: null,
-      // @ts-expect-error undefined is not allowed
-      customizeModules: null,
+      converter: undefined,
+      customizeModules: undefined,
       focusStateEnabled: true,
-      // @ts-expect-error undefined is not allowed
-      imageUpload: null,
-      // @ts-expect-error undefined is not allowed
+      imageUpload: undefined,
       mediaResizing: null,
-      // @ts-expect-error undefined is not allowed
       mentions: null,
       placeholder: '',
       stylingMode,
-      // @ts-expect-error undefined is not allowed
       tableContextMenu: null,
-      // @ts-expect-error undefined is not allowed
       tableResizing: null,
-      // @ts-expect-error undefined is not allowed
       toolbar: null,
-      // @ts-expect-error undefined is not allowed
       variables: null
     });
   }
@@ -213095,6 +213149,24 @@ class HtmlEditor extends _editor.default {
   }
   _keyDownHandler(e) {
     this._saveValueChangeEvent(e);
+    this._handleFocusEscape(e);
+  }
+  _handleFocusEscape(e) {
+    if (!e.ctrlKey || !e.shiftKey) {
+      return;
+    }
+    const keyName = (0, _index.normalizeKeyName)(e);
+    if (keyName !== 'upArrow' && keyName !== 'downArrow') {
+      return;
+    }
+    const isBackward = keyName === 'upArrow';
+    e.preventDefault();
+    if (isBackward && this._applyToolbarMethod('focusFirstItem')) {
+      return;
+    }
+    const editorNode = this.$element().get(0);
+    const target = (isBackward ? (0, _focus.getPreviousFocusableElement)(editorNode) : (0, _focus.getNextFocusableElement)(editorNode)) ?? _dom_adapter.default.getBody();
+    target.focus();
   }
   _renderHtmlEditor() {
     const {
@@ -213186,7 +213258,8 @@ class HtmlEditor extends _editor.default {
   }
   _getKeyboardModuleConfig() {
     return {
-      onKeydown: e => this._saveValueChangeEvent((0, _events.Event)(e))
+      onKeydown: e => this._saveValueChangeEvent((0, _events.Event)(e)),
+      inlineTabInsertion: false
     };
   }
   _getClipboardConfig() {
@@ -213454,7 +213527,7 @@ class HtmlEditor extends _editor.default {
   }
   _applyToolbarMethod(methodName) {
     var _this$getModule;
-    (_this$getModule = this.getModule('toolbar')) === null || _this$getModule === void 0 || _this$getModule[methodName]();
+    return (_this$getModule = this.getModule('toolbar')) === null || _this$getModule === void 0 ? void 0 : _this$getModule[methodName]();
   }
   addCleanCallback(callback) {
     this._cleanCallback.add(callback);
@@ -215718,10 +215791,10 @@ var _extend = __webpack_require__(52576);
 var _inflector = __webpack_require__(53124);
 var _iterator = __webpack_require__(21274);
 var _type = __webpack_require__(11528);
-var _toolbar = _interopRequireDefault(__webpack_require__(2850));
 var _ui = _interopRequireDefault(__webpack_require__(35185));
 var _capitalize = __webpack_require__(72928);
 var _menu2 = __webpack_require__(81172);
+var _toolbar = _interopRequireDefault(__webpack_require__(53716));
 var _devextremeQuill = _interopRequireDefault(__webpack_require__(40765));
 var _ai = __webpack_require__(39195);
 var _m_table_helper = __webpack_require__(53548);
@@ -215879,6 +215952,10 @@ if (_devextremeQuill.default) {
     }
     repaint() {
       this.toolbarInstance && this.toolbarInstance.repaint();
+    }
+    focusFirstItem() {
+      var _this$toolbarInstance;
+      return ((_this$toolbarInstance = this.toolbarInstance) === null || _this$toolbarInstance === void 0 ? void 0 : _this$toolbarInstance.focusFirstItem()) ?? false;
     }
     _getContainer() {
       const $container = (0, _renderer.default)('<div>');
@@ -216539,6 +216616,7 @@ Object.defineProperty(exports, "__esModule", ({
   value: true
 }));
 exports["default"] = void 0;
+var _message = _interopRequireDefault(__webpack_require__(4671));
 var _devextremeQuill = _interopRequireDefault(__webpack_require__(40765));
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 // eslint-disable-next-line import/no-mutable-exports
@@ -216550,7 +216628,7 @@ if (_devextremeQuill.default) {
       super(quill, options);
       this.quill.root.classList.add('dx-htmleditor-content');
       this.quill.root.setAttribute('role', 'textbox');
-      this.quill.root.setAttribute('aria-label', 'Editor content');
+      this.quill.root.setAttribute('aria-label', [_message.default.format('dxHtmlEditor-editorAriaLabel'), _message.default.format('dxHtmlEditor-ariaEscapeInstruction')].join('. '));
       this.quill.root.setAttribute('aria-multiline', 'true');
     }
   };
@@ -219796,19 +219874,14 @@ class ListBase extends _collection_widget.default {
       pulledDownText: _message.default.format('dxList-pulledDownText'),
       refreshingText: _message.default.format('dxList-refreshingText'),
       pageLoadingText: _message.default.format('dxList-pageLoadingText'),
-      // @ts-expect-error ts-error
-      onScroll: null,
-      // @ts-expect-error ts-error
-      onPullRefresh: null,
-      // @ts-expect-error ts-error
-      onPageLoading: null,
+      onScroll: undefined,
+      onPullRefresh: undefined,
+      onPageLoading: undefined,
       pageLoadMode: 'scrollBottom',
       nextButtonText: _message.default.format('dxList-nextButtonText'),
-      // @ts-expect-error ts-error
-      onItemSwipe: null,
+      onItemSwipe: undefined,
       grouped: false,
-      // @ts-expect-error ts-error
-      onGroupRendered: null,
+      onGroupRendered: undefined,
       collapsibleGroups: false,
       groupTemplate: 'group',
       indicateLoading: true,
@@ -220057,10 +220130,9 @@ class ListBase extends _collection_widget.default {
       onScroll: e => {
         this._scrollHandler(e);
       },
+      onPullDown: isPullRefreshEnabled ? this._pullDownHandler.bind(this) : undefined,
       // @ts-expect-error ts-error
-      onPullDown: isPullRefreshEnabled ? this._pullDownHandler.bind(this) : null,
-      // @ts-expect-error ts-error
-      onReachBottom: autoPagingEnabled ? this._scrollBottomHandler.bind(this) : null,
+      onReachBottom: autoPagingEnabled ? this._scrollBottomHandler.bind(this) : undefined,
       showScrollbar,
       useNative: useNativeScrolling,
       bounceEnabled,
@@ -222324,8 +222396,7 @@ class ListEdit extends _list.ListBase {
       showSelectionControls: false,
       selectionMode: 'none',
       selectAllMode: 'page',
-      // @ts-expect-error ts-error
-      onSelectAllValueChanged: null,
+      onSelectAllValueChanged: undefined,
       selectAllText: _message.default.format('dxList-selectAll'),
       menuItems: [],
       menuMode: 'context',
@@ -222834,9 +222905,7 @@ class ListSearch extends _list.default {
   }
   _getDefaultOptions() {
     return Object.assign({}, super._getDefaultOptions(), {
-      // @ts-expect-error ts-error
-      searchMode: '',
-      // @ts-expect-error ts-error
+      searchMode: undefined,
       searchExpr: null,
       searchValue: '',
       searchEnabled: false,
@@ -223863,12 +223932,9 @@ class Lookup extends _drop_down_list.default {
       pulledDownText: _message.default.format('dxList-pulledDownText'),
       refreshingText: _message.default.format('dxList-refreshingText'),
       pageLoadingText: _message.default.format('dxList-pageLoadingText'),
-      // @ts-expect-error public API
-      onScroll: null,
-      // @ts-expect-error public API
-      onPullRefresh: null,
-      // @ts-expect-error public API
-      onPageLoading: null,
+      onScroll: undefined,
+      onPullRefresh: undefined,
+      onPageLoading: undefined,
       pageLoadMode: 'scrollBottom',
       nextButtonText: _message.default.format('dxList-nextButtonText'),
       grouped: false,
@@ -223889,8 +223955,7 @@ class Lookup extends _drop_down_list.default {
         animation: {},
         title: '',
         titleTemplate: 'title',
-        // @ts-expect-error ts-error
-        onTitleRendered: null,
+        onTitleRendered: undefined,
         fullScreen: false,
         maxHeight: '100vh'
       },
@@ -224978,8 +225043,7 @@ class ProgressBar extends _m_track_bar.default {
         return `Progress: ${Math.round(ratio * 100)}%`;
       },
       showStatus: true,
-      // @ts-expect-error ts-error
-      onComplete: null,
+      onComplete: undefined,
       activeStateEnabled: false,
       statusPosition: 'bottom left',
       _animatingSegmentCount: 0
@@ -227353,17 +227417,12 @@ class Map extends _widget.default {
       provider: 'google',
       autoAdjust: true,
       markers: [],
-      // @ts-expect-error ts-error
-      markerIconSrc: null,
-      // @ts-expect-error ts-error
-      onMarkerAdded: null,
-      // @ts-expect-error ts-error
-      onMarkerRemoved: null,
+      markerIconSrc: undefined,
+      onMarkerAdded: undefined,
+      onMarkerRemoved: undefined,
       routes: [],
-      // @ts-expect-error ts-error
-      onRouteAdded: null,
-      // @ts-expect-error ts-error
-      onRouteRemoved: null,
+      onRouteAdded: undefined,
+      onRouteRemoved: undefined,
       apiKey: {
         bing: '',
         google: '',
@@ -227374,12 +227433,8 @@ class Map extends _widget.default {
         useAdvancedMarkers: true
       },
       controls: false,
-      // @ts-expect-error ts-error
-      onReady: null,
-      // for internal use only
-      // @ts-expect-error ts-error
-      onUpdated: null,
-      // @ts-expect-error ts-error
+      onReady: undefined,
+      onUpdated: undefined,
       onClick: null
     });
   }
@@ -229630,14 +229685,10 @@ class Menu extends _menu_base.default {
         }
       },
       hideSubmenuOnMouseLeave: false,
-      // @ts-expect-error ts-error
-      onSubmenuShowing: null,
-      // @ts-expect-error ts-error
-      onSubmenuShown: null,
-      // @ts-expect-error ts-error
-      onSubmenuHiding: null,
-      // @ts-expect-error ts-error
-      onSubmenuHidden: null,
+      onSubmenuShowing: undefined,
+      onSubmenuShown: undefined,
+      onSubmenuHiding: undefined,
+      onSubmenuHidden: undefined,
       adaptivityEnabled: false
     });
   }
@@ -234980,6 +235031,7 @@ class Popover extends _popup.default {
         visible
       } = this.option();
       const overlayStack = this._overlayStack();
+      // @ts-ignore expected: types Overlay<OverlayProperties> and this have no overlap
       const isTopOverlay = overlayStack[overlayStack.length - 1] === this;
       if ((0, _utils.normalizeKeyName)(e) === ESC_KEY_NAME && visible && isTopOverlay) {
         // eslint-disable-next-line @typescript-eslint/no-floating-promises
@@ -235812,14 +235864,14 @@ class Popup extends _overlay.default {
       title: '',
       showTitle: true,
       titleTemplate: 'title',
-      onTitleRendered: null,
+      onTitleRendered: undefined,
       dragOutsideBoundary: false,
       dragEnabled: false,
       enableBodyScroll: true,
       outsideDragFactor: 0,
-      onResizeStart: null,
-      onResize: null,
-      onResizeEnd: null,
+      onResizeStart: undefined,
+      onResize: undefined,
+      onResizeEnd: undefined,
       resizeEnabled: false,
       toolbarItems: [],
       showCloseButton: false,
@@ -238691,8 +238743,7 @@ class ResponsiveBox extends _uiCollection_widget.default {
       rows: [],
       cols: [],
       singleColumnScreen: '',
-      // @ts-expect-error ts-error
-      screenByWidth: null,
+      screenByWidth: undefined,
       height: '100%',
       width: '100%',
       activeStateEnabled: false,
@@ -239440,10 +239491,8 @@ class ScrollView extends _scrollable.default {
       pulledDownText: _message.default.format('dxScrollView-pulledDownText'),
       refreshingText: _message.default.format('dxScrollView-refreshingText'),
       reachBottomText: _message.default.format('dxScrollView-reachBottomText'),
-      // @ts-expect-error ts-error
-      onPullDown: null,
-      // @ts-expect-error ts-error
-      onReachBottom: null,
+      onPullDown: undefined,
+      onReachBottom: undefined,
       refreshStrategy: 'pullDown'
     });
   }
@@ -247190,7 +247239,7 @@ class SpeedDialAction extends _widget.default {
       label: '',
       visible: true,
       index: 0,
-      onContentReady: null,
+      onContentReady: undefined,
       activeStateEnabled: true,
       hoverStateEnabled: true,
       animation: {
@@ -251060,12 +251109,9 @@ class TabPanel extends _multi_view.default {
       tabsPosition: TABS_POSITION.top,
       iconPosition: ICON_POSITION.start,
       stylingMode: STYLING_MODE.primary,
-      // @ts-expect-error ts-error
       onTitleClick: null,
-      // @ts-expect-error ts-error
-      onTitleHold: null,
-      // @ts-expect-error ts-error
-      onTitleRendered: null,
+      onTitleHold: undefined,
+      onTitleRendered: undefined,
       badgeExpr(data) {
         return data === null || data === void 0 ? void 0 : data.badge;
       },
@@ -252598,10 +252644,10 @@ class TagBox extends _select_box.default {
       hideSelectedItems: false,
       selectedItems: [],
       selectAllMode: 'page',
-      onSelectAllValueChanged: null,
+      onSelectAllValueChanged: undefined,
       maxDisplayedTags: undefined,
       showMultiTagOnly: true,
-      onMultiTagPreparing: null,
+      onMultiTagPreparing: undefined,
       multiline: true,
       useSubmitBehavior: true
     });
@@ -258369,7 +258415,7 @@ const MENU_CLASS = exports.MENU_CLASS = 'dx-menu';
 const MENU_ITEM_CLASS = exports.MENU_ITEM_CLASS = 'dx-menu-item';
 const MENU_ITEM_EXPANDED_CLASS = exports.MENU_ITEM_EXPANDED_CLASS = 'dx-menu-item-expanded';
 const TOOLBAR_SEPARATOR_CLASS = exports.TOOLBAR_SEPARATOR_CLASS = 'dx-toolbar-separator';
-const TOOLBAR_ITEMS = exports.TOOLBAR_ITEMS = ['dxAutocomplete', 'dxButton', 'dxCheckBox', 'dxDateBox', 'dxDateRangeBox', 'dxMenu', 'dxSelectBox', 'dxSwitch', 'dxTabs', 'dxTextBox', 'dxButtonGroup', 'dxDropDownButton'];
+const TOOLBAR_ITEMS = exports.TOOLBAR_ITEMS = ['dxAutocomplete', 'dxButton', 'dxCheckBox', 'dxDateBox', 'dxDateRangeBox', 'dxMenu', 'dxSelectBox', 'dxSwitch', 'dxTabs', 'dxNumberBox', 'dxTextBox', 'dxButtonGroup', 'dxDropDownButton'];
 const TOOLBAR_COMPONENTS_SELECTOR = exports.TOOLBAR_COMPONENTS_SELECTOR = TOOLBAR_ITEMS.map(w => w.toLowerCase().replace('dx', '.dx-')).join(',');
 const NATIVE_FOCUSABLE_SELECTOR = exports.NATIVE_FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]';
 const TEXTEDITOR_CLASS = exports.TEXTEDITOR_CLASS = 'dx-texteditor';
@@ -260532,6 +260578,7 @@ Object.defineProperty(exports, "__esModule", ({
 }));
 exports["default"] = void 0;
 var _component_registrator = _interopRequireDefault(__webpack_require__(92848));
+var _focus = __webpack_require__(82312);
 var _toolbar = __webpack_require__(56527);
 var _toolbar2 = __webpack_require__(40096);
 var _toolbar3 = _interopRequireDefault(__webpack_require__(28793));
@@ -260664,6 +260711,14 @@ class Toolbar extends _toolbar3.default {
     if (allowKeyboardNavigation) {
       this._resetRovingTabIndex();
     }
+  }
+  focusFirstItem() {
+    if (this.option('disabled')) {
+      return false;
+    }
+    const target = (0, _focus.getFirstFocusableElement)(this.$element().get(0));
+    target === null || target === void 0 || target.focus();
+    return Boolean(target);
   }
   _isMenuItem(itemData) {
     return itemData.locateInMenu === 'always';
@@ -325330,7 +325385,6 @@ var _default = exports["default"] = _collection_widget.default;
  * @name CollectionWidgetOptions.selectionMode
  * @type string
  * @default 'none'
- * @acceptValues 'multiple'|'single'|'all'|'none'
  * @hidden
  */
 /**
