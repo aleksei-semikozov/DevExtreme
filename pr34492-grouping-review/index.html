@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PR 34492 — Scheduler multilevel grouping: разбор находок</title>
+  <style>
+    :root { color-scheme: light; }
+    body { margin: 0; padding: 24px; font-family: -apple-system, Segoe UI, Roboto, sans-serif; color: #1a1a1a; background: #fafafa; line-height: 1.5; }
+    .wrap { max-width: 1400px; margin: 0 auto; }
+    h1 { font-size: 22px; margin: 0 0 4px; }
+    .sub { color: #666; font-size: 14px; margin-bottom: 20px; }
+    .scenarios { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .scenarios button { font: inherit; font-size: 13px; padding: 7px 12px; border: 1px solid #ccc; background: #fff; border-radius: 6px; cursor: pointer; }
+    .scenarios button.active { background: #1e6fd9; border-color: #1e6fd9; color: #fff; }
+    .card { background: #fff; border: 1px solid #e2e2e2; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+    .card h2 { font-size: 16px; margin: 0 0 8px; }
+    .card dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; margin: 0; font-size: 14px; }
+    .card dt { color: #666; }
+    .card dd { margin: 0; }
+    .frames { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .frame { background: #fff; border: 1px solid #e2e2e2; border-radius: 8px; overflow: hidden; }
+    .frame > header { padding: 8px 12px; font-size: 13px; font-weight: 600; border-bottom: 1px solid #e2e2e2; }
+    .frame.pr > header { background: #fff4f4; color: #a11; }
+    .frame.base > header { background: #f2f8f2; color: #171; }
+    iframe { width: 100%; height: 480px; border: 0; display: block; }
+    code { background: #f0f0f0; padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+    .note { font-size: 13px; color: #555; background: #fffbe6; border: 1px solid #f0e0a0; border-radius: 6px; padding: 10px 12px; margin-top: 16px; }
+    @media (max-width: 1000px) { .frames { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>PR&nbsp;34492 — Scheduler, многоуровневая группировка</h1>
+  <div class="sub">
+    Сравнение head PR (<code>40af3a5501</code>) и merge-base (<code>1a08dc7334</code>).
+    Слева — CSS из PR, справа — CSS из базовой ветки. JavaScript в обоих кадрах <b>одинаковый</b>, отличается только собранная тема.
+  </div>
+
+  <div class="scenarios" id="scenarios"></div>
+  <div class="card" id="desc"></div>
+
+  <div class="frames">
+    <div class="frame pr"><header>Так стало (CSS из PR)</header><iframe id="fPr"></iframe></div>
+    <div class="frame base"><header>Так было (CSS из merge-base)</header><iframe id="fBase"></iframe></div>
+  </div>
+
+  <div class="note">
+    <b>Как читать правый кадр.</b> PR удалил из JS код, который вешал на воркспейс классы
+    <code>dx-scheduler-group-column-count-one/two/three</code>. Чтобы правый кадр показывал именно поведение
+    до PR, в сценариях «ширина» и «RTL» этот класс добавлен обратно скриптом — иначе старый CSS просто не к чему было бы применить.
+    Во всех остальных сценариях правый кадр — это чистый CSS базовой ветки без каких-либо доработок.
+  </div>
+</div>
+
+<script>
+const SCENARIOS = [
+  {
+    id: 'hier', btn: 'F2 · граница при 3 уровнях',
+    title: 'F2. У листа C3 пропадает правая граница панели ресурсов',
+    what: 'Дерево ресурсов A → B1(C1, C2), B2(C3, C4). Смотрите вертикальную линию между панелью ресурсов и таблицей дат.',
+    expect: 'Линия сплошная по всей высоте панели, как в правом кадре.',
+    actual: 'Напротив строки C3 линия разорвана — границы нет.',
+    why: 'В _index.scss:340 правило гасит border-right у всех потомков group-row:last-child (потомковый комбинатор), а восстанавливающее правило на строке 349 использует «>» и до C3 не достаёт: строка C3 не последняя, но её предок B2 — последний. Правило для листьев проигрывает по специфичности.',
+    measured: 'getComputedStyle(C3).borderRightWidth: 0px на head против 1px на merge-base (generic и fluent).',
+  },
+  {
+    id: 'flat', btn: 'F1 · ширина группы',
+    title: 'F1. Панель ресурсов шире у обычной, не иерархической группировки',
+    what: 'Timeline, два обычных ресурса без иерархии — сценарий, который существовал и до этой фичи.',
+    expect: 'Ширина заголовка ресурса 80px, как в правом кадре.',
+    actual: 'Ширина 100px: панель ресурсов шире, область дат уже, ячейки и встречи смещаются.',
+    why: 'Правила .dx-scheduler-group-column-count-two/three, которые сужали заголовки, остались в SCSS, но JS больше не вешает эти классы — правила стали недостижимы, и применяется полная ширина из темы.',
+    measured: 'Ширина заголовка: 80px → 100px (generic и fluent). PR сам обновил ожидание left 430 → 411 в integration.resources.tests.js:42.',
+  },
+  {
+    id: 'rtl', btn: 'F3 · RTL выравнивание',
+    title: 'F3. RTL: последний заголовок ресурса выравнивается влево (generic)',
+    what: 'То же самое, но rtlEnabled: true.',
+    expect: 'Текст последнего заголовка прижат вправо.',
+    actual: 'Текст прижат влево.',
+    why: 'RTL-правило text-align: right в _index.scss:945 завязано на тот же удалённый класс count-two/three. Других RTL-переопределений в generic нет.',
+    measured: 'text-align: right → left в generic. В fluent проблемы нет — там своё RTL-правило.',
+  },
+  {
+    id: 'week', btn: 'F4 · лишняя линия в шапке',
+    title: 'F4. Под заголовками групп появляется линия, которой не было',
+    what: 'Week view с группировкой.',
+    expect: 'Под ячейками заголовков групп линии нет.',
+    actual: 'Под каждым заголовком группы — линия 1px, включая первый уровень.',
+    why: 'Граница переехала с <tr> на <th>: раньше border-bottom стоял на строке таблицы, а в модели раздельных границ (border-spacing: 0 без border-collapse) браузер границы строк не рисует. Заодно ушло условие :not(:first-child).',
+    measured: 'border-bottom заголовка: 0px none → 1px solid.',
+  },
+  {
+    id: 'agenda', btn: 'F5 · Agenda',
+    title: 'F5. Побочный эффект в Agenda — двойной разделитель',
+    what: 'Agenda view с группировкой. К этой фиче Agenda отношения не имеет.',
+    expect: 'Один разделитель между ресурсами.',
+    actual: 'К имеющемуся разделителю добавляется вторая линия по нижнему краю ячейки.',
+    why: 'Новый селектор в generic начинается с .dx-scheduler-group-table, а такой класс носит и таблица групп в Agenda. Его специфичность (0,3,0) перебивает сброс границ для Agenda (0,2,0).',
+    measured: 'border-bottom заголовка Agenda: 0px none → 1px solid.',
+  },
+  {
+    id: 'dayNoAllDay', btn: 'F6 · зависимость от showAllDayPanel',
+    title: 'F6. Внешний вид зависит от несвязанной опции showAllDayPanel',
+    what: 'Day view с группировкой и showAllDayPanel: false. Сравните с кнопкой рядом — тот же вид, но с панелью на весь день.',
+    expect: 'Наличие панели «на весь день» не должно влиять на границы заголовков групп.',
+    actual: 'Без панели у последнего заголовка группы граница есть, с панелью — нет.',
+    why: 'Сброс границы навешен на класс dx-scheduler-work-space-all-day, а он переключается напрямую опцией showAllDayPanel, а не типом представления.',
+    measured: 'Последний заголовок, Day view: 1px solid без панели против 0px none с панелью (на head). На merge-base в обоих случаях 0px none.',
+  },
+  {
+    id: 'dayAllDay', btn: 'F6 · тот же вид с панелью',
+    title: 'F6 (вторая половина). Day view с showAllDayPanel: true',
+    what: 'Тот же Day view, но панель «на весь день» включена.',
+    expect: 'Границы такие же, как в сценарии без панели.',
+    actual: 'У последнего заголовка группы границы нет — отличие от предыдущего сценария.',
+    why: 'См. предыдущий сценарий: сброс границы привязан к классу, которым управляет опция showAllDayPanel.',
+    measured: 'Последний заголовок: 0px none с панелью против 1px solid без неё.',
+  },
+];
+
+const btns = document.getElementById('scenarios');
+const desc = document.getElementById('desc');
+
+function show(id) {
+  const s = SCENARIOS.find((x) => x.id === id);
+  [...btns.children].forEach((b) => b.classList.toggle('active', b.dataset.id === id));
+  desc.innerHTML = '<h2>' + s.title + '</h2><dl>'
+    + '<dt>Что на экране</dt><dd>' + s.what + '</dd>'
+    + '<dt>Ожидается</dt><dd>' + s.expect + '</dd>'
+    + '<dt>Фактически</dt><dd>' + s.actual + '</dd>'
+    + '<dt>Причина</dt><dd>' + s.why + '</dd>'
+    + '<dt>Замер</dt><dd>' + s.measured + '</dd>'
+    + '</dl>';
+  document.getElementById('fPr').src = 'frame.html?side=head&scenario=' + id;
+  document.getElementById('fBase').src = 'frame.html?side=base&scenario=' + id;
+}
+
+SCENARIOS.forEach((s) => {
+  const b = document.createElement('button');
+  b.textContent = s.btn;
+  b.dataset.id = s.id;
+  b.onclick = () => show(s.id);
+  btns.appendChild(b);
+});
+show('hier');
+</script>
+</body>
+</html>
