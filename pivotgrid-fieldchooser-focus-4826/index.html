@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PivotGrid — фокус на кнопках тулбара (issue 4826)</title>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script>
+    // The theme stylesheet must be in place before dx.all.js runs: DevExtreme reads the
+    // theme marker from the loaded CSS, and the demo reads the compiled fix rule from it.
+    window.__demoTheme = new URLSearchParams(location.search).get('theme') || 'fluent.blue.light';
+    document.write('<link rel="stylesheet" id="dx-theme" href="css/dx.' + window.__demoTheme + '.css">');
+  </script>
+  <script src="dx.all.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 24px; color: #1f2328; max-width: 1100px;
+    }
+    h1 { font-size: 1.35em; margin-bottom: 4px; }
+    h2 { font-size: 1.05em; margin: 28px 0 8px; }
+    .subtitle { color: #57606a; font-size: .9em; margin-bottom: 20px; }
+    .panel {
+      border: 1px solid #d0d7de; border-radius: 6px; padding: 14px 16px;
+      margin-bottom: 16px; background: #f6f8fa;
+    }
+    .panel h3 { font-size: .95em; margin: 0 0 8px; }
+    .panel ol, .panel ul { margin: 0; padding-left: 22px; }
+    .panel li { margin-bottom: 6px; }
+    .controls { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; }
+    .controls label { font-size: .9em; }
+    .toggle { font-weight: 600; }
+    kbd {
+      background: #eee; border: 1px solid #ccc; border-radius: 3px;
+      padding: 1px 5px; font-size: .85em;
+    }
+    #focus-status {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .85em;
+      border: 1px solid #d0d7de; border-left: 4px solid #8b949e; border-radius: 4px;
+      padding: 10px 12px; background: #fff; white-space: pre-wrap; margin-bottom: 16px;
+    }
+    #focus-status.ok { border-left-color: #1a7f37; background: #eef7ee; }
+    #focus-status.bad { border-left-color: #cf222e; background: #fff5f5; }
+    .case { margin-bottom: 30px; }
+    .case > p { font-size: .88em; color: #57606a; margin: 0 0 8px; }
+    .grid-host { border: 1px solid #d0d7de; border-radius: 6px; padding: 10px; background: #fff; }
+    code { background: #eff1f3; padding: 1px 4px; border-radius: 3px; font-size: .9em; }
+  </style>
+</head>
+<body class="dx-viewport">
+
+<h1>PivotGrid — видимый фокус на кнопках тулбара</h1>
+<p class="subtitle">
+  Проверка исправления issue&nbsp;4826 (часть&nbsp;#4196). WCAG 2.4.7 Focus Visible (A), 1.4.11 Non-text Contrast (AA).
+</p>
+
+<div class="panel">
+  <h3>В чём была проблема</h3>
+  <p style="margin:0 0 8px;font-size:.9em">
+    Кнопки тулбара PivotGrid («Показать список полей» и «Экспорт») создаются как <code>dxButton</code> со
+    <code>stylingMode: 'text'</code> в Fluent и Material. У такой кнопки состояние фокуса — это лёгкая
+    подсветка фона, которая на безрамочной иконочной кнопке практически незаметна. При этом ячейки самой
+    сводной таблицы используют контур 2px акцентного цвета. Кнопка была в tab-порядке и получала фокус,
+    но визуально это было не видно.
+  </p>
+  <p style="margin:0;font-size:.9em">
+    Исправление: <code>.dx-pivotgrid .dx-pivotgrid-toolbar .dx-button:focus-visible</code> получает
+    <code>outline: 2px solid $pivotgrid-accent-color; outline-offset: -2px</code> — тот же контур, что у
+    ячеек и иконок раскрытия. Правило добавлено в базовый SCSS, поэтому работает во всех темах, и
+    ограничено тулбаром PivotGrid, чтобы не задеть кнопки других компонентов.
+  </p>
+</div>
+
+<div class="panel">
+  <h3>Как проверять</h3>
+  <ol>
+    <li>Оставьте галочку <strong>«Фикс применён»</strong> включённой и нажимайте <kbd>Tab</kbd> — фокус пойдёт по кнопкам тулбара трёх примеров ниже. На каждой кнопке должен появиться отчётливый контур 2px.</li>
+    <li><strong>Снимите галочку</strong> — из собранной темы удаляется ровно одно CSS-правило (то, что добавляет фикс). Повторите обход по <kbd>Tab</kbd>: контура больше нет, остаётся только еле заметная подсветка фона — это состояние «до фикса».</li>
+    <li>Строка <strong>«Фокус»</strong> ниже показывает вычисленный <code>outline</code> элемента в фокусе: до фикса это <code>0px none</code>, после — <code>2px solid</code> акцентного цвета.</li>
+    <li>Смените <strong>тему</strong> и повторите: фикс должен работать в Fluent (light/dark), Material и Generic.</li>
+    <li>Мышью контур не появляется — это <code>:focus-visible</code>, ожидаемое поведение (как у ячеек грида).</li>
+  </ol>
+</div>
+
+<div class="panel controls">
+  <label>Тема:
+    <select id="theme-select">
+      <option value="fluent.blue.light">Fluent Blue Light</option>
+      <option value="fluent.blue.dark">Fluent Blue Dark</option>
+      <option value="material.blue.light">Material Blue Light</option>
+      <option value="light">Generic Light</option>
+    </select>
+  </label>
+  <label class="toggle">
+    <input type="checkbox" id="fix-toggle" checked /> Фикс применён
+  </label>
+  <span style="font-size:.85em;color:#57606a">CSS собран локально из этой ветки; переключатель удаляет/возвращает ровно одно правило</span>
+</div>
+
+<div id="focus-status">Фокус: — (нажмите Tab)</div>
+
+<div class="case">
+  <h2>1. Тулбар в области фильтров</h2>
+  <p><code>fieldPanel: { visible: true, showFilterFields: true }</code> — кнопки в <code>.dx-filter-header</code></p>
+  <div class="grid-host"><div id="grid-filter"></div></div>
+</div>
+
+<div class="case">
+  <h2>2. Тулбар в области колонок</h2>
+  <p><code>fieldPanel: { visible: true, showDataFields: true }</code> — кнопки в <code>.dx-column-header</code></p>
+  <div class="grid-host"><div id="grid-column"></div></div>
+</div>
+
+<div class="case">
+  <h2>3. Тулбар в ячейке описания</h2>
+  <p><code>fieldPanel: { visible: false }</code> — кнопки в <code>.dx-area-description-cell</code>; здесь <code>stylingMode</code> принудительно <code>'text'</code> во всех темах, включая Generic</p>
+  <div class="grid-host"><div id="grid-description"></div></div>
+</div>
+
+<script>
+  const sales = [
+    { region: 'Север', city: 'Москва', year: 2025, amount: 4200 },
+    { region: 'Север', city: 'Тверь', year: 2025, amount: 1800 },
+    { region: 'Север', city: 'Москва', year: 2026, amount: 5100 },
+    { region: 'Юг', city: 'Сочи', year: 2025, amount: 2600 },
+    { region: 'Юг', city: 'Ростов', year: 2026, amount: 3300 },
+    { region: 'Юг', city: 'Сочи', year: 2026, amount: 2900 },
+  ];
+
+  const fields = [
+    { caption: 'Регион', dataField: 'region', area: 'row', expanded: true },
+    { caption: 'Город', dataField: 'city', area: 'row' },
+    { caption: 'Год', dataField: 'year', area: 'column' },
+    { caption: 'Сумма', dataField: 'amount', dataType: 'number', summaryType: 'sum', area: 'data', format: 'fixedPoint' },
+  ];
+
+  const params = new URLSearchParams(location.search);
+  const theme = window.__demoTheme;
+
+  const themeSelect = document.getElementById('theme-select');
+  const fixToggle = document.getElementById('fix-toggle');
+  const statusEl = document.getElementById('focus-status');
+
+  themeSelect.value = theme;
+
+  themeSelect.addEventListener('change', () => {
+    params.set('theme', themeSelect.value);
+    location.search = params.toString();
+  });
+
+  const FIX_SELECTOR = '.dx-pivotgrid .dx-pivotgrid-toolbar .dx-button:focus-visible';
+  let fixRule = null;
+
+  function locateFixRule() {
+    for (const sheet of document.styleSheets) {
+      let rules;
+      try { rules = sheet.cssRules; } catch (e) { continue; }
+      for (let i = 0; i < rules.length; i += 1) {
+        if (rules[i].selectorText === FIX_SELECTOR) {
+          return { sheet: sheet, index: i, cssText: rules[i].cssText };
+        }
+      }
+    }
+    return null;
+  }
+
+  fixToggle.addEventListener('change', () => {
+    if (!fixRule) {
+      statusEl.className = 'bad';
+      statusEl.textContent = '⚠ правило фикса не найдено в CSS — перезагрузите страницу';
+      return;
+    }
+    if (fixToggle.checked) {
+      fixRule.sheet.insertRule(fixRule.cssText, fixRule.index);
+    } else {
+      fixRule.sheet.deleteRule(fixRule.index);
+    }
+    renderStatus();
+  });
+
+  function describe(el) {
+    if (!el || el === document.body) return null;
+    const button = el.closest('.dx-pivotgrid-toolbar .dx-button');
+    if (!button) return null;
+    const kind = button.classList.contains('dx-pivotgrid-field-chooser-button')
+      ? 'Показать список полей' : 'Экспорт';
+    const host = button.closest('.dx-filter-header') ? 'область фильтров'
+      : button.closest('.dx-column-header') ? 'область колонок'
+        : 'ячейка описания';
+    const s = getComputedStyle(button);
+    const mode = button.classList.contains('dx-button-mode-text') ? 'text' : 'contained';
+    return {
+      kind, host, mode,
+      outline: s.outlineWidth + ' ' + s.outlineStyle + (s.outlineStyle === 'none' ? '' : ' ' + s.outlineColor),
+      visible: s.outlineStyle !== 'none' && parseFloat(s.outlineWidth) > 0,
+    };
+  }
+
+  function renderStatus() {
+    const info = describe(document.activeElement);
+    if (!info) {
+      statusEl.className = '';
+      statusEl.textContent = 'Фокус: не на кнопке тулбара PivotGrid — нажимайте Tab';
+      return;
+    }
+    statusEl.className = info.visible ? 'ok' : 'bad';
+    statusEl.textContent =
+      'Фокус: кнопка «' + info.kind + '» (' + info.host + '), stylingMode: ' + info.mode + '\n'
+      + 'outline: ' + info.outline + '\n'
+      + (info.visible ? '✓ контур фокуса виден' : '✗ контура нет — состояние «до фикса»');
+  }
+
+  document.addEventListener('focusin', renderStatus);
+  document.addEventListener('focusout', () => setTimeout(renderStatus, 0));
+
+  $(() => {
+    const base = {
+      dataSource: { fields: fields, store: sales },
+      allowFiltering: true,
+      allowSortingBySummary: true,
+      showBorders: true,
+      height: 300,
+      fieldChooser: { enabled: true },
+      export: { enabled: true },
+      onExporting(e) { e.cancel = true; },
+    };
+
+    $('#grid-filter').dxPivotGrid(Object.assign({}, base, {
+      fieldPanel: { visible: true, showFilterFields: true, showRowFields: true },
+    }));
+    $('#grid-column').dxPivotGrid(Object.assign({}, base, {
+      fieldPanel: { visible: true, showDataFields: true, showColumnFields: true },
+    }));
+    $('#grid-description').dxPivotGrid(Object.assign({}, base, {
+      fieldPanel: { visible: false },
+    }));
+
+    fixRule = locateFixRule();
+    statusEl.textContent = 'Фокус: — нажмите Tab, чтобы дойти до кнопок тулбара (тема: '
+      + DevExpress.ui.themes.current() + ')\n'
+      + (fixRule
+        ? 'правило фикса найдено в собранной теме: ' + fixRule.cssText
+        : '⚠ правило фикса не найдено в CSS');
+  });
+</script>
+
+</body>
+</html>
