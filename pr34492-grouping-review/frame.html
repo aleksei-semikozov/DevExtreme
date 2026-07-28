@@ -17,10 +17,9 @@
   <script src="fixed/dx.all.js"></script>
   <script>
     const params = new URLSearchParams(location.search);
-    const side = params.get('side') === 'base' ? 'base' : 'head';
     const scenario = params.get('scenario') || 'hier';
 
-    const flatRooms = [
+    const rooms = [
       { id: 1, text: 'Room 1' },
       { id: 2, text: 'Room 2' },
     ];
@@ -48,44 +47,11 @@
         groups: ['regionId'],
         resources: [{ fieldExpr: 'regionId', dataSource: hierRegions, parentIdExpr: 'parentId', label: 'Region' }],
       },
-      flat: {
-        currentView: 'timelineDay',
-        views: ['timelineDay'],
-        groups: ['roomId'],
-        resources: [{ fieldExpr: 'roomId', dataSource: flatRooms, label: 'Room' }],
-      },
-      rtl: {
-        rtlEnabled: true,
-        currentView: 'timelineDay',
-        views: ['timelineDay'],
-        groups: ['roomId'],
-        resources: [{ fieldExpr: 'roomId', dataSource: flatRooms, label: 'Room' }],
-      },
-      week: {
-        currentView: 'week',
-        views: ['week'],
-        groups: ['roomId'],
-        resources: [{ fieldExpr: 'roomId', dataSource: flatRooms, label: 'Room' }],
-      },
       agenda: {
         currentView: 'agenda',
         views: ['agenda'],
         groups: ['roomId'],
-        resources: [{ fieldExpr: 'roomId', dataSource: flatRooms, label: 'Room' }],
-      },
-      dayNoAllDay: {
-        currentView: 'day',
-        views: ['day'],
-        showAllDayPanel: false,
-        groups: ['roomId'],
-        resources: [{ fieldExpr: 'roomId', dataSource: flatRooms, label: 'Room' }],
-      },
-      dayAllDay: {
-        currentView: 'day',
-        views: ['day'],
-        showAllDayPanel: true,
-        groups: ['roomId'],
-        resources: [{ fieldExpr: 'roomId', dataSource: flatRooms, label: 'Room' }],
+        resources: [{ fieldExpr: 'roomId', dataSource: rooms, label: 'Room' }],
       },
     };
 
@@ -98,23 +64,8 @@
       groupOrientation: 'vertical',
     }, scenarios[scenario]);
 
-    const instance = new DevExpress.ui.dxScheduler(document.getElementById('scheduler'), config);
+    new DevExpress.ui.dxScheduler(document.getElementById('scheduler'), config);
 
-    // The base frame runs the SAME JS as the PR frame — only the stylesheet differs.
-    // This PR deleted the code that put dx-scheduler-group-column-count-* on the workspace,
-    // so for the base stylesheet to behave as it did before the PR, the class is re-added here.
-    if (side === 'base' && (scenario === 'flat' || scenario === 'rtl')) {
-      // The widget re-renders its workspace asynchronously, so keep re-applying the class.
-      const reapply = () => {
-        document.querySelectorAll('.dx-scheduler-work-space').forEach((ws) => {
-          ws.classList.add('dx-scheduler-group-column-count-two');
-        });
-      };
-      reapply();
-      new MutationObserver(reapply).observe(document.getElementById('scheduler'), { childList: true, subtree: true });
-      setTimeout(reapply, 300);
-      setTimeout(reapply, 1000);
-    }
   </script>
 </body>
 </html>
