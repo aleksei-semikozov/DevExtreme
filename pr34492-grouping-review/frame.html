@@ -47,6 +47,19 @@
         groups: ['regionId'],
         resources: [{ fieldExpr: 'regionId', dataSource: hierRegions, parentIdExpr: 'parentId', label: 'Region' }],
       },
+      flat: {
+        currentView: 'timelineDay',
+        views: ['timelineDay'],
+        groups: ['roomId'],
+        resources: [{ fieldExpr: 'roomId', dataSource: rooms, label: 'Room' }],
+      },
+      rtlHier: {
+        rtlEnabled: true,
+        currentView: 'timelineDay',
+        views: ['timelineDay'],
+        groups: ['regionId'],
+        resources: [{ fieldExpr: 'regionId', dataSource: hierRegions, parentIdExpr: 'parentId', label: 'Region' }],
+      },
       agenda: {
         currentView: 'agenda',
         views: ['agenda'],
