@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PivotGrid — обрезанная рамка фокуса у поля field panel (4825)</title>
+
+  <link rel="stylesheet" href="fixed/css/dx.fluent.blue.light.css">
+  <script src="fixed/js/jquery.min.js"></script>
+  <script src="fixed/js/dx.all.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 24px 28px 48px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      color: #1a1a1a;
+      background: #fafafa;
+      line-height: 1.55;
+    }
+
+    .wrap { max-width: 1060px; }
+
+    h1 { font-size: 21px; margin: 0 0 4px; }
+    h2 { font-size: 15px; margin: 28px 0 8px; text-transform: uppercase; letter-spacing: .04em; color: #555; }
+
+    .sub { color: #666; margin: 0 0 20px; font-size: 14px; }
+    .sub a { color: #0f6cbd; }
+
+    .card {
+      background: #fff;
+      border: 1px solid #e3e3e3;
+      border-radius: 8px;
+      padding: 18px 20px;
+      margin-bottom: 18px;
+    }
+
+    ol, ul { margin: 8px 0; padding-left: 22px; }
+    li { margin: 3px 0; }
+
+    code {
+      background: #f0f1f3;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12.5px;
+    }
+
+    .toggle-bar {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      padding: 14px 18px;
+      background: #fff;
+      border: 1px solid #e3e3e3;
+      border-radius: 8px;
+      margin-bottom: 18px;
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+
+    .toggle-bar button {
+      font: inherit;
+      font-size: 14px;
+      padding: 8px 16px;
+      border-radius: 6px;
+      border: 1px solid #0f6cbd;
+      background: #0f6cbd;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .toggle-bar button.off { background: #fff; color: #0f6cbd; }
+
+    .state { font-size: 14px; font-weight: 600; }
+    .state.on { color: #107c41; }
+    .state.off { color: #c0392b; }
+
+    .hint { font-size: 13px; color: #666; }
+
+    #readout {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12.5px;
+      white-space: pre-wrap;
+      background: #1e1e1e;
+      color: #e6e6e6;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin: 0;
+      min-height: 96px;
+    }
+
+    .verdict-cropped { color: #ff7b72; font-weight: 700; }
+    .verdict-ok { color: #7ee787; font-weight: 700; }
+
+    .note {
+      border-left: 3px solid #f0ad4e;
+      background: #fff8ec;
+      padding: 10px 14px;
+      border-radius: 0 6px 6px 0;
+      font-size: 13.5px;
+      margin: 14px 0 0;
+    }
+
+    #grid { margin-top: 4px; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>PivotGrid — рамка фокуса первого поля в field panel обрезана слева</h1>
+  <p class="sub">
+    Задача 4825 (часть эпика 4196 по доступности PivotGrid). WCAG 2.4.7 Focus Visible (уровень A).
+    Сборка DevExtreme 26.2.0, тема Fluent Blue Light.
+  </p>
+
+  <div class="card">
+    <h2 style="margin-top:0">В чём была проблема</h2>
+    <p style="margin:6px 0">
+      У чипов полей (<code>.dx-area-field</code>) не было своего правила <code>:focus-visible</code>, поэтому
+      использовалась рамка по умолчанию от браузера. Браузер рисует её <b>снаружи</b> границ элемента, а у первой
+      ячейки области <code>padding-left: 0</code>, и контейнер <code>.dx-area-field-container</code> имеет
+      <code>overflow: hidden</code> — левая часть рамки уходила за границу обрезки и пропадала.
+    </p>
+    <p style="margin:6px 0">
+      Фикс — задать чипам собственную рамку с отрицательным <code>outline-offset</code>, ровно как уже сделано
+      для ячеек заголовков:
+    </p>
+    <pre style="margin:8px 0 0;background:#f6f8fa;padding:12px 14px;border-radius:6px;overflow-x:auto"><code>.dx-pivotgrid-fields-container {
+  .dx-area-field:focus-visible {
+    outline: 2px solid;
+    outline-color: $pivotgrid-accent-color;
+    outline-offset: -2px;
+  }
+}</code></pre>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0">Как проверить</h2>
+    <ol>
+      <li>Нажмите <code>Tab</code> несколько раз, пока фокус не встанет на чип <b>«Date Year»</b> — это первое поле
+        области колонок (второй ряд панели, сразу справа от «Amount&nbsp;(Sum)»).</li>
+      <li>Смотрите на его левую границу и на замеры ниже.</li>
+      <li>Переключайте кнопку «Фикс» и повторяйте — состояние «выключен» полностью воспроизводит поведение до правки.</li>
+    </ol>
+
+    <p style="margin:14px 0 6px">
+      Режется <b>именно это поле</b>, и вот почему — замеры по всем четырём областям в Chrome с выключенным фиксом:
+    </p>
+    <table style="border-collapse:collapse;font-size:13.5px;margin:6px 0 0">
+      <thead>
+        <tr style="text-align:left;border-bottom:1px solid #ddd">
+          <th style="padding:6px 14px 6px 0">Область</th>
+          <th style="padding:6px 14px 6px 0">Первое поле</th>
+          <th style="padding:6px 14px 6px 0"><code>padding-left</code> ячейки</th>
+          <th style="padding:6px 14px 6px 0">Обрезающий предок</th>
+          <th style="padding:6px 0">Срез рамки</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid #f0f0f0">
+          <td style="padding:5px 14px 5px 0">filter</td><td style="padding:5px 14px 5px 0">Country</td>
+          <td style="padding:5px 14px 5px 0">2px</td><td style="padding:5px 14px 5px 0"><code>overflow: hidden</code></td>
+          <td style="padding:5px 0">нет</td>
+        </tr>
+        <tr style="border-bottom:1px solid #f0f0f0">
+          <td style="padding:5px 14px 5px 0">data</td><td style="padding:5px 14px 5px 0">Amount (Sum)</td>
+          <td style="padding:5px 14px 5px 0">10px</td><td style="padding:5px 14px 5px 0">нет</td>
+          <td style="padding:5px 0">нет</td>
+        </tr>
+        <tr style="border-bottom:1px solid #f0f0f0;background:#fff4f4">
+          <td style="padding:5px 14px 5px 0"><b>column</b></td><td style="padding:5px 14px 5px 0"><b>Date Year</b></td>
+          <td style="padding:5px 14px 5px 0"><b>0px</b></td><td style="padding:5px 14px 5px 0"><code>overflow: hidden</code></td>
+          <td style="padding:5px 0;color:#c0392b"><b>1&nbsp;px</b></td>
+        </tr>
+        <tr>
+          <td style="padding:5px 14px 5px 0">row</td><td style="padding:5px 14px 5px 0">Region</td>
+          <td style="padding:5px 14px 5px 0">10px</td><td style="padding:5px 14px 5px 0">нет</td>
+          <td style="padding:5px 0">нет</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="note">
+      <b>Про браузеры.</b> Числа выше — из Chrome: там дефолтная рамка отстоит от элемента на 1&nbsp;px, поэтому
+      срезается только поле с <code>padding-left: 0</code>, а 2&nbsp;px у области фильтров хватает. В <b>Firefox</b>
+      (где дефект и был найден на поле «Country») рамка рисуется дальше от элемента, поэтому там срез заметнее и
+      задевает больше полей. Фикс убирает причину целиком: рамка рисуется внутрь границ чипа, и внешний отступ
+      браузера больше ни на что не влияет.
+    </p>
+  </div>
+
+  <div class="toggle-bar">
+    <button id="toggle" type="button">Выключить фикс</button>
+    <span class="state on" id="state">Фикс включён (как в PR)</span>
+    <span class="hint">Кнопка удаляет/возвращает то самое CSS-правило в загруженной таблице стилей.</span>
+  </div>
+
+  <h2>Замеры сфокусированного поля</h2>
+  <pre id="readout">Нажмите Tab и доведите фокус до чипа поля — здесь появятся замеры.</pre>
+
+  <h2>PivotGrid с включённой field panel</h2>
+  <div class="card">
+    <div id="grid"></div>
+  </div>
+
+</div>
+
+<script>
+  const RULE_SELECTOR = '.dx-pivotgrid-fields-container .dx-area-field:focus-visible';
+
+  const sales = [
+    { region: 'Африка', country: 'Египет', city: 'Каир', amount: 500, date: new Date('2015-05-26') },
+    { region: 'Южная Америка', country: 'Аргентина', city: 'Буэнос-Айрес', amount: 780, date: new Date('2015-05-07') },
+    { region: 'Европа', country: 'Германия', city: 'Берлин', amount: 640, date: new Date('2015-07-14') },
+  ];
+
+  $('#grid').dxPivotGrid({
+    height: 420,
+    allowSorting: true,
+    allowFiltering: true,
+    showBorders: true,
+    fieldChooser: { enabled: true },
+    fieldPanel: {
+      visible: true,
+      showFilterFields: true,
+      showColumnFields: true,
+      showRowFields: true,
+      showDataFields: true,
+    },
+    dataSource: {
+      fields: [
+        { dataField: 'country', area: 'filter' },
+        { dataField: 'city', area: 'filter' },
+        { dataField: 'region', area: 'row' },
+        { dataField: 'date', dataType: 'date', area: 'column' },
+        { dataField: 'amount', summaryType: 'sum', dataType: 'number', area: 'data' },
+      ],
+      store: sales,
+    },
+  });
+
+  // Находим то самое правило, чтобы его можно было снимать и возвращать:
+  // «выключен» = ровно то состояние, что было до правки.
+  const findRule = () => {
+    for (const sheet of document.styleSheets) {
+      let rules;
+      try { rules = sheet.cssRules; } catch { continue; }
+      for (let i = 0; i < rules.length; i += 1) {
+        if (rules[i].selectorText === RULE_SELECTOR) {
+          return { sheet, index: i, cssText: rules[i].cssText };
+        }
+      }
+    }
+    return null;
+  };
+
+  const found = findRule();
+  let fixOn = true;
+
+  const button = document.getElementById('toggle');
+  const state = document.getElementById('state');
+  const readout = document.getElementById('readout');
+
+  if (!found) {
+    button.disabled = true;
+    state.textContent = 'Правило не найдено в таблице стилей';
+    state.className = 'state off';
+  }
+
+  const setFix = (on) => {
+    if (!found) return;
+
+    if (on) {
+      found.sheet.insertRule(found.cssText, found.sheet.cssRules.length);
+    } else {
+      const rules = found.sheet.cssRules;
+      for (let i = rules.length - 1; i >= 0; i -= 1) {
+        if (rules[i].selectorText === RULE_SELECTOR) {
+          found.sheet.deleteRule(i);
+        }
+      }
+    }
+
+    fixOn = on;
+    button.textContent = on ? 'Выключить фикс' : 'Включить фикс';
+    button.className = on ? '' : 'off';
+    state.textContent = on ? 'Фикс включён (как в PR)' : 'Фикс выключен (как до правки)';
+    state.className = on ? 'state on' : 'state off';
+    measure();
+  };
+
+  button.addEventListener('click', () => setFix(!fixOn));
+
+  const round = (n) => Math.round(n * 100) / 100;
+
+  function measure() {
+    const el = document.activeElement;
+
+    if (!el || !el.classList || !el.classList.contains('dx-area-field')) {
+      readout.textContent = 'Фокус не на чипе поля. Нажмите Tab, пока рамка не встанет на «Date Year».';
+      return;
+    }
+
+    const style = getComputedStyle(el);
+    const width = parseFloat(style.outlineWidth) || 0;
+    const offset = parseFloat(style.outlineOffset) || 0;
+
+    // Ближайший предок, который реально обрезает содержимое.
+    let clipper = el.parentElement;
+    while (clipper && getComputedStyle(clipper).overflow === 'visible') {
+      clipper = clipper.parentElement;
+    }
+
+    const chipLeft = el.getBoundingClientRect().left;
+    const ringLeft = chipLeft - offset - width;
+    const clipLeft = clipper ? clipper.getBoundingClientRect().left : null;
+    const cropped = clipLeft !== null && ringLeft < clipLeft - 0.01;
+
+    const lines = [
+      `состояние:            ${fixOn ? 'фикс включён' : 'фикс выключен (как до правки)'}`,
+      `поле в фокусе:        «${el.textContent.trim()}»`,
+      `:focus-visible:       ${el.matches(':focus-visible') ? 'да' : 'нет'}`,
+      `рамка:                ${style.outlineStyle} ${style.outlineWidth}, offset ${style.outlineOffset}`,
+      `левый край чипа:      x = ${round(chipLeft)}`,
+      `внешний край рамки:   x = ${round(ringLeft)}`,
+      clipper
+        ? `граница обрезки:      x = ${round(clipLeft)}  (.${clipper.className.split(' ')[0]}, overflow: ${getComputedStyle(clipper).overflow})`
+        : 'граница обрезки:      обрезающего предка нет',
+      '',
+    ];
+
+    readout.innerHTML = lines.join('\n') + (cropped
+      ? `<span class="verdict-cropped">РАМКА ОБРЕЗАНА: выходит за границу обрезки на ${round(clipLeft - ringLeft)} px</span>`
+      : '<span class="verdict-ok">Рамка целиком внутри области — обрезки нет</span>');
+  }
+
+  document.addEventListener('focusin', measure);
+  document.addEventListener('keyup', measure);
+  document.addEventListener('click', measure);
+</script>
+</body>
+</html>
