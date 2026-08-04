@@ -49,7 +49,7 @@ const createRoomGroup = (form, roomId) => ({
       editorType: 'dxSelectBox',
       editorOptions: {
         dataSource: rooms,
-        displayExpr: 'text',
+        displayExpr: 'shortText',
         valueExpr: 'id',
         value: roomId,
         placeholder: 'Room',
@@ -71,7 +71,6 @@ const hideLabels = (items) => {
     if (item.items) {
       hideLabels(item.items);
     } else if (item.dataField !== 'allDay') {
-      // eslint-disable-next-line no-param-reassign
       item.label = { ...item.label, visible: false };
     }
   });

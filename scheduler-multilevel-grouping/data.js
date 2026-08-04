@@ -1,12 +1,16 @@
 const assignees = [
-  { id: 'room-1', text: 'Room 1', parentId: null },
+  {
+    id: 'room-1', text: '🏢 Room 1', shortText: 'Room 1', parentId: null,
+  },
   {
     id: 1, text: 'Samantha Bright', parentId: 'room-1', color: '#A7E3A5',
   },
   {
     id: 2, text: 'John Heart', parentId: 'room-1', color: '#F9E2AE',
   },
-  { id: 'room-2', text: 'Room 2', parentId: null },
+  {
+    id: 'room-2', text: '🏢 Room 2', shortText: 'Room 2', parentId: null,
+  },
   {
     id: 3, text: 'Todd Hoffman', parentId: 'room-2', color: '#F1BBBC',
   },
