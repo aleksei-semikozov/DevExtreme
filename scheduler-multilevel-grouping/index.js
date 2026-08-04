@@ -129,6 +129,10 @@ $(() => {
 
       employee.list.splice(employee.index, 0, createRoomGroup(form, roomId));
       hideLabels(items);
+
+      const description = findItem(items, (item) => item.name === 'descriptionGroup');
+
+      description.list[description.index].visible = false;
       form.option('items', items.slice());
 
       form.getEditor('repeatEditor')?.option('value', repeatValue);
