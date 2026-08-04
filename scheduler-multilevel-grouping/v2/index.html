@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Multilevel Grouping — вариант 2 (сгруппированный список)</title>
+    <link rel="stylesheet" type="text/css" href="../fixed/css/dx.fluent.blue.light.css" />
+    <style>
+      body {
+        margin: 0;
+        font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      }
+
+      .variant-bar {
+        display: flex;
+        gap: 16px;
+        align-items: baseline;
+        padding: 10px 20px;
+        background: #21262d;
+        color: #fff;
+        font-size: 13px;
+      }
+
+      .variant-bar b {
+        font-size: 14px;
+      }
+
+      .variant-bar a {
+        color: #7cc4ff;
+      }
+
+      .variant-bar .hint {
+        color: #b9c2cc;
+        margin-left: auto;
+      }
+
+      .demo-container {
+        padding: 20px;
+      }
+    </style>
+  </head>
+  <body class="dx-viewport">
+    <div class="variant-bar">
+      <b>Вариант 2 — сгруппированный список</b>
+      <a href="../v3/">вариант 3 (каскад) →</a>
+      <a href="../">← стенд со всеми тремя</a>
+      <span class="hint">двойной клик по встрече → поле Room</span>
+    </div>
+    <div class="demo-container">
+      <div id="scheduler"></div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="../fixed/dx.all.js"></script>
+    <script src="data.js"></script>
+    <script src="index.js"></script>
+  </body>
+</html>
