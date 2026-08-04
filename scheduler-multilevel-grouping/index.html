@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Scheduler — Multilevel Grouping (демка к 4715)</title>
     <link rel="stylesheet" href="fixed/css/dx.fluent.blue.light.css" />
+    <link rel="stylesheet" href="styles.css" />
     <style>
       body {
         margin: 0;
@@ -66,19 +67,6 @@
         background: #fff8f0;
       }
 
-      .pick {
-        border-left: 4px solid #0a5ca8;
-        background: #f4f8fd;
-      }
-
-      .row {
-        display: flex;
-        gap: 12px;
-        align-items: center;
-        flex-wrap: wrap;
-        margin-top: 12px;
-      }
-
       .tree {
         font-size: 13px;
         line-height: 1.6;
@@ -94,72 +82,61 @@
       <h1>Scheduler — Multilevel Grouping</h1>
       <div class="sub">
         Демка из
-        <a href="https://github.com/DevExpress/DevExtreme/pull/34625">PR #34625</a>
-        к карточке 4715. Библиотека собрана из ветки
-        <code>feature/scheduler-multilevel-grouping/main</code>.
-      </div>
-
-      <div class="card pick">
-        <h2>Выбираем вид редактора комнаты в попапе</h2>
-        <ul>
-          <li>
-            Проблема: в попапе комната — это <b>лист</b> иерархии, и его надо как-то показать
-            вместе с родителями. Вариант 1 (сейчас в PR) даёт длинные повторяющиеся строки.
-          </li>
-          <li>
-            Выбери вариант в списке, нажми <b>Открыть попап встречи</b> и раскрой поле
-            <b>Room</b>. Переключать можно сколько угодно раз.
-          </li>
-        </ul>
-        <div class="row">
-          <div id="variant"></div>
-          <div id="open-popup"></div>
-        </div>
-        <div class="row">
-          Отдельными демками, без этой обвязки:
-          <a href="v2/">вариант 2 — сгруппированный список</a>
-          <a href="v3/">вариант 3 — каскад</a>
-        </div>
+        <a href="https://github.com/DevExpress/DevExtreme/pull/34625">PR&nbsp;#34625</a>
+        к карточке 4715, собрана <b>по Figma-макету</b>. Библиотека — из ветки
+        <code>feature/scheduler-multilevel-grouping/main</code>. Код на странице ровно тот,
+        что уедет в <code>apps/demos/Demos/Scheduler/MultilevelGrouping</code>.
       </div>
 
       <div class="card">
-        <h2>Что тут смотреть в самом расписании</h2>
+        <h2>Что смотреть</h2>
         <ul>
           <li>
-            Иерархия задаётся <b>плоским массивом</b> в одном <code>dataSource</code> ресурса плюс
-            <code>parentIdExpr: 'parentId'</code>. Отдельного ресурса на уровень нет,
-            <code>groups</code> остаётся <code>['roomId']</code>.
+            Иерархия <b>Room → Employee</b> задаётся плоским массивом в одном
+            <code>dataSource</code> ресурса плюс <code>parentIdExpr: 'parentId'</code>.
+            Отдельного ресурса на уровень нет, <code>groups</code> остаётся
+            <code>['assigneeId']</code>.
           </li>
           <li>
-            Бэнды дают <b>только листья</b>. Здания и этажи — это заголовки, которые растягиваются
-            на своих детей.
+            Бэнды дают <b>только листья</b> — сотрудники. Комнаты становятся заголовками,
+            растянутыми на своих людей. У каждой комнаты <b>свой</b> набор сотрудников,
+            они не повторяются между комнатами.
           </li>
           <li>
             Переключатель в тулбаре справа: <b>Vertical Grouping</b> ↔ <b>Horizontal Grouping</b>.
           </li>
-          <li>Цвет встречи берётся из <code>color</code> листа-комнаты.</li>
+          <li>
+            Двойной клик по встрече → в попапе два поля: <b>Room</b> (выпадающий список) и
+            <b>Employee</b> (теговое поле, <code>allowMultiple</code>). Выбор комнаты
+            <b>фильтрует</b> список сотрудников. Это кастомная логика демки в
+            <code>onAppointmentFormOpening</code>.
+          </li>
+          <li>Цвет встречи берётся из <code>color</code> сотрудника.</li>
         </ul>
-        <div class="tree">Building A
-├── Floor 1
-│   ├── Room 101
-│   └── Room 102
-└── Floor 2
-    └── Room 201
-Building B
-└── Floor 1
-    ├── Room 301
-    └── Room 302</div>
+        <div class="tree">Room 1
+├── Samantha Bright
+└── John Heart
+Room 2
+├── Todd Hoffman
+└── Sandra Johnson</div>
       </div>
 
       <div class="card warn">
-        <h2>Известная проблема (чинится отдельно)</h2>
+        <h2>Расхождения и известные вещи</h2>
         <ul>
           <li>
-            При вертикальной группировке axe находит нарушение <code>aria-required-parent</code>:
-            в <code>group_panel_vertical_node.tsx:53</code> роль <code>rowheader</code> висит на
-            обычном <code>&lt;div&gt;</code>, у которого ни один предок не имеет
-            <code>role="row"</code>. Горизонтальная группировка чистая — там настоящий
-            <code>&lt;th role="columnheader"&gt;</code> внутри таблицы.
+            <b>Иконка комнаты из макета убрана.</b> Она делалась через
+            <code>resourceCellTemplate</code>, а он рендерится по-разному в React и Angular
+            (в React данные приходят первым аргументом, а не как <code>{ data }</code>).
+            Эталон скриншота в репозитории один на все фреймворки, поэтому шаблон давал
+            красные <code>react/angular-screenshots</code>. Без шаблона все четыре фреймворка
+            дают побайтово одинаковый рендер.
+          </li>
+          <li>
+            При вертикальной группировке axe находит <code>aria-required-parent</code> на
+            заголовках групп. Это <b>баг виджета</b>, а не демки — чинится в
+            <a href="https://github.com/DevExpress/DevExtreme/pull/34648">PR&nbsp;#34648</a>
+            (issue 4881), который в эту ветку ещё не влит.
           </li>
         </ul>
       </div>

@@ -1,96 +1,155 @@
-const rooms = [
-  { id: 'building-a', text: 'Building A', parentId: null },
-  { id: 'floor-a1', text: 'Floor 1', parentId: 'building-a' },
+const assignees = [
+  { id: 'room-1', text: 'Room 1', parentId: null },
   {
-    id: 'room-101', text: 'Room 101', parentId: 'floor-a1', color: '#3f51b5',
+    id: 1, text: 'Samantha Bright', parentId: 'room-1', color: '#A7E3A5',
   },
   {
-    id: 'room-102', text: 'Room 102', parentId: 'floor-a1', color: '#8e24aa',
+    id: 2, text: 'John Heart', parentId: 'room-1', color: '#F9E2AE',
   },
-  { id: 'floor-a2', text: 'Floor 2', parentId: 'building-a' },
+  { id: 'room-2', text: 'Room 2', parentId: null },
   {
-    id: 'room-201', text: 'Room 201', parentId: 'floor-a2', color: '#00897b',
-  },
-  { id: 'building-b', text: 'Building B', parentId: null },
-  { id: 'floor-b1', text: 'Floor 1', parentId: 'building-b' },
-  {
-    id: 'room-301', text: 'Room 301', parentId: 'floor-b1', color: '#e65100',
+    id: 3, text: 'Todd Hoffman', parentId: 'room-2', color: '#F1BBBC',
   },
   {
-    id: 'room-302', text: 'Room 302', parentId: 'floor-b1', color: '#c62828',
+    id: 4, text: 'Sandra Johnson', parentId: 'room-2', color: '#CFE4FA',
   },
 ];
 
-const getRoomPath = (room) => {
-  const parent = rooms.find((item) => item.id === room.parentId);
-
-  return parent ? `${getRoomPath(parent)} / ${room.text}` : room.text;
-};
-
-const bookableRooms = rooms
-  .filter((room) => !rooms.some((item) => item.parentId === room.id))
-  .map((room) => ({ ...room, text: getRoomPath(room) }));
-
 const appointments = [
   {
-    text: 'Daily Standup',
-    roomId: 'room-101',
-    startDate: new Date(2021, 3, 26, 9, 0),
-    endDate: new Date(2021, 3, 26, 10, 0),
+    text: 'Upgrade Personal Computers',
+    assigneeId: [1],
+    startDate: new Date(2026, 6, 13, 9, 30),
+    endDate: new Date(2026, 6, 13, 11, 30),
   }, {
-    text: 'Design Review',
-    roomId: 'room-101',
-    startDate: new Date(2021, 3, 28, 11, 0),
-    endDate: new Date(2021, 3, 28, 12, 30),
+    text: 'Install New Database',
+    assigneeId: [1],
+    startDate: new Date(2026, 6, 13, 13, 0),
+    endDate: new Date(2026, 6, 13, 15, 30),
   }, {
-    text: 'Sprint Planning',
-    roomId: 'room-101',
-    startDate: new Date(2021, 3, 30, 9, 0),
-    endDate: new Date(2021, 3, 30, 11, 0),
+    text: 'Install New Router in Dev Room',
+    assigneeId: [1],
+    startDate: new Date(2026, 6, 14, 9, 0),
+    endDate: new Date(2026, 6, 14, 12, 15),
   }, {
-    text: 'Interview: Frontend Developer',
-    roomId: 'room-102',
-    startDate: new Date(2021, 3, 26, 11, 0),
-    endDate: new Date(2021, 3, 26, 12, 30),
+    text: 'Brochure Design Review',
+    assigneeId: [1],
+    startDate: new Date(2026, 6, 15, 11, 0),
+    endDate: new Date(2026, 6, 15, 13, 30),
   }, {
-    text: 'Interview: QA Engineer',
-    roomId: 'room-102',
-    startDate: new Date(2021, 3, 29, 10, 0),
-    endDate: new Date(2021, 3, 29, 11, 30),
+    text: 'Book Flights to San Fran for Sales Trip',
+    assigneeId: [1],
+    startDate: new Date(2026, 6, 16, 10, 0),
+    endDate: new Date(2026, 6, 16, 12, 0),
   }, {
-    text: 'Retrospective',
-    roomId: 'room-201',
-    startDate: new Date(2021, 3, 27, 10, 0),
-    endDate: new Date(2021, 3, 27, 11, 0),
+    text: 'Upgrade Server Hardware',
+    assigneeId: [1],
+    startDate: new Date(2026, 6, 17, 9, 0),
+    endDate: new Date(2026, 6, 17, 15, 0),
   }, {
-    text: 'Team Sync',
-    roomId: 'room-201',
-    startDate: new Date(2021, 3, 29, 14, 0),
-    endDate: new Date(2021, 3, 29, 15, 0),
+    text: 'Google AdWords Strategy',
+    assigneeId: [2],
+    startDate: new Date(2026, 6, 13, 9, 0),
+    endDate: new Date(2026, 6, 13, 12, 0),
   }, {
-    text: 'Onboarding Training',
-    roomId: 'room-301',
-    startDate: new Date(2021, 3, 26, 13, 0),
-    endDate: new Date(2021, 3, 26, 15, 0),
+    text: 'Rollout of New Website and Marketing Brochures',
+    assigneeId: [2],
+    startDate: new Date(2026, 6, 13, 13, 0),
+    endDate: new Date(2026, 6, 13, 15, 30),
   }, {
-    text: 'Product Demo',
-    roomId: 'room-301',
-    startDate: new Date(2021, 3, 28, 9, 0),
-    endDate: new Date(2021, 3, 28, 10, 30),
+    text: 'Update NDA Agreement',
+    assigneeId: [2],
+    startDate: new Date(2026, 6, 14, 11, 0),
+    endDate: new Date(2026, 6, 14, 14, 15),
   }, {
-    text: 'Client Call',
-    roomId: 'room-302',
-    startDate: new Date(2021, 3, 27, 13, 0),
-    endDate: new Date(2021, 3, 27, 14, 0),
+    text: 'Submit Questions Regarding New NDA',
+    assigneeId: [2],
+    startDate: new Date(2026, 6, 15, 10, 0),
+    endDate: new Date(2026, 6, 15, 11, 30),
   }, {
-    text: 'Budget Review',
-    roomId: 'room-302',
-    startDate: new Date(2021, 3, 28, 14, 0),
-    endDate: new Date(2021, 3, 28, 15, 0),
+    text: 'Submit Signed NDA',
+    assigneeId: [2],
+    startDate: new Date(2026, 6, 15, 13, 0),
+    endDate: new Date(2026, 6, 15, 15, 0),
   }, {
-    text: 'All-Hands Meeting',
-    roomId: 'room-302',
-    startDate: new Date(2021, 3, 30, 12, 0),
-    endDate: new Date(2021, 3, 30, 13, 30),
+    text: 'Review Training Course for any Omissions',
+    assigneeId: [2],
+    startDate: new Date(2026, 6, 16, 11, 0),
+    endDate: new Date(2026, 6, 16, 14, 0),
+  }, {
+    text: 'Update Employee Files with New NDA',
+    assigneeId: [2],
+    startDate: new Date(2026, 6, 17, 9, 0),
+    endDate: new Date(2026, 6, 17, 11, 45),
+  }, {
+    text: 'Website Re-Design Plan',
+    assigneeId: [3],
+    startDate: new Date(2026, 6, 13, 9, 30),
+    endDate: new Date(2026, 6, 13, 11, 30),
+  }, {
+    text: 'New Brochures',
+    assigneeId: [3],
+    startDate: new Date(2026, 6, 13, 13, 0),
+    endDate: new Date(2026, 6, 13, 15, 15),
+  }, {
+    text: 'Approve Personal Computer Upgrade Plan',
+    assigneeId: [3],
+    startDate: new Date(2026, 6, 14, 10, 0),
+    endDate: new Date(2026, 6, 14, 11, 0),
+  }, {
+    text: 'Final Budget Review',
+    assigneeId: [3],
+    startDate: new Date(2026, 6, 14, 12, 0),
+    endDate: new Date(2026, 6, 14, 13, 35),
+  }, {
+    text: 'Approve New Online Marketing Strategy',
+    assigneeId: [3],
+    startDate: new Date(2026, 6, 15, 12, 0),
+    endDate: new Date(2026, 6, 15, 14, 0),
+  }, {
+    text: 'Prepare 2026 Marketing Plan',
+    assigneeId: [3],
+    startDate: new Date(2026, 6, 16, 11, 0),
+    endDate: new Date(2026, 6, 16, 13, 30),
+  }, {
+    text: 'Create Icons for Website',
+    assigneeId: [3],
+    startDate: new Date(2026, 6, 17, 10, 0),
+    endDate: new Date(2026, 6, 17, 11, 30),
+  }, {
+    text: 'Launch New Website',
+    assigneeId: [3],
+    startDate: new Date(2026, 6, 17, 12, 20),
+    endDate: new Date(2026, 6, 17, 14, 0),
+  }, {
+    text: 'Comment on Revenue Projections',
+    assigneeId: [4],
+    startDate: new Date(2026, 6, 13, 10, 0),
+    endDate: new Date(2026, 6, 13, 13, 0),
+  }, {
+    text: 'Approve Hiring of John Jeffers',
+    assigneeId: [4],
+    startDate: new Date(2026, 6, 14, 9, 0),
+    endDate: new Date(2026, 6, 14, 12, 0),
+  }, {
+    text: 'Non-Compete Agreements',
+    assigneeId: [4],
+    startDate: new Date(2026, 6, 14, 13, 0),
+    endDate: new Date(2026, 6, 14, 15, 45),
+  }, {
+    text: 'Review Revenue Projections',
+    assigneeId: [4],
+    startDate: new Date(2026, 6, 15, 11, 0),
+    endDate: new Date(2026, 6, 15, 14, 0),
+  }, {
+    text: 'Review Changes to Health Insurance Coverage',
+    assigneeId: [4],
+    startDate: new Date(2026, 6, 16, 9, 0),
+    endDate: new Date(2026, 6, 16, 13, 0),
+  }, {
+    text: 'Provide New Health Insurance Docs',
+    assigneeId: [4],
+    startDate: new Date(2026, 6, 17, 12, 0),
+    endDate: new Date(2026, 6, 17, 15, 0),
   },
 ];
