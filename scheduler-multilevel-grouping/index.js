@@ -86,7 +86,10 @@ $(() => {
       }
 
       const appointment = e.appointmentData ?? {};
-      const [assigneeId] = appointment.assigneeId ?? [];
+      // The Scheduler prefills the resource value from the clicked cell as a
+      // scalar, while allowMultiple appointments store an array.
+      const assigneeIds = appointment.assigneeId;
+      const [assigneeId] = Array.isArray(assigneeIds) ? assigneeIds : [assigneeIds];
       const roomId = roomOf(assigneeId);
       const employee = findItem(items, (item) => item.dataField === 'assigneeId');
 
