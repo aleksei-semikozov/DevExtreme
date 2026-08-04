@@ -66,6 +66,22 @@ const createRoomGroup = (form, roomId) => ({
   ],
 });
 
+// Tint the tag with the employee colour, the same colour their appointments use.
+const renderEmployeeTag = (data) => {
+  const tag = document.createElement('div');
+
+  tag.className = 'dx-tag-content';
+  tag.style.backgroundColor = data.color;
+  tag.textContent = data.text;
+
+  const removeButton = document.createElement('div');
+
+  removeButton.className = 'dx-tag-remove-button';
+  tag.appendChild(removeButton);
+
+  return tag;
+};
+
 const hideLabels = (items) => {
   items.forEach((item) => {
     if (item.items) {
@@ -137,6 +153,10 @@ $(() => {
       employeeEditor.list[employeeEditor.index].validationRules = [
         { type: 'required', message: 'Employee is required' },
       ];
+      employeeEditor.list[employeeEditor.index].editorOptions = {
+        ...employeeEditor.list[employeeEditor.index].editorOptions,
+        tagTemplate: renderEmployeeTag,
+      };
 
       const description = findItem(items, (item) => item.name === 'descriptionGroup');
 
