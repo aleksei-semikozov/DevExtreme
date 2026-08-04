@@ -66,6 +66,19 @@
         background: #fff8f0;
       }
 
+      .pick {
+        border-left: 4px solid #0a5ca8;
+        background: #f4f8fd;
+      }
+
+      .row {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-top: 12px;
+      }
+
       .tree {
         font-size: 13px;
         line-height: 1.6;
@@ -84,11 +97,28 @@
         <a href="https://github.com/DevExpress/DevExtreme/pull/34625">PR #34625</a>
         к карточке 4715. Библиотека собрана из ветки
         <code>feature/scheduler-multilevel-grouping/main</code>.
-        Конфиг ниже — ровно тот, что уедет в <code>apps/demos/Demos/Scheduler/MultilevelGrouping</code>.
+      </div>
+
+      <div class="card pick">
+        <h2>Выбираем вид редактора комнаты в попапе</h2>
+        <ul>
+          <li>
+            Проблема: в попапе комната — это <b>лист</b> иерархии, и его надо как-то показать
+            вместе с родителями. Вариант 1 (сейчас в PR) даёт длинные повторяющиеся строки.
+          </li>
+          <li>
+            Выбери вариант в списке, нажми <b>Открыть попап встречи</b> и раскрой поле
+            <b>Room</b>. Переключать можно сколько угодно раз.
+          </li>
+        </ul>
+        <div class="row">
+          <div id="variant"></div>
+          <div id="open-popup"></div>
+        </div>
       </div>
 
       <div class="card">
-        <h2>Что тут смотреть</h2>
+        <h2>Что тут смотреть в самом расписании</h2>
         <ul>
           <li>
             Иерархия задаётся <b>плоским массивом</b> в одном <code>dataSource</code> ресурса плюс
@@ -101,13 +131,6 @@
           </li>
           <li>
             Переключатель в тулбаре справа: <b>Vertical Grouping</b> ↔ <b>Horizontal Grouping</b>.
-            Это два варианта из прототипов Екатерины.
-          </li>
-          <li>
-            Двойной клик по встрече → в поле <b>Room</b> лежат только листья, подписанные полным
-            путём («Building A / Floor 1 / Room 101»). Это кастомная логика демки в
-            <code>onAppointmentFormOpening</code>: без неё в списке оказались бы и здания с этажами,
-            а встреча, привязанная к родителю, просто не отрисовывается.
           </li>
           <li>Цвет встречи берётся из <code>color</code> листа-комнаты.</li>
         </ul>
