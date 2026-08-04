@@ -130,6 +130,14 @@ $(() => {
       employee.list.splice(employee.index, 0, createRoomGroup(form, roomId));
       hideLabels(items);
 
+      // An appointment without a leaf resource belongs to no group and would
+      // not be rendered at all, so the employee is required.
+      const employeeEditor = findItem(items, (item) => item.dataField === 'assigneeId');
+
+      employeeEditor.list[employeeEditor.index].validationRules = [
+        { type: 'required', message: 'Employee is required' },
+      ];
+
       const description = findItem(items, (item) => item.name === 'descriptionGroup');
 
       description.list[description.index].visible = false;
