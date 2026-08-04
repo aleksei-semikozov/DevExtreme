@@ -26,8 +26,6 @@ const findItem = (items, predicate) => {
   return null;
 };
 
-// The Scheduler renders resource editors as an icon plus an editor, without a
-// text label. The room editor repeats that structure so both rows match.
 const createRoomGroup = (form, roomId) => ({
   itemType: 'group',
   name: 'roomGroup',
@@ -53,7 +51,6 @@ const createRoomGroup = (form, roomId) => ({
         valueExpr: 'id',
         value: roomId,
         placeholder: 'Room',
-        // Match the styling the Scheduler applies to its own editors.
         stylingMode: form.getEditor('assigneeId')?.option('stylingMode'),
         onValueChanged(e) {
           const editor = form.getEditor('assigneeId');
@@ -66,7 +63,6 @@ const createRoomGroup = (form, roomId) => ({
   ],
 });
 
-// Tint the tag with the employee colour, the same colour their appointments use.
 const renderEmployeeTag = (data) => {
   const tag = document.createElement('div');
 
@@ -132,22 +128,16 @@ $(() => {
       }
 
       const appointment = e.appointmentData ?? {};
-      // The Scheduler prefills the resource value from the clicked cell as a
-      // scalar, while allowMultiple appointments store an array.
       const assigneeIds = appointment.assigneeId;
       const [assigneeId] = Array.isArray(assigneeIds) ? assigneeIds : [assigneeIds];
       const roomId = roomOf(assigneeId);
       const employee = findItem(items, (item) => item.name === 'assigneeIdGroup');
 
-      // The Repeat editor keeps its value outside of formData, so rebuilding
-      // the item list below would reset it and rewrite the recurrence rule.
       const repeatValue = form.getEditor('repeatEditor')?.option('value');
 
       employee?.list.splice(employee.index, 0, createRoomGroup(form, roomId));
       hideLabels(items);
 
-      // An appointment without a leaf resource belongs to no group and would
-      // not be rendered at all, so the employee is required.
       const employeeEditor = findItem(items, (item) => item.dataField === 'assigneeId');
 
       if (employeeEditor) {
