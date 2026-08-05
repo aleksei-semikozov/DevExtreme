@@ -4,6 +4,11 @@
 
 .dx-scheduler-group-header {
   min-width: 120px;
+  background-color: #fafafa;
+}
+
+.dx-scheduler-work-space-vertical-group-table {
+  background-color: #fafafa;
 }
 
 .dx-scheduler-group-header,
