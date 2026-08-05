@@ -12,7 +12,7 @@
 .dx-scheduler-work-space-vertical-grouped .dx-scheduler-time-panel-cell,
 .dx-scheduler-work-space-grouped:not(.dx-scheduler-work-space-vertical-grouped)
   .dx-scheduler-header-panel-cell {
-  background-color: #fafafa;
+  background-color: var(--dx-color-main-bg);
 }
 
 .dx-scheduler-group-header,
