@@ -4,10 +4,14 @@
 
 .dx-scheduler-group-header {
   min-width: 120px;
-  background-color: #fafafa;
 }
 
-.dx-scheduler-work-space-vertical-group-table {
+.dx-scheduler-group-header,
+.dx-scheduler-header-panel-empty-cell,
+.dx-scheduler-work-space-vertical-group-table,
+.dx-scheduler-work-space-vertical-grouped .dx-scheduler-time-panel-cell,
+.dx-scheduler-work-space-grouped:not(.dx-scheduler-work-space-vertical-grouped)
+  .dx-scheduler-header-panel-cell {
   background-color: #fafafa;
 }
 
