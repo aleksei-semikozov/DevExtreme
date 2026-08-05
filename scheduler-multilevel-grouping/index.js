@@ -119,6 +119,7 @@ $(() => {
     crossScrollingEnabled: true,
     showAllDayPanel: false,
     showCurrentTimeIndicator: false,
+    height: 700,
     onAppointmentFormOpening(e) {
       const { form } = e;
       const items = form.option('items');
