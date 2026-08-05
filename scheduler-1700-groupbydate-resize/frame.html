@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>Scheduler groupByDate resize</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="dx.fluent.blue.light.css">
+  <style>
+    body { margin: 0; font: 13px/1.45 -apple-system, "Segoe UI", Roboto, sans-serif; }
+    .panel { padding: 8px 10px; border-bottom: 1px solid #e0e0e0; background: #fafafa; }
+    .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
+    .row:last-child { margin-bottom: 0; }
+    label { color: #555; }
+    code { background: #eef1f4; padding: 1px 4px; border-radius: 3px; }
+    .handles { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .parts-ok { color: #107c10; font-weight: 600; }
+    .parts-bad { color: #d13438; font-weight: 600; }
+    #log { margin: 0; padding: 6px 10px; height: 74px; overflow: auto;
+           font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px;
+           background: #fff; border-bottom: 1px solid #e0e0e0; white-space: pre-wrap; }
+    #host { padding: 4px; }
+    button, select { font: inherit; }
+    button { padding: 3px 9px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <div class="row">
+      <label>Вид:</label>
+      <select id="viewSelect">
+        <option value="month">Month</option>
+        <option value="week">Week (all-day панель)</option>
+        <option value="timelineMonthH">TimelineMonth (гориз. группировка)</option>
+      </select>
+      <label><input type="checkbox" id="gbd" checked> groupByDate</label>
+      <button id="resetBtn">Сбросить данные</button>
+    </div>
+    <div class="row">
+      <span>Блоков встречи «Long»: <b id="partsOut">—</b></span>
+      <span>Ручки по блокам: <span class="handles" id="handlesOut">—</span></span>
+    </div>
+    <div class="row">
+      <span>Даты встречи: <code id="datesOut">—</code></span>
+    </div>
+  </div>
+  <pre id="log">Лог изменений (onAppointmentUpdated) пуст.</pre>
+  <div id="host"></div>
+
+  <script src="jquery.js"></script>
+  <script id="dxScript"></script>
+  <script>
+    (function () {
+      var params = new URLSearchParams(location.search);
+      var bundle = params.get('bundle') === 'buggy' ? 'dx.all.buggy.js' : 'dx.all.fixed.js';
+
+      var INITIAL = [{
+        text: 'Long', roomId: 1,
+        startDate: new Date(2021, 3, 12, 9, 0),
+        endDate: new Date(2021, 3, 14, 12, 0),
+      }, {
+        text: 'Single', roomId: 2,
+        startDate: new Date(2021, 3, 13, 9, 0),
+        endDate: new Date(2021, 3, 13, 12, 0),
+      }];
+
+      var widget = null;
+      var logLines = [];
+
+      function pad(n) { return (n < 10 ? '0' : '') + n; }
+      function fmt(d) {
+        d = new Date(d);
+        return pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+      }
+
+      function cloneData() {
+        return INITIAL.map(function (i) {
+          return {
+            text: i.text, roomId: i.roomId,
+            startDate: new Date(i.startDate), endDate: new Date(i.endDate),
+          };
+        });
+      }
+
+      function describeHandles() {
+        if (!widget) { return; }
+        var parts = [].slice.call(document.querySelectorAll('.dx-scheduler-appointment'))
+          .filter(function (a) { return (a.textContent || '').indexOf('Long') >= 0; });
+
+        var partsOut = document.getElementById('partsOut');
+        partsOut.textContent = parts.length;
+        partsOut.className = parts.length > 3 ? 'parts-bad' : 'parts-ok';
+
+        document.getElementById('handlesOut').textContent = parts.length
+          ? parts.map(function (p, i) {
+            var l = p.querySelector('.dx-resizable-handle-left') ? '←' : ' ';
+            var r = p.querySelector('.dx-resizable-handle-right') ? '→' : ' ';
+            var t = p.querySelector('.dx-resizable-handle-top') ? '↑' : '';
+            var b = p.querySelector('.dx-resizable-handle-bottom') ? '↓' : '';
+            return (i + 1) + ':[' + l + r + t + b + ']';
+          }).join('  ')
+          : '—';
+
+        var item = widget.option('dataSource')[0];
+        document.getElementById('datesOut').textContent = fmt(item.startDate) + ' — ' + fmt(item.endDate);
+      }
+
+      function render() {
+        var viewName = document.getElementById('viewSelect').value;
+        var $el = jQuery('<div>');
+        jQuery('#host').empty().append($el);
+
+        widget = $el.dxScheduler({
+          dataSource: cloneData(),
+          views: [
+            'month',
+            'week',
+            { type: 'timelineMonth', name: 'timelineMonthH', groupOrientation: 'horizontal' },
+          ],
+          currentView: viewName,
+          currentDate: new Date(2021, 3, 14),
+          groupByDate: document.getElementById('gbd').checked,
+          groups: ['roomId'],
+          resources: [{
+            fieldExpr: 'roomId',
+            label: 'Комната',
+            dataSource: [{ id: 1, text: 'Room 1' }, { id: 2, text: 'Room 2' }],
+          }],
+          height: 430,
+          onAppointmentUpdated: function (e) {
+            logLines.unshift(e.appointmentData.text + ': ' + fmt(e.appointmentData.startDate)
+              + ' — ' + fmt(e.appointmentData.endDate));
+            document.getElementById('log').textContent = logLines.join('\n');
+            setTimeout(describeHandles, 350);
+          },
+        }).dxScheduler('instance');
+
+        setTimeout(describeHandles, 350);
+      }
+
+      function boot() {
+        document.getElementById('viewSelect').onchange = render;
+        document.getElementById('gbd').onchange = render;
+        document.getElementById('resetBtn').onclick = function () {
+          logLines = [];
+          document.getElementById('log').textContent = 'Лог изменений (onAppointmentUpdated) пуст.';
+          render();
+        };
+        render();
+      }
+
+      var s = document.getElementById('dxScript');
+      s.onload = boot;
+      s.src = bundle;
+    }());
+  </script>
+</body>
+</html>

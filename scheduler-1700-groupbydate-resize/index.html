@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scheduler 1700 — ресайз встреч при groupByDate</title>
+  <style>
+    :root { --bad: #d13438; --good: #107c10; --line: #e1e4e8; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 18px 20px 40px; font: 14px/1.55 -apple-system, "Segoe UI", Roboto, sans-serif; color: #1b1f23; }
+    h1 { font-size: 20px; margin: 0 0 4px; }
+    h2 { font-size: 15px; margin: 22px 0 8px; }
+    .sub { color: #57606a; margin: 0 0 14px; }
+    code { background: #eef1f4; padding: 1px 5px; border-radius: 3px; font-size: 12.5px; }
+    .box { border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; margin: 0 0 14px; }
+    .box.bad { border-left: 4px solid var(--bad); }
+    .box.good { border-left: 4px solid var(--good); }
+    ol, ul { margin: 6px 0; padding-left: 22px; }
+    li { margin: 3px 0; }
+    .frames { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 1100px) { .frames { grid-template-columns: 1fr; } }
+    .frame { border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+    .frame > header { padding: 8px 12px; font-weight: 600; font-size: 13.5px; color: #fff; }
+    .frame.bad > header { background: var(--bad); }
+    .frame.good > header { background: var(--good); }
+    .frame > header span { font-weight: 400; opacity: .9; font-size: 12px; }
+    iframe { width: 100%; height: 620px; border: 0; display: block; }
+    table { border-collapse: collapse; font-size: 13px; margin: 8px 0; }
+    th, td { border: 1px solid var(--line); padding: 5px 9px; text-align: left; }
+    th { background: #f6f8fa; }
+    .k { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    a { color: #0969da; }
+    .note { font-size: 12.5px; color: #57606a; }
+  </style>
+</head>
+<body>
+
+<h1>Scheduler: ресайз встреч при <code>groupByDate: true</code></h1>
+<p class="sub">
+  Задача <a href="https://github.com/DevExpress/devextreme-private/issues/1700">devextreme-private#1700</a> ·
+  PR <a href="https://github.com/DevExpress/DevExtreme/pull/34653">DevExtreme#34653</a> ·
+  слева сборка ветки <code>main</code> (34b7f0ea, до фикса), справа — та же сборка с фиксом.
+</p>
+
+<h2>В чём баг</h2>
+<div class="box bad">
+  <p style="margin-top:0">
+    При <code>groupByDate: true</code> многодневная встреча рисуется не одним блоком, а <b>разбивается на части — по одной на каждую дату</b>
+    (между частями одной группы стоят ячейки других групп, поэтому непрерывным блоком её нарисовать нельзя).
+  </p>
+  <p>
+    Ручки ресайза должны быть только по краям встречи: у первой части — левая (начало), у последней — правая (конец),
+    у середины — никаких. Но под <code>groupByDate</code> флаг <code>reduced</code> занулялся (это делали, чтобы спрятать иконку-стрелку),
+    а вместе с ним терялась и раскладка ручек — <b>каждая часть получала обе ручки</b>.
+  </p>
+  <p style="margin-bottom:0">
+    Потянув за правую ручку <b>первой</b> части, вы меняете <code>endDate</code> <b>всей</b> встречи (в модели у части лежат даты до разбиения),
+    поэтому встреча удлиняется и появляется лишний блок — это и есть «additional appointment» из карточки.
+  </p>
+</div>
+
+<h2>Данные в демке</h2>
+<table>
+  <tr><th>Встреча</th><th>Даты</th><th>Ресурс</th></tr>
+  <tr><td class="k">Long</td><td>12 апреля 2021, 09:00 — 14 апреля 2021, 12:00 (3 дня)</td><td>Room 1</td></tr>
+  <tr><td class="k">Single</td><td>13 апреля 2021, 09:00 — 12:00</td><td>Room 2</td></tr>
+</table>
+<p class="note">Две группы (Room 1 / Room 2), <code>groupByDate: true</code>. Встреча «Long» в виде Month рисуется тремя блоками: 12-е, 13-е, 14-е.</p>
+
+<h2>Как воспроизвести</h2>
+<ol>
+  <li>В <b>левом</b> фрейме (до фикса) вид <b>Month</b>. Найдите три блока «Long» в строке Room 1 — на 12, 13 и 14 апреля.</li>
+  <li>Наведитесь на <b>первый</b> блок (12 апреля) — у него видны <b>обе</b> ручки. В строке «Ручки по блокам» будет <span class="k">1:[←→] 2:[←→] 3:[←→]</span>.</li>
+  <li>Потяните <b>правую</b> ручку <b>первого</b> блока вправо примерно на две ячейки (шаг ресайза при группировке по дате = ширина одной даты, то есть 2 ячейки при двух группах).</li>
+</ol>
+
+<div class="box bad">
+  <b>Фактически (левый фрейм):</b> <code>endDate</code> уезжает с 14 на 15 апреля, блоков становится <b>4</b> — лишний блок на 15-м.
+  Счётчик «Блоков встречи» станет красным, а в логе появится новая дата окончания.
+</div>
+<div class="box good">
+  <b>Ожидается (правый фрейм):</b> у первого блока правой ручки <b>нет вовсе</b> — потянуть за неё нельзя
+  (<span class="k">1:[← ] 2:[&nbsp;&nbsp;] 3:[ →]</span>). Это и есть «cannot resize part of the appointment» из карточки.
+  Конец встречи меняется только правой ручкой <b>последнего</b> блока, начало — левой ручкой <b>первого</b>; каждый шаг = ровно один день.
+</div>
+
+<h2>Что ещё стоит проверить</h2>
+<ul>
+  <li><b>Хвост работает:</b> в правом фрейме потяните правую ручку <b>третьего</b> блока вправо — встреча удлинится ровно на один день (появится 4-й блок, ручки перераспределятся на новые края).</li>
+  <li><b>Начало работает:</b> потяните левую ручку первого блока влево — начало сдвинется на день назад.</li>
+  <li>
+    <b>Вид Week (all-day панель) — вторая часть фикса.</b> Переключите оба фрейма на <b>Week</b> и потяните правую ручку
+    <b>последнего</b> блока вправо на две ячейки.
+    <br>Слева (до фикса): встреча <b>сжимается</b> вместо удлинения — блоков становится <b>2</b>, конец уезжает на <span class="k">14.04 00:00</span>
+    (в расчёт попадала ячейка не той даты).
+    <br>Справа (после фикса): блоков <b>4</b>, конец <span class="k">16.04 00:00</span> — то есть встреча покрывает ещё один день, по 15-е включительно.
+  </li>
+  <li>
+    <b>TimelineMonth с горизонтальной группировкой:</b> раскладка ручек такая же, как в Month — слева у всех блоков
+    <span class="k">[←→]</span>, справа только по краям. Сам таймлайн шире экрана, поэтому для перетаскивания крайнего блока его нужно домотать по горизонтали.
+  </li>
+  <li><b>Без группировки ничего не изменилось:</b> снимите галку <code>groupByDate</code> в обоих фреймах — поведение и ручки одинаковые слева и справа.</li>
+</ul>
+
+<h2>До фикса / после фикса</h2>
+<div class="frames">
+  <div class="frame bad">
+    <header>ДО фикса <span>— main @ 34b7f0ea</span></header>
+    <iframe src="frame.html?bundle=buggy" title="До фикса"></iframe>
+  </div>
+  <div class="frame good">
+    <header>ПОСЛЕ фикса <span>— тот же main + PR 34653</span></header>
+    <iframe src="frame.html?bundle=fixed" title="После фикса"></iframe>
+  </div>
+</div>
+
+<h2>Что именно поправлено в коде</h2>
+<ul>
+  <li><code>appointments/m_appointment_collection.ts</code> — <code>reduced</code> больше не занулять под <code>groupByDate</code>; иконка-стрелка гасится отдельной опцией <code>hideReducedIcon</code> (внешний вид не изменился).</li>
+  <li><code>appointments/appointment/m_appointment.ts</code> — <code>_renderReducedAppointment</code> учитывает <code>hideReducedIcon</code>.</li>
+  <li><code>appointments/resizing/m_core.ts</code> — граничные ячейки встречи считаются по геометрии (физические строка/колонка), а не из <code>cellData.index</code>: этот индекс — номер даты <i>внутри одной группы</i>, и под <code>groupByDate</code> строка чередуется по группам, из-за чего в all-day панели брали ячейку не той даты.</li>
+</ul>
+<p class="note">
+  Тесты: <code>scheduler/__tests__/appointments_resizing.test.ts</code> (4 теста на раскладку ручек по частям) и
+  <code>scheduler/appointments/resizing/m_core.test.ts</code> (6 юнит-тестов; у файла раньше не было тестов вовсе).
+  На старом коде 3 из 6 падают, а два теста «без группировки» зелёные и до, и после — то есть поведение без группировки не менялось.
+</p>
+
+</body>
+</html>
