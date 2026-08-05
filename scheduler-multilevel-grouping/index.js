@@ -96,6 +96,7 @@ $(() => {
       type: 'workWeek',
       name: 'Vertical Grouping',
       groupOrientation: 'vertical',
+      cellDuration: 60,
     }, {
       type: 'workWeek',
       name: 'Horizontal Grouping',
