@@ -117,10 +117,15 @@ $(() => {
         icon: 'user',
       },
     ],
-    crossScrollingEnabled: true,
+    crossScrollingEnabled: false,
     showAllDayPanel: false,
     showCurrentTimeIndicator: false,
     height: 700,
+    onOptionChanged(e) {
+      if (e.name === 'currentView') {
+        e.component.option('crossScrollingEnabled', e.value === 'Horizontal Grouping');
+      }
+    },
     onAppointmentFormOpening(e) {
       const { form } = e;
       const items = form.option('items');
