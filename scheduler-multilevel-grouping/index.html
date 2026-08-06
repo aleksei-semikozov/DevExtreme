@@ -87,6 +87,8 @@
     <div class="page">
       <div class="bar">
         <h1>Scheduler — Multilevel Grouping</h1>
+        <span>Cross scrolling</span>
+        <div id="cross-picker"></div>
         <span>Theme</span>
         <div id="theme-picker"></div>
       </div>
@@ -97,6 +99,14 @@
     <script src="fixed/dx.all.js"></script>
     <script>
       DevExpress.ui.themes.current(dxTheme);
+    </script>
+    <script>
+      var DX_CROSS_MODES = ['perview', 'on', 'off'];
+      var dxCross = new URLSearchParams(location.search).get('cross')
+        || localStorage.getItem('dxCross')
+        || 'perview';
+      if (DX_CROSS_MODES.indexOf(dxCross) === -1) { dxCross = 'perview'; }
+      window.DX_CROSS_MODE = dxCross;
     </script>
     <script src="data.js"></script>
     <script src="index.js"></script>
@@ -119,6 +129,27 @@
             if (e.value && e.value !== dxTheme) {
               localStorage.setItem('dxTheme', e.value);
               window.location.reload();
+            }
+          },
+        });
+
+        $('#cross-picker').dxSelectBox({
+          dataSource: [
+            { text: 'Вариант 1 — по виду', name: 'perview' },
+            { text: 'Вариант 2 — всегда включён', name: 'on' },
+            { text: 'Вариант 3 — всегда выключен', name: 'off' },
+          ],
+          displayExpr: 'text',
+          valueExpr: 'name',
+          value: dxCross,
+          width: 260,
+          inputAttr: { 'aria-label': 'Cross scrolling' },
+          onValueChanged: function (e) {
+            if (e.value && e.value !== dxCross) {
+              localStorage.setItem('dxCross', e.value);
+              var url = new URL(location.href);
+              url.searchParams.set('cross', e.value);
+              window.location.href = url.toString();
             }
           },
         });

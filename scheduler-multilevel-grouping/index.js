@@ -1,3 +1,5 @@
+const crossMode = window.DX_CROSS_MODE || 'perview';
+
 const rooms = assignees.filter((item) => item.parentId === null);
 
 const employeesOf = (roomId) => assignees.filter((item) => item.parentId === roomId);
@@ -117,12 +119,12 @@ $(() => {
         icon: 'user',
       },
     ],
-    crossScrollingEnabled: false,
+    crossScrollingEnabled: crossMode === 'on',
     showAllDayPanel: false,
     showCurrentTimeIndicator: false,
     height: 700,
     onOptionChanged(e) {
-      if (e.name === 'currentView') {
+      if (crossMode === 'perview' && e.name === 'currentView') {
         e.component.option('crossScrollingEnabled', e.value === 'Horizontal Grouping');
       }
     },
