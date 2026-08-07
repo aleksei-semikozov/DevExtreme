@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PivotGrid — горизонтальный скроллбар пропадает, когда нет данных (4898)</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 24px 28px 64px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      color: #1a1a1a;
+      background: #fafafa;
+      line-height: 1.55;
+    }
+
+    .wrap { max-width: 1500px; }
+
+    h1 { font-size: 21px; margin: 0 0 4px; }
+    h2 { font-size: 13px; margin: 30px 0 10px; text-transform: uppercase; letter-spacing: .05em; color: #666; }
+
+    .sub { color: #666; margin: 0 0 20px; font-size: 14px; }
+    .sub a { color: #0f6cbd; }
+
+    .card {
+      background: #fff;
+      border: 1px solid #e3e3e3;
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 18px;
+    }
+
+    ol, ul { margin: 8px 0; padding-left: 22px; }
+    li { margin: 4px 0; }
+
+    code {
+      background: #f0f1f3;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12.5px;
+    }
+
+    .panes {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    @media (max-width: 1100px) {
+      .panes { grid-template-columns: minmax(0, 1fr); }
+    }
+
+    .pane {
+      background: #fff;
+      border: 1px solid #e3e3e3;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .pane-head {
+      padding: 12px 16px;
+      border-bottom: 1px solid #ececec;
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .pane-title { font-weight: 600; font-size: 15px; }
+    .pane-note { color: #777; font-size: 12.5px; }
+
+    .badge {
+      font-size: 11.5px;
+      font-weight: 600;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+
+    .badge-bad { background: #fdecea; color: #a4262c; }
+    .badge-good { background: #e7f6ec; color: #0e6b2f; }
+
+    iframe {
+      display: block;
+      width: 100%;
+      height: 420px;
+      border: 0;
+    }
+
+    .readout {
+      border-top: 1px solid #ececec;
+      padding: 12px 16px 16px;
+      font-size: 13px;
+    }
+
+    .metrics {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12.5px;
+      color: #444;
+      margin-bottom: 10px;
+    }
+
+    .verdict { font-weight: 600; }
+    .verdict.no { color: #a4262c; }
+    .verdict.yes { color: #0e6b2f; }
+
+    .track {
+      position: relative;
+      height: 10px;
+      border-radius: 5px;
+      background: #ececec;
+      overflow: hidden;
+      margin: 10px 0 12px;
+    }
+
+    .thumb {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      border-radius: 5px;
+      background: #b9bcc0;
+      transition: left .12s ease, width .12s ease;
+    }
+
+    .thumb.full { background: #e0a6a6; }
+
+    button {
+      font: inherit;
+      font-size: 13px;
+      padding: 6px 14px;
+      border: 1px solid #c8c8c8;
+      border-radius: 6px;
+      background: #fff;
+      cursor: pointer;
+      margin-right: 8px;
+    }
+
+    button:hover { background: #f4f4f4; }
+
+    .hint {
+      background: #fff8e6;
+      border: 1px solid #f0dca6;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 13.5px;
+      margin-bottom: 18px;
+    }
+
+    table.facts { border-collapse: collapse; font-size: 13.5px; }
+    table.facts td { padding: 3px 14px 3px 0; vertical-align: top; }
+    table.facts td:first-child { color: #666; white-space: nowrap; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>PivotGrid — горизонтальный скроллбар пропадает, когда нет данных</h1>
+  <p class="sub">
+    T1333383 ·
+    <a href="https://github.com/DevExpress/devextreme-private/issues/4898">issue 4898</a> ·
+    <a href="https://github.com/DevExpress/DevExtreme/pull/34692">PR 34692</a>
+  </p>
+
+  <div class="card">
+    <h2 style="margin-top:0">Сценарий</h2>
+    <p style="margin:0 0 8px">
+      В PivotGrid настроены только поля <code>Регион</code> (row) и <code>Город</code> (column, <code>width: 150</code>) —
+      <b>data-поля нет</b>. Из-за этого <code>isEmpty()</code> возвращает <code>true</code>, в области данных выводится
+      «No data», но заголовки 17 городов отрисованы и занимают 3110&nbsp;px при видимых ~700&nbsp;px.
+    </p>
+    <p style="margin:0">
+      Ожидается: горизонтальный скроллбар есть, до дальних городов можно доскроллить.
+      По факту (до фикса): скроллбара нет, колонки за пределами видимой области недостижимы.
+    </p>
+  </div>
+
+  <div class="hint">
+    <b>Как смотреть.</b> Попробуйте прокрутить сетку вбок — трекпадом, шифт-колесом или кнопкой «Прокрутить вправо» под каждой панелью.
+    В левой панели ничего не двигается, в правой заголовки городов уезжают. Под каждой панелью — живые метрики и индикатор
+    прокрутки: серый бегунок показывает, какая доля содержимого видна.
+    <br><br>
+    На macOS системные скроллбары наложенные (overlay) и в покое не видны — поэтому здесь и нарисован собственный индикатор.
+    На Windows и Linux в правой панели скроллбар виден постоянно.
+  </div>
+
+  <div class="panes">
+    <div class="pane">
+      <div class="pane-head">
+        <span class="pane-title">До фикса</span>
+        <span class="badge badge-bad">скролла нет</span>
+        <span class="pane-note">старая реализация <code>setColumnsWidth</code></span>
+      </div>
+      <iframe id="frame-broken" src="frame.html?mode=broken" title="До фикса"></iframe>
+      <div class="readout">
+        <div class="metrics" id="metrics-broken">измеряю…</div>
+        <div class="track"><div class="thumb" id="thumb-broken" style="left:0;width:100%"></div></div>
+        <div class="verdict no" id="verdict-broken">—</div>
+        <div style="margin-top:10px">
+          <button data-target="broken" data-action="scrollRight">Прокрутить вправо</button>
+          <button data-target="broken" data-action="scrollReset">В начало</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="pane">
+      <div class="pane-head">
+        <span class="pane-title">После фикса</span>
+        <span class="badge badge-good">скролл работает</span>
+        <span class="pane-note">сборка ветки PR</span>
+      </div>
+      <iframe id="frame-fixed" src="frame.html?mode=fixed" title="После фикса"></iframe>
+      <div class="readout">
+        <div class="metrics" id="metrics-fixed">измеряю…</div>
+        <div class="track"><div class="thumb" id="thumb-fixed" style="left:0;width:100%"></div></div>
+        <div class="verdict yes" id="verdict-fixed">—</div>
+        <div style="margin-top:10px">
+          <button data-target="fixed" data-action="scrollRight">Прокрутить вправо</button>
+          <button data-target="fixed" data-action="scrollReset">В начало</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:22px">
+    <h2 style="margin-top:0">Причина</h2>
+    <p style="margin:0 0 10px">
+      Горизонтальный скролл PivotGrid живёт на scrollable <b>области данных</b>: у области заголовков колонок
+      <code>showScrollbar: 'never'</code>, она лишь синхронно повторяет скролл области данных.
+    </p>
+    <p style="margin:0 0 10px">
+      Во время замеров заголовки колонок временно лежат внутри таблицы области данных, поэтому ширины и признак
+      <code>hasColumnsScroll</code> вычисляются верно и scrollable получает <code>direction: 'horizontal'</code>.
+      Но затем <code>AreaItem.setColumnsWidth()</code> берёт число колонок из собственных строк области данных —
+      а там ноль ячеек, потому что data-полей нет. В итоге <code>colgroup</code> оставалась пустой,
+      таблица схлопывалась в <code>width: 0px</code>, и нативному контейнеру было нечего скроллить.
+    </p>
+    <table class="facts">
+      <tr><td>Файл</td><td><code>js/__internal/grids/pivot_grid/area_item/m_area_item.ts</code></td></tr>
+      <tr><td>Суть фикса</td><td>таблица без ячеек всё равно растягивается на запрошенную суммарную ширину</td></tr>
+      <tr><td>Тесты</td><td>4 новых кейса в <code>m_data_area.test.ts</code>; на чистой базе падают (<code>0px</code> вместо <code>60px</code>)</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0">Честность сравнения</h2>
+    <p style="margin:0">
+      Обе панели загружают <b>один и тот же</b> бандл, собранный из ветки PR. В левой панели после создания виджета
+      в рантайме возвращается дореализация <code>setColumnsWidth</code> (её текст виден в исходнике
+      <code>frame.html</code>) и вызывается <code>updateDimensions()</code>. То есть панели отличаются ровно тем
+      кодом, который меняет PR, — а не версией библиотеки.
+    </p>
+  </div>
+
+</div>
+
+<script>
+  var state = { broken: null, fixed: null };
+
+  window.addEventListener('message', function (e) {
+    var d = e.data;
+    if (!d || d.source !== 'pivot-frame') { return; }
+
+    if (d.error) {
+      document.getElementById('metrics-' + d.mode).textContent = 'ошибка: ' + d.error;
+      return;
+    }
+
+    state[d.mode] = d;
+    render(d.mode);
+  });
+
+  function render(mode) {
+    var d = state[mode];
+    var scrollable = d.scrollWidth - d.clientWidth;
+
+    document.getElementById('metrics-' + mode).textContent =
+      'ширина содержимого ' + d.scrollWidth + 'px · видимая область ' + d.clientWidth +
+      'px · прокручено ' + Math.round(d.scrollLeft) + 'px';
+
+    var verdict = document.getElementById('verdict-' + mode);
+    if (scrollable > 1) {
+      verdict.textContent = 'Горизонтальная прокрутка: есть (скрыто ' + scrollable + 'px)';
+      verdict.className = 'verdict yes';
+    } else {
+      verdict.textContent = 'Горизонтальная прокрутка: нет — содержимое обрезано, доскроллить нельзя';
+      verdict.className = 'verdict no';
+    }
+
+    var thumb = document.getElementById('thumb-' + mode);
+    var ratio = d.scrollWidth > 0 ? Math.min(1, d.clientWidth / d.scrollWidth) : 1;
+    thumb.style.width = (ratio * 100) + '%';
+    thumb.style.left = (d.scrollWidth > d.clientWidth
+      ? (d.scrollLeft / d.scrollWidth) * 100
+      : 0) + '%';
+    thumb.className = ratio >= 1 ? 'thumb full' : 'thumb';
+  }
+
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('button[data-action]');
+    if (!btn) { return; }
+    var frame = document.getElementById('frame-' + btn.dataset.target);
+    frame.contentWindow.postMessage({ action: btn.dataset.action }, '*');
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PivotGrid frame</title>
+  <link rel="stylesheet" href="fixed/css/dx.fluent.blue.light.css">
+  <script src="fixed/js/jquery.min.js"></script>
+  <script src="fixed/js/dx.all.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 12px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      background: #fff;
+    }
+  </style>
+</head>
+<body class="dx-viewport">
+  <div id="pivotgrid"></div>
+
+  <script>
+    var SALES = [
+      { region: 'Северная Америка', city: 'New York', amount: 1740 },
+      { region: 'Северная Америка', city: 'Los Angeles', amount: 850 },
+      { region: 'Северная Америка', city: 'Denver', amount: 2235 },
+      { region: 'Северная Америка', city: 'Vancouver', amount: 1965 },
+      { region: 'Северная Америка', city: 'Edmonton', amount: 880 },
+      { region: 'Южная Америка', city: 'Rio de Janeiro', amount: 5260 },
+      { region: 'Южная Америка', city: 'Buenos Aires', amount: 2790 },
+      { region: 'Южная Америка', city: 'Asuncion', amount: 3140 },
+      { region: 'Европа', city: 'London', amount: 6175 },
+      { region: 'Европа', city: 'Berlin', amount: 4575 },
+      { region: 'Европа', city: 'Madrid', amount: 3680 },
+      { region: 'Азия', city: 'Tokyo', amount: 8400 },
+      { region: 'Азия', city: 'Seoul', amount: 1325 },
+      { region: 'Австралия', city: 'Sydney', amount: 3920 },
+      { region: 'Австралия', city: 'Melbourne', amount: 2220 },
+      { region: 'Африка', city: 'Pretoria', amount: 940 },
+      { region: 'Африка', city: 'Cairo', amount: 1630 }
+    ];
+
+    // Реализация setColumnsWidth ДО фикса — восстанавливается в рантайме,
+    // чтобы обе панели работали на одном и том же бандле и отличались ровно одной строкой.
+    function setColumnsWidthBeforeFix(values) {
+      var tableElement = this._tableElement.get(0);
+      var columnsCount = this.getColumnsCount();
+      var columnWidth = [];
+
+      for (var i = 0; i < columnsCount; i += 1) {
+        columnWidth.push(values[i] || 0);
+      }
+
+      for (var j = columnsCount; j < values.length && values; j += 1) {
+        columnWidth[columnsCount - 1] += values[j];
+      }
+
+      this._colgroupElement.html('');
+
+      for (var k = 0; k < columnsCount; k += 1) {
+        var col = document.createElement('col');
+        col.style.width = columnWidth[k] + 'px';
+        this._colgroupElement.append(col);
+      }
+
+      this._tableWidth = columnWidth.reduce(function (sum, width) { return sum + width; }, 0);
+      tableElement.style.width = this._tableWidth + 'px';
+      tableElement.style.tableLayout = 'fixed';
+    }
+
+    function createGrid() {
+      return $('#pivotgrid').dxPivotGrid({
+        allowSortingBySummary: true,
+        allowFiltering: true,
+        showBorders: true,
+        showColumnGrandTotals: false,
+        showRowGrandTotals: false,
+        showRowTotals: false,
+        showColumnTotals: false,
+        fieldChooser: { enabled: true, height: 400 },
+        dataSource: {
+          fields: [
+            { caption: 'Регион', width: 120, dataField: 'region', area: 'row' },
+            { caption: 'Город', dataField: 'city', width: 150, area: 'column' }
+          ],
+          store: SALES
+        }
+      }).dxPivotGrid('instance');
+    }
+
+    function dataContainer() {
+      return document.querySelector('.dx-area-data-cell .dx-scrollable-container');
+    }
+
+    function report() {
+      var c = dataContainer();
+      if (!c) { return; }
+      parent.postMessage({
+        source: 'pivot-frame',
+        mode: MODE,
+        scrollWidth: c.scrollWidth,
+        clientWidth: c.clientWidth,
+        scrollLeft: c.scrollLeft
+      }, '*');
+    }
+
+    var MODE = new URLSearchParams(location.search).get('mode') === 'broken' ? 'broken' : 'fixed';
+
+    $(function () {
+      var pivot = createGrid();
+
+      if (MODE === 'broken') {
+        var areaItemProto = Object.getPrototypeOf(Object.getPrototypeOf(pivot._dataArea));
+
+        if (!Object.prototype.hasOwnProperty.call(areaItemProto, 'setColumnsWidth')) {
+          parent.postMessage({ source: 'pivot-frame', mode: MODE, error: 'AreaItem.prototype не найден' }, '*');
+          return;
+        }
+
+        areaItemProto.setColumnsWidth = setColumnsWidthBeforeFix;
+        pivot.updateDimensions();
+      }
+
+      setTimeout(report, 600);
+
+      var c = null;
+      setInterval(function () {
+        c = c || dataContainer();
+        if (c) { report(); }
+      }, 250);
+
+      window.addEventListener('message', function (e) {
+        if (e.data && e.data.action === 'scrollRight') {
+          var el = dataContainer();
+          if (el) { el.scrollLeft += 400; report(); }
+        }
+        if (e.data && e.data.action === 'scrollReset') {
+          var el2 = dataContainer();
+          if (el2) { el2.scrollLeft = 0; report(); }
+        }
+      });
+    });
+  </script>
+</body>
+</html>
