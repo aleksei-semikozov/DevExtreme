@@ -68,7 +68,6 @@ const renderEmployeeTag = (data) => {
 
   tag.className = 'dx-tag-content';
   tag.style.backgroundColor = data.color ?? '';
-  tag.style.borderColor = data.color ?? 'transparent';
   tag.textContent = data.text;
 
   const removeButton = document.createElement('div');

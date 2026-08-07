@@ -6,6 +6,10 @@
   min-width: 120px;
 }
 
+.dx-scheduler-appointment-popup .dx-tag-content {
+  border-color: transparent;
+}
+
 .dx-scheduler-group-header,
 .dx-scheduler-header-panel-empty-cell,
 .dx-scheduler-work-space-vertical-group-table,
