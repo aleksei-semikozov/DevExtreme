@@ -1,5 +1,18 @@
 const crossMode = window.DX_CROSS_MODE || 'perview';
 
+const scrollbarSize = () => {
+  const probe = document.createElement('div');
+
+  probe.style.cssText = 'position:absolute;top:-9999px;width:100px;height:100px;overflow:scroll';
+  document.body.appendChild(probe);
+
+  const size = probe.offsetHeight - probe.clientHeight;
+
+  probe.remove();
+
+  return size;
+};
+
 const rooms = assignees.filter((item) => item.parentId === null);
 
 const employeesOf = (roomId) => assignees.filter((item) => item.parentId === roomId);
@@ -122,7 +135,7 @@ $(() => {
     crossScrollingEnabled: crossMode === 'on',
     showAllDayPanel: false,
     showCurrentTimeIndicator: false,
-    height: 700,
+    height: 700 + scrollbarSize(),
     onOptionChanged(e) {
       if (crossMode === 'perview' && e.name === 'currentView') {
         e.component.option('crossScrollingEnabled', e.value === 'Horizontal Grouping');
