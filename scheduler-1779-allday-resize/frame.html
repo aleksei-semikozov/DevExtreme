@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="dx.fluent.blue.light.css">
+  <style>
+    html, body { margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; background: #fff; }
+    .bar { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid #e5e5e5; flex-wrap: wrap; }
+    .bar button { font: inherit; font-size: 13px; padding: 4px 10px; border: 1px solid #c8c8c8; background: #fff; border-radius: 4px; cursor: pointer; }
+    .bar button.on { background: #0f6cbd; border-color: #0f6cbd; color: #fff; }
+    .dates { padding: 8px 10px; font-size: 13px; font-family: ui-monospace, Menlo, Consolas, monospace; border-bottom: 1px solid #e5e5e5; }
+    .dates b { font-weight: 600; }
+    .changed { color: #0a7d28; font-weight: 600; }
+    .same { color: #999; }
+    #scheduler { height: 460px; }
+    dx-license, dx-license-trigger { display: none !important; }
+  </style>
+</head>
+<body class="dx-viewport">
+  <div class="bar">
+    <button id="v-week" class="on">week</button>
+    <button id="v-timeline">timelineWeek</button>
+    <button id="reset">Сбросить</button>
+  </div>
+  <div class="dates">
+    <div>Сейчас: <b id="cur">—</b></div>
+    <div>Исходно: <span id="orig">—</span> <span id="delta" class="same"></span></div>
+  </div>
+  <div id="scheduler"></div>
+
+  <script src="jquery.js"></script>
+  <script src="dx.all.js"></script>
+  <script>
+  (function () {
+    var MODE = new URLSearchParams(location.search).get('mode') || 'after';
+
+    // Закрываем баннер триал-лицензии штатной кнопкой (она ставит DxLicense.closed).
+    var closeTrial = function () {
+      var lic = document.querySelector('dx-license');
+      var svg = lic && lic.querySelector('div svg');
+      if (svg && svg.parentElement) { svg.parentElement.click(); return true; }
+      return false;
+    };
+    var trialTimer = setInterval(function () { if (closeTrial()) { clearInterval(trialTimer); } }, 200);
+    setTimeout(function () { clearInterval(trialTimer); }, 10000);
+
+    var ORIGINAL = {
+      startDate: new Date(2020, 6, 12, 5),
+      endDate: new Date(2020, 6, 13, 5)
+    };
+    var makeData = function () {
+      return [{
+        text: 'all day 12',
+        startDate: new Date(ORIGINAL.startDate),
+        endDate: new Date(ORIGINAL.endDate),
+        allDay: true,
+        priorityId: 2
+      }];
+    };
+
+    var fmt = function (d) {
+      var p = function (n) { return String(n).padStart(2, '0'); };
+      return p(d.getDate()) + '.' + p(d.getMonth() + 1) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+    };
+
+    var instance = $('#scheduler').dxScheduler({
+      dataSource: makeData(),
+      currentDate: new Date(2020, 6, 15),
+      views: ['week', 'timelineWeek'],
+      currentView: 'week',
+      resources: [{
+        fieldExpr: 'priorityId',
+        dataSource: [{ id: 2, text: 'Unknown', color: '#b671fb' }],
+        label: 'Priority'
+      }],
+      allDayPanelMode: 'hidden',
+      // Ограничение часов дня — только чтобы все три блока помещались на экран
+      // без прокрутки. На поведение ресайза не влияет.
+      startDayHour: 3,
+      endDayHour: 9,
+      height: 460,
+      onAppointmentUpdated: function () { setTimeout(render, 0); }
+    }).dxScheduler('instance');
+
+    // ------------------------------------------------------------------
+    // Режим "До": возвращаем поведение main до PR 34702.
+    // Ровно две правки этого PR, откатанные обратно:
+    //   1) getDeltaTime получал isAllDayPanel = isAllDay(itemData) — флаг был
+    //      true в timeline-вью, где all-day панели нет, поэтому шаг ресайза
+    //      становился равен СУТКАМ вместо длительности ячейки;
+    //   2) _getVerticalResizingRule игнорировал reduced и вешал обе ручки
+    //      (top+bottom) на каждую часть разрезанного аппойнтмента.
+    // ------------------------------------------------------------------
+    if (MODE === 'before') {
+      var DAY_MS = 86400000;
+      var MINUTE_MS = 60000;
+      var VERTICAL = ['day', 'week', 'workWeek'];
+
+      instance.subscribe('getDeltaTime', function (args, initialSize, itemData) {
+        var ws = this.getWorkSpace();
+        var viewType = this.currentView.type;
+        var cellW = ws.getCellWidth();
+        var cellH = ws.getCellHeight();
+        var cellDuration = ws.option('cellDuration');
+        var resizableStep = ws.positionHelper.getResizableStep();
+        // СТАРЫЙ флаг: голый allDay аппойнтмента, без проверки на вертикальное вью
+        var isAllDayPanel = this.fire('isAllDay', itemData);
+
+        if (['timelineMonth', 'month'].indexOf(viewType) !== -1 || Boolean(isAllDayPanel)) {
+          var step = resizableStep || 2;
+          return Math.round((args.width - initialSize.width) / step) * DAY_MS;
+        }
+        if (viewType === 'agenda') { return 0; }
+        if (VERTICAL.indexOf(viewType) !== -1 && !isAllDayPanel) {
+          return MINUTE_MS * Math.round(((args.height - initialSize.height) * cellDuration) / cellH);
+        }
+        return MINUTE_MS * Math.round(((args.width - initialSize.width) * cellDuration) / cellW);
+      });
+
+      var patchAppointmentProto = function () {
+        var el = document.querySelector('.dx-scheduler-appointment');
+        if (!el) { return false; }
+        var inst = $(el).dxSchedulerAppointment('instance');
+        var proto = Object.getPrototypeOf(inst);
+        if (proto.__patched1779) { return true; }
+        proto.__patched1779 = true;
+        proto._getVerticalResizingRule = function () {
+          var height = Math.round(this.invoke('getCellHeight'));
+          // СТАРОЕ правило: обе ручки на каждой части, reduced не учитывается
+          return {
+            handles: 'top bottom',
+            minWidth: 0,
+            minHeight: height,
+            step: height,
+            roundStepValue: true
+          };
+        };
+        return true;
+      };
+      var tries = 0;
+      var t = setInterval(function () {
+        tries += 1;
+        if (patchAppointmentProto() || tries > 40) {
+          clearInterval(t);
+          instance.repaint();
+        }
+      }, 50);
+    }
+
+    function render() {
+      var a = instance.option('dataSource')[0];
+      document.getElementById('cur').textContent = fmt(a.startDate) + '  →  ' + fmt(a.endDate);
+      document.getElementById('orig').textContent = fmt(ORIGINAL.startDate) + '  →  ' + fmt(ORIGINAL.endDate);
+      var moved = a.startDate.getTime() !== ORIGINAL.startDate.getTime()
+        || a.endDate.getTime() !== ORIGINAL.endDate.getTime();
+      var d = document.getElementById('delta');
+      if (!moved) {
+        d.className = 'same';
+        d.textContent = '(не изменилось)';
+      } else {
+        var hours = Math.round((a.endDate - a.startDate) / 3600000);
+        d.className = 'changed';
+        d.textContent = '(изменено, длительность ' + hours + ' ч)';
+      }
+    }
+
+    document.getElementById('reset').onclick = function () {
+      instance.option('dataSource', makeData());
+      setTimeout(render, 50);
+    };
+    document.getElementById('v-week').onclick = function () {
+      instance.option('currentView', 'week');
+      this.classList.add('on');
+      document.getElementById('v-timeline').classList.remove('on');
+    };
+    document.getElementById('v-timeline').onclick = function () {
+      instance.option('currentView', 'timelineWeek');
+      this.classList.add('on');
+      document.getElementById('v-week').classList.remove('on');
+    };
+
+    window.__demo = { instance: instance, render: render, reset: function () { instance.option('dataSource', makeData()); } };
+    render();
+  })();
+  </script>
+</body>
+</html>

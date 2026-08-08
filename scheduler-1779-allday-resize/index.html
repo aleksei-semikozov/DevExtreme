@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scheduler #1779 — ресайз all-day аппойнтмента</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #fff; --line: #e3e6ea; --text: #1b1f24; --muted: #5c6470;
+    --bad: #c0392b; --good: #0a7d28; --accent: #0f6cbd;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 28px 20px 60px; background: var(--bg); color: var(--text);
+    font-family: 'Segoe UI', Roboto, -apple-system, sans-serif; line-height: 1.55;
+  }
+  .wrap { max-width: 1500px; margin: 0 auto; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 34px 0 12px; }
+  .sub { color: var(--muted); margin: 0 0 22px; font-size: 14px; }
+  .sub a { color: var(--accent); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; margin-bottom: 18px; }
+  code, pre { font-family: ui-monospace, Menlo, Consolas, monospace; }
+  code { background: #eef1f4; padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+  pre { background: #1e2229; color: #e6e6e6; padding: 14px 16px; border-radius: 8px; overflow-x: auto; font-size: 12.5px; line-height: 1.5; }
+  pre .del { color: #ff8a80; }
+  pre .add { color: #a5d6a7; }
+  pre .cmt { color: #9aa4b2; }
+  ol, ul { margin: 8px 0; padding-left: 22px; }
+  li { margin: 6px 0; }
+  .bug { border-left: 3px solid var(--bad); padding-left: 14px; margin: 16px 0; }
+  .bug h3 { margin: 0 0 4px; font-size: 16px; }
+  .bug p { margin: 4px 0; }
+  .frames { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 1100px) { .frames { grid-template-columns: 1fr; } }
+  .frame { background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .frame > header { padding: 10px 16px; font-weight: 600; font-size: 15px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 10px; }
+  .frame.before > header { background: #fdf0ee; color: var(--bad); }
+  .frame.after > header { background: #eef7f0; color: var(--good); }
+  .frame iframe { width: 100%; height: 610px; border: 0; display: block; }
+  .tag { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; padding: 2px 8px; border-radius: 20px; }
+  .frame.before .tag { background: var(--bad); color: #fff; }
+  .frame.after .tag { background: var(--good); color: #fff; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; margin-top: 10px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; color: var(--muted); font-size: 13px; }
+  td.bad { color: var(--bad); }
+  td.good { color: var(--good); }
+  .note { font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Scheduler: ресайз all-day аппойнтмента сломан в timeline и вертикальных вью</h1>
+  <p class="sub">
+    Задача <a href="https://github.com/DevExpress/devextreme-private/issues/1779">#1779</a> ·
+    Исправление <a href="https://github.com/DevExpress/DevExtreme/pull/34702">PR 34702</a> ·
+    Сборка 26.2.0 (main)
+  </p>
+
+  <div class="card">
+    <h2 style="margin-top:0">Сцена</h2>
+    <p>Один all-day аппойнтмент и скрытая all-day панель — конфигурация из репро в задаче:</p>
+    <pre>{
+  dataSource: [{ text: 'all day 12', <span class="add">allDay: true</span>,
+                 startDate: new Date(2020, 6, 12, <b>5</b>),   <span class="cmt">// 12 июля, 05:00</span>
+                 endDate:   new Date(2020, 6, 13, <b>5</b>) }], <span class="cmt">// 13 июля, 05:00 — ровно сутки</span>
+  views: ['week', 'timelineWeek'],
+  <span class="add">allDayPanelMode: 'hidden'</span>
+}</pre>
+    <p class="note">
+      При <code>allDayPanelMode: 'hidden'</code> панель «весь день» не показывается, и аппойнтмент
+      рисуется прямо в сетке времени. В <b>week</b> он разрезается по полуночи на три блока, в
+      <b>timelineWeek</b> — это одна длинная полоса.
+      Единственное отступление от репро — сужены часы дня (<code>startDayHour: 3</code>,
+      <code>endDayHour: 9</code>), чтобы все три блока помещались на экран без прокрутки;
+      на поведение ресайза это не влияет (проверено).
+    </p>
+  </div>
+
+  <h2>Две независимые проблемы</h2>
+
+  <div class="card">
+    <div class="bug">
+      <h3>1. timelineWeek — один «щелчок» мыши двигает дату на целые сутки</h3>
+      <p>
+        Ячейка timeline-вью равна 30 минутам, но при протяжке ручки аппойнтмент прыгает на день.
+        Протянули на 10 ячеек (визуально 5 часов) — конец уехал на 10 суток вперёд.
+      </p>
+    </div>
+    <div class="bug">
+      <h3>2. week — протяжка «ничего не делает»</h3>
+      <p>
+        У каждого из трёх блоков есть и верхняя, и нижняя ручка. Но низ первого блока и верх
+        последнего упираются в границу таблицы: тянешь — и ничего не происходит. Рабочая ручка
+        только одна из шести, и найти её пользователь не может.
+      </p>
+    </div>
+  </div>
+
+  <h2>Что попробовать</h2>
+  <div class="card">
+    <ol>
+      <li>
+        <b>Переключите оба планировщика на <code>timelineWeek</code></b> и потяните <b>правую</b> ручку
+        полосы вправо ровно на одну ячейку.
+        <br><span class="note">Слева конец уедет на сутки (13 июля → 14 июля), справа — на 30 минут.</span>
+      </li>
+      <li>
+        <b>Вернитесь на <code>week</code></b> и потяните <b>вниз низ первого (левого) блока</b>.
+        <br><span class="note">Слева ручка есть, но ничего не происходит. Справа этой ручки просто нет —
+        осталась только та, что реально работает: низ последнего блока.</span>
+      </li>
+    </ol>
+    <p class="note">Кнопка «Сбросить» возвращает исходные даты. Табло над сеткой показывает текущие даты аппойнтмента.</p>
+  </div>
+
+  <div class="frames">
+    <div class="frame before">
+      <header><span class="tag">до</span> main без исправления</header>
+      <iframe src="frame.html?mode=before" title="До исправления"></iframe>
+    </div>
+    <div class="frame after">
+      <header><span class="tag">после</span> PR 34702</header>
+      <iframe src="frame.html?mode=after" title="После исправления"></iframe>
+    </div>
+  </div>
+
+  <h2>Измеренная разница</h2>
+  <div class="card">
+    <table>
+      <tr><th>Действие</th><th>До</th><th>После</th></tr>
+      <tr>
+        <td>timelineWeek, правая ручка, +1 ячейка (30 мин)</td>
+        <td class="bad">13.07 05:00 → <b>14.07</b> 05:00 (+сутки)</td>
+        <td class="good">13.07 05:00 → 13.07 <b>05:30</b> (+30 мин)</td>
+      </tr>
+      <tr>
+        <td>week, низ первого блока, вниз</td>
+        <td class="bad">ничего не происходит</td>
+        <td class="good">ручки нет — тянуть нечего</td>
+      </tr>
+      <tr>
+        <td>week, ручки на трёх блоках</td>
+        <td class="bad">top+bottom / top+bottom / top+bottom</td>
+        <td class="good">top / — / bottom</td>
+      </tr>
+      <tr>
+        <td>week, низ последнего блока, +2 ячейки</td>
+        <td class="good">13.07 06:00 (верно)</td>
+        <td class="good">13.07 06:00 (верно)</td>
+      </tr>
+    </table>
+  </div>
+
+  <h2>Что чинит PR</h2>
+  <div class="card">
+    <p><b>1. <code>m_subscribes.ts</code></b> — all-day панель существует только в вертикальных вью
+    (<code>day</code>, <code>week</code>, <code>workWeek</code>). В timeline аппойнтмент рисуется в сетке
+    времени, поэтому и ресайзиться должен по длительности ячейки:</p>
+<pre><span class="del">- isAllDayPanel: isAllDay(this, itemData),</span>
+<span class="add">+ isAllDayPanel: isAllDayPanelAppointment(this, itemData),</span>
+
+<span class="add">+ const isAllDayPanelAppointment = (scheduler, appointmentData) =&gt;</span>
+<span class="add">+   VERTICAL_VIEW_TYPES.includes(scheduler.currentView.type)</span>
+<span class="add">+   &amp;&amp; isAllDay(scheduler, appointmentData);</span></pre>
+
+    <p><b>2. <code>m_appointment.ts</code></b> — вертикальное правило ресайза теперь учитывает
+    <code>reduced</code>, как это давно делает горизонтальное:</p>
+<pre>  _getVerticalResizingRule() {
+<span class="add">+   const reducedHandles = { head: 'top', body: '', tail: 'bottom' };</span>
+    const height = Math.round(this.invoke('getCellHeight'));
+    return {
+<span class="del">-     handles: DEFAULT_VERTICAL_HANDLES,</span>
+<span class="add">+     handles: this.option('reduced')</span>
+<span class="add">+       ? reducedHandles[this.option('reduced')]</span>
+<span class="add">+       : DEFAULT_VERTICAL_HANDLES,</span>
+      ...</pre>
+
+    <p class="note" style="margin-top:16px">
+      Обе проблемы шире, чем формулировка в задаче: шаг в сутки в timeline воспроизводится и при
+      значении <code>allDayPanelMode</code> по умолчанию, а мёртвые вертикальные ручки — на любом
+      аппойнтменте, пересекающем полночь, не только на all-day.
+    </p>
+  </div>
+
+  <div class="card note">
+    <b>Как устроен стенд.</b> Оба планировщика используют один и тот же бандл (сборка ветки с
+    исправлением, 26.2.0). В левом фрейме в рантайме откачены ровно две правки этого PR — код отката
+    целиком лежит в <code>frame.html</code> и виден в исходнике страницы. Поведение левого фрейма
+    сверено с настоящей сборкой main без исправления: числа совпадают (timeline — сутки за ячейку,
+    низ первого блока не двигается, ручки <code>top+bottom</code> на всех трёх частях).
+  </div>
+
+</div>
+</body>
+</html>
