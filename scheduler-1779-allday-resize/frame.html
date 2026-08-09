@@ -21,6 +21,7 @@
     <button id="v-week" class="on">week</button>
     <button id="v-timeline">timelineWeek</button>
     <button id="reset">Сбросить</button>
+    <button id="go-tail" title="Прокрутить к 05:00 — там низ последнего блока">К 05:00</button>
   </div>
   <div class="dates">
     <div>Сейчас: <b id="cur">—</b></div>
@@ -74,10 +75,6 @@
         label: 'Priority'
       }],
       allDayPanelMode: 'hidden',
-      // Ограничение часов дня — только чтобы все три блока помещались на экран
-      // без прокрутки. На поведение ресайза не влияет.
-      startDayHour: 3,
-      endDayHour: 9,
       height: 460,
       onAppointmentUpdated: function () { setTimeout(render, 0); }
     }).dxScheduler('instance');
@@ -168,18 +165,56 @@
       instance.option('dataSource', makeData());
       setTimeout(render, 50);
     };
+    // В timelineWeek полоса шире фрейма: подводим её левый край (и левую ручку)
+    // в кадр, иначе ручку просто не за что взять.
+    function scrollToAppointment() {
+      var el = document.querySelector('.dx-scheduler-appointment');
+      var scrollable = document.querySelector('.dx-scheduler-date-table-scrollable');
+      if (!el || !scrollable) { return; }
+      var inst = $(scrollable).dxScrollable('instance');
+      if (!inst) { return; }
+      var box = el.getBoundingClientRect();
+      var host = scrollable.getBoundingClientRect();
+      inst.scrollBy({ left: box.left - host.left - 40, top: 0 });
+    }
+
+    // Ручки, о которых идёт речь, лежат по краям суток: низ первого блока — на
+    // 24:00, верх/низ хвоста — около 05:00. Подводим нужное место сразу, иначе
+    // ручку не найти.
+    function scrollToDayEnd() {
+      instance.scrollTo(new Date(2020, 6, 12, 23, 30));
+    }
+    function scrollToTail() {
+      instance.scrollTo(new Date(2020, 6, 14, 5));
+    }
+
+    function setView(view, btnOn, btnOff) {
+      instance.option('currentView', view);
+      btnOn.classList.add('on');
+      btnOff.classList.remove('on');
+      setTimeout(view === 'timelineWeek' ? scrollToAppointment : scrollToDayEnd, 350);
+    }
     document.getElementById('v-week').onclick = function () {
-      instance.option('currentView', 'week');
-      this.classList.add('on');
-      document.getElementById('v-timeline').classList.remove('on');
+      setView('week', this, document.getElementById('v-timeline'));
     };
     document.getElementById('v-timeline').onclick = function () {
-      instance.option('currentView', 'timelineWeek');
-      this.classList.add('on');
-      document.getElementById('v-week').classList.remove('on');
+      setView('timelineWeek', this, document.getElementById('v-week'));
     };
 
-    window.__demo = { instance: instance, render: render, reset: function () { instance.option('dataSource', makeData()); } };
+    window.__demo = {
+      instance: instance,
+      render: render,
+      reset: function () { instance.option('dataSource', makeData()); },
+      setView: function (v) {
+        setView(v, document.getElementById(v === 'week' ? 'v-week' : 'v-timeline'),
+          document.getElementById(v === 'week' ? 'v-timeline' : 'v-week'));
+      },
+      scrollToAppointment: scrollToAppointment,
+      scrollToDayEnd: scrollToDayEnd,
+      scrollToTail: scrollToTail
+    };
+    document.getElementById('go-tail').onclick = scrollToTail;
+    setTimeout(scrollToDayEnd, 900);
     render();
   })();
   </script>
