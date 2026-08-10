@@ -19626,6 +19626,10 @@ td[style*="text-align: right"] .dx-command-ai-header-button {
 .dx-scheduler-group-flex-container .dx-scheduler-group-row:not(:first-child) .dx-scheduler-group-row:first-child > .dx-scheduler-group-header:first-child {
   border-top: 1px solid #e0e0e0;
 }
+.dx-scheduler-group-table > .dx-scheduler-group-flex-container:not(.dx-scheduler-group-flex-container-hierarchical) > .dx-scheduler-group-row > .dx-scheduler-group-header:first-child,
+.dx-scheduler-work-space-vertical-group-table > .dx-scheduler-group-flex-container:not(.dx-scheduler-group-flex-container-hierarchical) > .dx-scheduler-group-row > .dx-scheduler-group-header:first-child {
+  border-top: none;
+}
 .dx-scheduler-group-flex-container-hierarchical {
   flex-direction: column;
 }
