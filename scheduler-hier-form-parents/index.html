@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Scheduler: иерархический ресурс — форма предлагает родителей</title>
+    <link rel="dx-theme" data-theme="fluent.blue.light" href="../scheduler-multilevel-grouping/fixed/css/dx.fluent.blue.light.css" />
+    <link rel="dx-theme" data-theme="fluent.blue.dark" href="../scheduler-multilevel-grouping/fixed/css/dx.fluent.blue.dark.css" />
+    <link rel="dx-theme" data-theme="generic.light" href="../scheduler-multilevel-grouping/fixed/css/dx.light.css" />
+    <link rel="dx-theme" data-theme="generic.dark" href="../scheduler-multilevel-grouping/fixed/css/dx.dark.css" />
+    <link rel="dx-theme" data-theme="material.blue.light" href="../scheduler-multilevel-grouping/fixed/css/dx.material.blue.light.css" />
+    <link rel="dx-theme" data-theme="generic.contrast" href="../scheduler-multilevel-grouping/fixed/css/dx.contrast.css" />
+    <script>
+      var DX_THEME_FILES = {
+        'fluent.blue.light': 'dx.fluent.blue.light.css',
+        'fluent.blue.dark': 'dx.fluent.blue.dark.css',
+        'generic.light': 'dx.light.css',
+        'generic.dark': 'dx.dark.css',
+        'material.blue.light': 'dx.material.blue.light.css',
+        'generic.contrast': 'dx.contrast.css'
+      };
+      var dxTheme = localStorage.getItem('dxThemeHierForm') || 'fluent.blue.light';
+      if (!DX_THEME_FILES[dxTheme]) { dxTheme = 'fluent.blue.light'; }
+      document.write(
+        '<link rel="stylesheet" href="../scheduler-multilevel-grouping/fixed/css/' + DX_THEME_FILES[dxTheme] + '" />'
+      );
+    </script>
+    <style>
+      body {
+        margin: 0;
+        padding: 16px;
+        font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      .page {
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+
+      .bar {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+      }
+
+      h1 {
+        font-size: 18px;
+        margin: 0 auto 0 0;
+      }
+
+      h2 {
+        font-size: 15px;
+        margin: 0 0 6px;
+      }
+
+      .intro {
+        max-width: 900px;
+        margin-bottom: 16px;
+      }
+
+      .intro ol {
+        padding-left: 22px;
+        margin: 8px 0;
+      }
+
+      code {
+        background: rgba(127, 127, 127, 0.18);
+        padding: 1px 4px;
+        border-radius: 3px;
+        font-size: 12.5px;
+      }
+
+      .cols {
+        display: flex;
+        gap: 20px;
+        align-items: flex-start;
+        flex-wrap: wrap;
+      }
+
+      .col {
+        flex: 1 1 460px;
+        min-width: 380px;
+      }
+
+      .status {
+        margin: 8px 0;
+        padding: 8px 12px;
+        border-left: 4px solid #999;
+        background: rgba(127, 127, 127, 0.12);
+        font-weight: 600;
+        font-size: 13px;
+      }
+
+      .status.lost {
+        border-left-color: #d9534f;
+      }
+
+      .status.ok {
+        border-left-color: #4caf50;
+      }
+
+      .data {
+        margin: 0 0 12px;
+        padding: 8px 12px;
+        background: rgba(127, 127, 127, 0.12);
+        font: 12px/1.45 ui-monospace, monospace;
+        white-space: pre-wrap;
+      }
+
+      .actions {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 8px;
+        flex-wrap: wrap;
+      }
+
+      .note {
+        font-size: 12.5px;
+        opacity: 0.8;
+        margin: 4px 0 10px;
+      }
+
+      .badge {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.4px;
+        padding: 2px 6px;
+        border-radius: 3px;
+        margin-right: 6px;
+        vertical-align: 2px;
+      }
+
+      .badge.bad {
+        background: #d9534f;
+        color: #fff;
+      }
+
+      .badge.good {
+        background: #4caf50;
+        color: #fff;
+      }
+    </style>
+  </head>
+  <body class="dx-viewport">
+    <div class="page">
+      <div class="bar">
+        <h1>Scheduler: иерархический ресурс — дефолтная форма предлагает родительские узлы</h1>
+        <span>Тема</span>
+        <div id="theme-picker"></div>
+      </div>
+
+      <div class="intro">
+        <p>
+          Один ресурс с <code>parentIdExpr</code>, группировка по нему же. Форма встречи
+          <b>не кастомизирована</b>: ни <code>onAppointmentFormOpening</code>, ни
+          <code>editing.form</code>. Сборка — <code>26.2.0</code> из ветки
+          <code>feature/scheduler-multilevel-grouping/main</code> (в <code>main</code> фичи нет).
+        </p>
+        <ol>
+          <li>Двойной клик по <b>Upgrade Personal Computers</b> (строка <i>Samantha Bright</i>).</li>
+          <li>
+            Открыть редактор <b>Employee</b>: в списке есть <b>🏢 Room 1</b> и <b>🏢 Room 2</b> —
+            родительские узлы, которые не являются листьями группировки.
+          </li>
+          <li>Снять тег <i>Samantha Bright</i>, выбрать <b>🏢 Room 1</b>, нажать <b>Save</b>.</li>
+          <li>Встреча исчезает из всех групп. Ни ошибки, ни сообщения валидации.</li>
+        </ol>
+        <p>
+          Панель со списком читает тот же массив, на который подписан Scheduler, — видно, что
+          запись никуда не удалилась, просто <code>assigneeId: ["room-1"]</code> не совпадает ни с
+          одним листом группировки, а группы строятся только по листьям
+          (<code>collectGroupLeaves</code> в <code>group_utils.ts</code>).
+        </p>
+      </div>
+
+      <div class="cols">
+        <div class="col">
+          <h2><span class="badge bad">Сейчас</span>Дефолтная форма</h2>
+          <p class="note">
+            Редактор Employee получает весь <code>dataSource</code> ресурса, включая комнаты.
+          </p>
+          <div class="actions">
+            <div id="break-btn"></div>
+            <div id="reset-btn"></div>
+          </div>
+          <div class="status" id="status-bug"></div>
+          <pre class="data" id="data-bug"></pre>
+          <div id="scheduler-bug"></div>
+        </div>
+
+        <div class="col">
+          <h2><span class="badge good">Как ожидается</span>Только листья в редакторе</h2>
+          <p class="note">
+            То же самое, но <code>onAppointmentFormOpening</code> подменяет
+            <code>dataSource</code> редактора на листья иерархии — выбрать комнату нельзя,
+            потерять встречу невозможно.
+          </p>
+          <div class="actions">
+            <div id="reset-btn-fixed"></div>
+          </div>
+          <div class="status" id="status-fixed"></div>
+          <pre class="data" id="data-fixed"></pre>
+          <div id="scheduler-fixed"></div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="../scheduler-multilevel-grouping/fixed/dx.all.js"></script>
+    <script>
+      DevExpress.ui.themes.current(dxTheme);
+    </script>
+    <script src="index.js"></script>
+  </body>
+</html>
