@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>frame</title>
+  <script>
+    (function () {
+      var css = new URLSearchParams(location.search).get('css') || 'after';
+      document.write('<link rel="stylesheet" href="css/dx.fluent.blue.light.' + css + '.css">');
+    }());
+  </script>
+  <style>
+    html, body { margin: 0; padding: 0; background: #fff; font-family: system-ui, sans-serif; }
+    #scheduler { height: 100vh; }
+  </style>
+</head>
+<body>
+  <div id="scheduler"></div>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="../scheduler-multilevel-grouping/fixed/dx.all.js"></script>
+  <script>
+    var params = new URLSearchParams(location.search);
+    var levels = params.get('levels') || '2';
+
+    var flat = [
+      { id: 1, text: 'Самонова Ольга' },
+      { id: 2, text: 'Черных Иван' },
+      { id: 3, text: 'Гущина Мария' },
+      { id: 4, text: 'Лапин Сергей' },
+    ];
+    var two = [
+      { id: 'r1', text: 'Кабинет 1', parentId: null },
+      { id: 'r2', text: 'Кабинет 2', parentId: null },
+      { id: 1, text: 'Самонова Ольга', parentId: 'r1' },
+      { id: 2, text: 'Черных Иван', parentId: 'r1' },
+      { id: 3, text: 'Гущина Мария', parentId: 'r2' },
+      { id: 4, text: 'Лапин Сергей', parentId: 'r2' },
+    ];
+    var three = [
+      { id: 'A', text: 'Корпус А', parentId: null },
+      { id: 'A1', text: 'Этаж 1', parentId: 'A' },
+      { id: 1, text: 'Кабинет 101', parentId: 'A1' },
+      { id: 2, text: 'Кабинет 102', parentId: 'A1' },
+      { id: 'A2', text: 'Этаж 2', parentId: 'A' },
+      { id: 3, text: 'Кабинет 201', parentId: 'A2' },
+      { id: 'B', text: 'Корпус Б', parentId: null },
+      { id: 'B1', text: 'Этаж 1', parentId: 'B' },
+      { id: 4, text: 'Кабинет 301', parentId: 'B1' },
+    ];
+
+    var dataSource = levels === '1' ? flat : levels === '3' ? three : two;
+    var resource = { fieldExpr: 'roomId', dataSource: dataSource, label: 'Ресурс' };
+    if (levels !== '1') { resource.parentIdExpr = 'parentId'; }
+
+    $(function () {
+      $('#scheduler').dxScheduler({
+        dataSource: [],
+        currentDate: new Date(2026, 6, 13),
+        views: [{ type: params.get('view') || 'workWeek', name: 'v', groupOrientation: 'vertical' }],
+        currentView: 'v',
+        startDayHour: 9,
+        endDayHour: 13,
+        showAllDayPanel: false,
+        crossScrollingEnabled: params.get('crossScrolling') !== 'false',
+        rtlEnabled: params.get('rtl') === 'true',
+        groups: ['roomId'],
+        resources: [resource],
+      });
+    });
+  </script>
+</body>
+</html>

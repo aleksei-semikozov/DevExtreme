@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scheduler — дублирующиеся разделители в вертикальной панели групп</title>
+  <style>
+    :root { color-scheme: light; }
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+      background: #f5f5f5;
+      color: #222;
+    }
+    h1 { font-size: 20px; margin: 0 0 6px; }
+    p.lead { margin: 0 0 16px; max-width: 900px; line-height: 1.5; color: #444; }
+    .controls {
+      display: flex;
+      gap: 18px;
+      align-items: center;
+      flex-wrap: wrap;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin-bottom: 16px;
+    }
+    .controls label { font-size: 13px; display: flex; gap: 6px; align-items: center; }
+    select { font-size: 13px; padding: 3px 6px; }
+    .frames { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+    .pane { flex: 1 1 460px; min-width: 380px; background: #fff; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; }
+    .pane h2 { font-size: 14px; margin: 0; padding: 8px 12px; border-bottom: 1px solid #eee; background: #fafafa; }
+    .pane.before h2 { color: #b3261e; }
+    .pane.after h2 { color: #146c2e; }
+    iframe { width: 100%; height: 620px; border: 0; display: block; }
+    table.m { border-collapse: collapse; margin: 18px 0 0; background: #fff; font-size: 13px; }
+    table.m th, table.m td { border: 1px solid #ddd; padding: 5px 10px; text-align: left; }
+    table.m th { background: #fafafa; }
+    code { background: #eee; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h1>Scheduler: дублирующиеся разделители в вертикальной панели групп</h1>
+  <p class="lead">
+    Слева — CSS с базовой ветки <code>feature/scheduler-multilevel-grouping/main</code>, справа — с фиксом.
+    JS-бандл в обоих кадрах одинаковый, отличается только тема. Смотреть на <b>верхнюю кромку панели групп</b>:
+    до фикса там три наложенные линии (<code>sidebar-scrollable</code> + <code>work-space-vertical-group-table</code> +
+    <code>group-header</code>) — полоса заметно толще, чем над таблицей дат; после фикса линия одна, 1px,
+    и совпадает по толщине и по вертикали с линией над таблицей дат.
+  </p>
+
+  <div class="controls">
+    <label>Уровней группировки:
+      <select id="levels">
+        <option value="1">1 (плоская)</option>
+        <option value="2" selected>2 (Кабинет → Сотрудник)</option>
+        <option value="3">3 (Корпус → Этаж → Кабинет)</option>
+      </select>
+    </label>
+    <label>Вид:
+      <select id="view">
+        <option value="workWeek" selected>workWeek</option>
+        <option value="day">day</option>
+        <option value="week">week</option>
+        <option value="month">month</option>
+        <option value="timelineWeek">timelineWeek</option>
+      </select>
+    </label>
+    <label>Cross-scrolling:
+      <select id="crossScrolling">
+        <option value="true" selected>вкл</option>
+        <option value="false">выкл</option>
+      </select>
+    </label>
+    <label>RTL:
+      <select id="rtl">
+        <option value="false" selected>нет</option>
+        <option value="true">да</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="frames">
+    <div class="pane before">
+      <h2>До — CSS базовой ветки</h2>
+      <iframe id="f-before"></iframe>
+    </div>
+    <div class="pane after">
+      <h2>После — CSS с фиксом</h2>
+      <iframe id="f-after"></iframe>
+    </div>
+  </div>
+
+  <table class="m">
+    <tr><th></th><th>верх панели групп</th><th>граница между группами</th></tr>
+    <tr><td>до фикса</td><td>3px</td><td>1px</td></tr>
+    <tr><td>после фикса</td><td>1px</td><td>1px</td></tr>
+    <tr><td>таблица дат (не менялась)</td><td>1px</td><td>3px (2px + 1px)</td></tr>
+  </table>
+  <p class="lead" style="margin-top:10px">
+    Разной толщины на границе групп (последняя строка таблицы) этот фикс не трогает — это отдельное,
+    досуществующее расхождение, оно одинаково видно и при одном плоском ресурсе.
+  </p>
+
+  <script>
+    function refresh() {
+      var qs = new URLSearchParams({
+        levels: document.getElementById('levels').value,
+        view: document.getElementById('view').value,
+        crossScrolling: document.getElementById('crossScrolling').value,
+        rtl: document.getElementById('rtl').value,
+      });
+      document.getElementById('f-before').src = 'frame.html?css=before&' + qs.toString();
+      document.getElementById('f-after').src = 'frame.html?css=after&' + qs.toString();
+    }
+    ['levels', 'view', 'crossScrolling', 'rtl'].forEach(function (id) {
+      document.getElementById(id).addEventListener('change', refresh);
+    });
+    refresh();
+  </script>
+</body>
+</html>
