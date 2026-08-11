@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ревью PR 34713: иерархический ресурс вне groups и ленивая загрузка</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 16px;
+        font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        font-size: 14px;
+        line-height: 1.5;
+        color: #222;
+        background: #fff;
+      }
+
+      .page { max-width: 1500px; margin: 0 auto; }
+
+      h1 { font-size: 19px; margin: 0 0 12px; }
+      h2 { font-size: 16px; margin: 30px 0 8px; }
+      h3 { font-size: 14px; margin: 0 0 8px; }
+
+      .intro { max-width: 1050px; }
+      .intro ol { padding-left: 22px; margin: 8px 0; }
+
+      code {
+        background: #f2f2f2;
+        border-radius: 3px;
+        padding: 1px 4px;
+        font-size: 13px;
+      }
+
+      .cols {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        align-items: start;
+      }
+
+      @media (max-width: 1100px) {
+        .cols { grid-template-columns: 1fr; }
+      }
+
+      .panel {
+        border: 1px solid #d8d8d8;
+        border-radius: 6px;
+        padding: 10px;
+        background: #fcfcfc;
+      }
+
+      .panel.base { border-color: #5cb85c; }
+      .panel.head { border-color: #d9534f; }
+
+      .panel h3 span {
+        font-weight: normal;
+        color: #666;
+        font-size: 12px;
+      }
+
+      iframe {
+        width: 100%;
+        height: 560px;
+        border: 0;
+        background: #fff;
+      }
+
+      .verdict {
+        background: #fdecea;
+        border-left: 3px solid #d9534f;
+        padding: 8px 12px;
+        margin: 10px 0 0;
+        max-width: 1050px;
+      }
+
+      .note {
+        background: #fff8e1;
+        border-left: 3px solid #f0ad4e;
+        padding: 8px 12px;
+        margin: 16px 0;
+        max-width: 1050px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <h1>Ревью PR&nbsp;34713 — что задевает правка за пределами сгруппированного ресурса</h1>
+
+      <div class="intro">
+        <p>
+          Две колонки — <b>две разные сборки</b> одного и того же кода:
+          слева merge-base <code>74a1770</code> (до правки), справа head PR&nbsp;34713
+          <code>2cdc4e2</code>. Обе собраны из ветки
+          <code>feature/scheduler-multilevel-grouping</code>.
+        </p>
+        <p>
+          Основной сценарий фикса — ресурс, перечисленный в <code>groups</code> — работает верно
+          и здесь не оспаривается. Ниже два сценария, которые правка задевает непреднамеренно:
+          условие в <code>getResourceEditorDataSource</code> смотрит только на
+          <code>hasHierarchy</code> и ничего не знает ни про <code>groups</code>, ни про опции
+          исходного <code>dataSource</code>.
+        </p>
+      </div>
+
+      <h2>Сценарий 1. Иерархический ресурс, которого нет в <code>groups</code></h2>
+
+      <div class="intro">
+        <p>
+          <code>groups: ['ownerId']</code>; ресурс <code>roomId</code> с <code>parentIdExpr</code>
+          в группировке не участвует. Встреча «Совещание в Board rooms» назначена на
+          <b>родительский</b> узел <code>roomId: 'board'</code>.
+        </p>
+        <ol>
+          <li>Обратите внимание: встреча <b>отрисована в обеих колонках</b> — значение рабочее,
+            потому что по листьям фильтруются только ресурсы из <code>groups</code>
+            (<code>is_appointment_matched_resources.ts:19</code> получает лишь
+            <code>groupResources()</code>).</li>
+          <li>Откройте «Совещание в Board rooms» двойным щелчком и посмотрите на поле <b>Room</b>
+            и на строку состояния над расписанием.</li>
+        </ol>
+        <p>
+          <b>Ожидается:</b> поле Room показывает «🏢 Board rooms», родителя видно и можно выбрать.<br />
+          <b>Фактически справа:</b> поле Room <b>пустое</b>, «Board rooms» в списке нет — при том
+          что расписание это значение отображает.
+        </p>
+        <div class="verdict">
+          Чем хуже: у встречи, которая нормально живёт в расписании, форма показывает пустое поле
+          ресурса — пользователь видит «комната не назначена» и не может вернуть прежнее значение.
+        </div>
+      </div>
+
+      <div class="cols">
+        <div class="panel base">
+          <h3>merge-base 74a1770 <span>(до правки)</span></h3>
+          <iframe src="./frame.html?bundle=base&amp;case=1" title="случай 1, до правки"></iframe>
+        </div>
+        <div class="panel head">
+          <h3>head PR 34713 <span>(2cdc4e2)</span></h3>
+          <iframe src="./frame.html?bundle=fixed&amp;case=1" title="случай 1, после правки"></iframe>
+        </div>
+      </div>
+
+      <h2>Сценарий 2. Ленивый ресурс: теряются <code>filter</code> и <code>sort</code></h2>
+
+      <div class="intro">
+        <p>
+          Тот же ресурс вне <code>groups</code>, его <code>dataSource</code> задан объектом опций:
+          <code>{ store: rooms, filter: ['active', '=', true], sort: 'text' }</code>. Ни одна
+          встреча на <code>roomId</code> не ссылается, поэтому к моменту открытия формы ресурс
+          не загружен: Scheduler предзагружает только ресурсы из <code>groups</code>
+          (<code>scheduler.ts:484</code>), а <code>loadAppointmentsResources</code> — только те,
+          на которые ссылаются встречи. Форма идёт по ленивой ветке и пересобирает
+          <code>DataSource</code> из одного лишь <code>store()</code>.
+        </p>
+        <ol>
+          <li>Откройте «Встреча без комнаты» двойным щелчком.</li>
+          <li>Разверните список <b>Room</b> и сравните состав и порядок с левой колонкой.</li>
+        </ol>
+        <p>
+          <b>Ожидается:</b> только активные комнаты, отсортированные по названию.<br />
+          <b>Фактически справа:</b> в списке есть «Room 12 (архивная)», которую отсекал
+          <code>filter</code>, а порядок — как в сторе, без <code>sort</code>.
+        </p>
+        <div class="verdict">
+          Чем хуже: пользователь может выбрать ресурс, который разработчик намеренно скрыл
+          через <code>filter</code>; такое же расхождение получают <code>sort</code>,
+          <code>select</code>, <code>map</code> и <code>postProcess</code>. Причём тот же ресурс
+          после загрузки (ветка <code>leafData</code>) отдаёт уже отфильтрованный список — состав
+          списка зависит от тайминга.
+        </div>
+      </div>
+
+      <div class="cols">
+        <div class="panel base">
+          <h3>merge-base 74a1770 <span>(до правки)</span></h3>
+          <iframe src="./frame.html?bundle=base&amp;case=2" title="случай 2, до правки"></iframe>
+        </div>
+        <div class="panel head">
+          <h3>head PR 34713 <span>(2cdc4e2)</span></h3>
+          <iframe src="./frame.html?bundle=fixed&amp;case=2" title="случай 2, после правки"></iframe>
+        </div>
+      </div>
+
+      <div class="note">
+        Jest-репро обоих сценариев падает на head PR и проходит на merge-base:
+        <code>js/__internal/scheduler/appointment_popup/dxreview_34713.test.ts</code>
+        (в ревью-worktree, в PR не коммитился).
+      </div>
+    </div>
+  </body>
+</html>

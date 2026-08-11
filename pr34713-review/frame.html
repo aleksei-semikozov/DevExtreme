@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>frame</title>
+    <link rel="stylesheet" href="../scheduler-multilevel-grouping/fixed/css/dx.fluent.blue.light.css" />
+    <style>
+      body {
+        margin: 0;
+        padding: 8px;
+        font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        font-size: 13px;
+      }
+
+      .status {
+        white-space: pre-wrap;
+        font-family: 'SF Mono', Menlo, Consolas, monospace;
+        font-size: 12px;
+        background: #f7f7f7;
+        border-radius: 4px;
+        padding: 8px;
+        margin-bottom: 8px;
+        min-height: 52px;
+      }
+
+      .status.bad { background: #fdecea; }
+      .status.good { background: #eef8ee; }
+    </style>
+    <script>
+      var bundleParams = new URLSearchParams(location.search);
+      var bundle = bundleParams.get('bundle') === 'base' ? 'base' : 'fixed';
+      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"><\/script>');
+      document.write('<script src="./' + bundle + '/dx.all.js"><\/script>');
+    </script>
+  </head>
+  <body>
+    <div class="status" id="status">…</div>
+    <div id="scheduler"></div>
+    <script src="./frame.js"></script>
+  </body>
+</html>
