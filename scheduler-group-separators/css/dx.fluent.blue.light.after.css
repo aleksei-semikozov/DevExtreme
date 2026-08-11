@@ -19940,6 +19940,7 @@ td[style*="text-align: right"] .dx-command-ai-header-button {
 .dx-scheduler-work-space-vertical-grouped .dx-scheduler-work-space-vertical-group-table {
   height: 100%;
   min-height: 100px;
+  border-top: 1px solid #e0e0e0;
   border-spacing: 0;
   display: flex;
   flex-flow: column nowrap;
