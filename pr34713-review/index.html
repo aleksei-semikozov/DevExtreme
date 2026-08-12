@@ -192,7 +192,7 @@
           <h4>head 2cdc4e2 — добавлен <code>getResourceEditorDataSource</code></h4>
 <pre><code><span class="add">const getResourceEditorDataSource = (</span>
 <span class="add">  resourceLoader: ResourceLoader,</span>
-<span class="add">) =&gt; {</span>
+<span class="add">): ResourceLoader['dataSource'] | RawResourceData[] | DataSourceOptions&lt;RawResourceData&gt; =&gt; {</span>
 <span class="add">  if (!resourceLoader.hasHierarchy) {      // ← только hasHierarchy,</span>
 <span class="add">    return resourceLoader.dataSource;      //   про groups здесь ничего нет</span>
 <span class="add">  }</span>
