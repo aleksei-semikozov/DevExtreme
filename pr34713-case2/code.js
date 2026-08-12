@@ -1,6 +1,4 @@
-window.DEMO_CODE = {};
-
-window.DEMO_CODE.fail = `const rooms = [
+window.DEMO_CODE = `const rooms = [
   { id: 'board', text: 'Board rooms', active: true },
   { id: 12, text: 'Room 12 (архивная)', parentId: 'board', active: false },
   { id: 11, text: 'Room 11', parentId: 'board', active: true },
@@ -51,8 +49,3 @@ $('#scheduler').dxScheduler({
     setTimeout(() => e.component.showAppointmentPopup(appointment));
   },
 });`;
-
-window.DEMO_CODE.pass = window.DEMO_CODE.fail.replace(
-  "  ownerId: 1,\n",
-  '  ownerId: 1,\n  roomId: 11,\n',
-);

@@ -1,5 +1,3 @@
-const variant = new URLSearchParams(location.search).get('v') === 'pass' ? 'pass' : 'fail';
-
 const getRoomEditor = () => {
   const $form = $('.dx-scheduler-appointment-popup .dx-form').first();
   if (!$form.length) {
@@ -51,7 +49,7 @@ const showState = () => {
 };
 
 // eslint-disable-next-line no-new-func
-new Function('$', window.DEMO_CODE[variant])(jQuery);
+new Function('$', window.DEMO_CODE)(jQuery);
 
 setTimeout(showState, 1200);
 setTimeout(showState, 2800);

@@ -49,6 +49,13 @@
       .panel.fail h3 { color: #b02a25; }
       .panel.pass h3 { color: #3d8b3d; }
 
+      .panel h3 span {
+        font-weight: normal;
+        color: #666;
+        font-family: 'SF Mono', Menlo, Consolas, monospace;
+        font-size: 12px;
+      }
+
       iframe {
         width: 100%;
         height: 560px;
@@ -56,7 +63,7 @@
         background: #fff;
       }
 
-      .codewrap { position: relative; margin-top: 6px; }
+      .codewrap { position: relative; }
 
       pre {
         background: #f7f7f8;
@@ -92,44 +99,35 @@
 
       <div class="cols">
         <div class="panel fail">
-          <h3>не проходит — встреча без roomId</h3>
-          <iframe src="./frame.html?v=fail" title="не проходит"></iframe>
+          <h3>не проходит — <span>head PR 34713, 2cdc4e2</span></h3>
+          <iframe src="./frame.html?b=fixed" title="head PR"></iframe>
         </div>
         <div class="panel pass">
-          <h3>проходит — встреча с roomId: 11</h3>
-          <iframe src="./frame.html?v=pass" title="проходит"></iframe>
+          <h3>проходит — <span>merge-base 74a1770</span></h3>
+          <iframe src="./frame.html?b=base" title="merge-base"></iframe>
         </div>
       </div>
 
-      <h2>не проходит</h2>
+      <h2>код демки</h2>
       <div class="codewrap">
-        <button class="copy" data-target="code-fail">Копировать</button>
-        <pre><code id="code-fail"></code></pre>
-      </div>
-
-      <h2>проходит</h2>
-      <div class="codewrap">
-        <button class="copy" data-target="code-pass">Копировать</button>
-        <pre><code id="code-pass"></code></pre>
+        <button class="copy" id="copy">Копировать</button>
+        <pre><code id="code"></code></pre>
       </div>
     </div>
 
     <script src="./code.js"></script>
     <script>
-      document.getElementById('code-fail').textContent = window.DEMO_CODE.fail;
-      document.getElementById('code-pass').textContent = window.DEMO_CODE.pass;
+      document.getElementById('code').textContent = window.DEMO_CODE;
 
-      document.querySelectorAll('.copy').forEach((button) => {
-        button.addEventListener('click', () => {
-          const text = document.getElementById(button.dataset.target).textContent;
-          navigator.clipboard.writeText(text).then(
-            () => {
-              button.textContent = 'Скопировано';
-              setTimeout(() => { button.textContent = 'Копировать'; }, 1500);
-            },
-            () => { button.textContent = 'Не вышло'; },
-          );
-        });
+      document.getElementById('copy').addEventListener('click', () => {
+        const button = document.getElementById('copy');
+        navigator.clipboard.writeText(window.DEMO_CODE).then(
+          () => {
+            button.textContent = 'Скопировано';
+            setTimeout(() => { button.textContent = 'Копировать'; }, 1500);
+          },
+          () => { button.textContent = 'Не вышло'; },
+        );
       });
     </script>
   </body>

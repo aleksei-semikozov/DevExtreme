@@ -25,13 +25,16 @@
       #state.bad { background: #fdecea; }
       #state.good { background: #eef8ee; }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-    <script src="../pr34713-review/fixed/dx.all.js"></script>
-    <script src="./code.js"></script>
+    <script>
+      var bundle = new URLSearchParams(location.search).get('b') === 'base' ? 'base' : 'fixed';
+      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"><\/script>');
+      document.write('<script src="../pr34713-review/' + bundle + '/dx.all.js"><\/script>');
+    </script>
   </head>
   <body>
     <div id="state">…</div>
     <div id="scheduler"></div>
+    <script src="./code.js"></script>
     <script src="./runner.js"></script>
   </body>
 </html>
