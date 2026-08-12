@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <title>frame</title>
+    <link rel="stylesheet" href="../scheduler-multilevel-grouping/fixed/css/dx.fluent.blue.light.css" />
+    <style>
+      body {
+        margin: 0;
+        padding: 8px;
+        font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        font-size: 13px;
+      }
+
+      #state {
+        font-family: 'SF Mono', Menlo, Consolas, monospace;
+        font-size: 12px;
+        background: #f7f7f7;
+        border-radius: 4px;
+        padding: 7px 9px;
+        margin-bottom: 8px;
+        white-space: pre-wrap;
+      }
+
+      #state.bad { background: #fdecea; }
+      #state.good { background: #eef8ee; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="../pr34713-review/fixed/dx.all.js"></script>
+    <script src="./code.js"></script>
+  </head>
+  <body>
+    <div id="state">…</div>
+    <div id="scheduler"></div>
+    <script src="./runner.js"></script>
+  </body>
+</html>
