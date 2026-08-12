@@ -2,7 +2,7 @@
 /**
 * DevExtreme (dx.fluent.blue.light.css)
 * Version: 26.2.0
-* Build date: Mon Aug 10 2026
+* Build date: Wed Aug 12 2026
 *
 * Copyright (c) 2012 - 2026 Developer Express Inc. ALL RIGHTS RESERVED
 * Read about DevExtreme licensing here: https://js.devexpress.com/Licensing/
@@ -19621,14 +19621,14 @@ td[style*="text-align: right"] .dx-command-ai-header-button {
   border-right: 1px solid #e0e0e0;
 }
 .dx-scheduler-group-flex-container > .dx-scheduler-group-row:first-child > .dx-scheduler-group-header:first-child {
-  border-top: none;
+  border-top-color: transparent;
 }
 .dx-scheduler-group-flex-container .dx-scheduler-group-row:not(:first-child) .dx-scheduler-group-row:first-child > .dx-scheduler-group-header:first-child {
-  border-top: 1px solid #e0e0e0;
+  border-top-color: #e0e0e0;
 }
 .dx-scheduler-group-table > .dx-scheduler-group-flex-container:not(.dx-scheduler-group-flex-container-hierarchical) > .dx-scheduler-group-row > .dx-scheduler-group-header:first-child,
 .dx-scheduler-work-space-vertical-group-table > .dx-scheduler-group-flex-container:not(.dx-scheduler-group-flex-container-hierarchical) > .dx-scheduler-group-row > .dx-scheduler-group-header:first-child {
-  border-top: none;
+  border-top-color: transparent;
 }
 .dx-scheduler-group-flex-container-hierarchical {
   flex-direction: column;
