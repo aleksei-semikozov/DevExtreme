@@ -80,6 +80,70 @@
         margin: 16px 0;
         max-width: 1050px;
       }
+
+      pre {
+        background: #f7f7f8;
+        border: 1px solid #e2e2e4;
+        border-radius: 5px;
+        padding: 10px 12px;
+        overflow-x: auto;
+        font-family: 'SF Mono', Menlo, Consolas, monospace;
+        font-size: 12.5px;
+        line-height: 1.45;
+        margin: 0;
+      }
+
+      pre code {
+        background: none;
+        padding: 0;
+        font-size: inherit;
+      }
+
+      pre .add { background: #e4f5e4; display: block; }
+      pre .del { background: #fce8e6; display: block; }
+      pre .cmt { color: #7a7a7a; }
+      pre .hl { background: #fff3c4; display: block; }
+
+      details {
+        border: 1px solid #e2e2e4;
+        border-radius: 5px;
+        padding: 8px 12px;
+        margin: 10px 0;
+        background: #fcfcfc;
+      }
+
+      details > summary {
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 13px;
+      }
+
+      details[open] > summary { margin-bottom: 8px; }
+
+      .codecols {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        align-items: start;
+      }
+
+      @media (max-width: 1100px) {
+        .codecols { grid-template-columns: 1fr; }
+      }
+
+      .codecols h4 {
+        font-size: 12px;
+        margin: 0 0 6px;
+        color: #555;
+        font-weight: 600;
+      }
+
+      .filepath {
+        font-family: 'SF Mono', Menlo, Consolas, monospace;
+        font-size: 12px;
+        color: #666;
+        margin: 14px 0 4px;
+      }
     </style>
   </head>
   <body>
@@ -99,6 +163,72 @@
           условие в <code>getResourceEditorDataSource</code> смотрит только на
           <code>hasHierarchy</code> и ничего не знает ни про <code>groups</code>, ни про опции
           исходного <code>dataSource</code>.
+        </p>
+      </div>
+
+      <h2>Что именно делает правка</h2>
+
+      <div class="intro">
+        <p class="filepath">packages/devextreme/js/__internal/scheduler/appointment_popup/form.ts</p>
+      </div>
+
+      <div class="codecols">
+        <div>
+          <h4>merge-base 74a1770 — редактор получал dataSource ресурса как есть</h4>
+<pre><code>private createResourcesGroup(): GroupItem {
+  const resourceById = Object.values(this.config.resourceManager.resourceById);
+  const resourcesLoaders: ResourceLoader[] = resourceById;
+
+  let resourcesItems: FormItem[] = resourcesLoaders.map((resourceLoader) =&gt; {
+<span class="hl">    const { dataSource, dataAccessor } = resourceLoader;</span>
+    ...
+      editorOptions: {
+<span class="hl">        dataSource,</span>
+        displayExpr: dataAccessor.textExpr,
+        valueExpr: dataAccessor.idExpr,
+      },</code></pre>
+        </div>
+        <div>
+          <h4>head 2cdc4e2 — добавлен <code>getResourceEditorDataSource</code></h4>
+<pre><code><span class="add">const getResourceEditorDataSource = (</span>
+<span class="add">  resourceLoader: ResourceLoader,</span>
+<span class="add">) =&gt; {</span>
+<span class="add">  if (!resourceLoader.hasHierarchy) {      // ← только hasHierarchy,</span>
+<span class="add">    return resourceLoader.dataSource;      //   про groups здесь ничего нет</span>
+<span class="add">  }</span>
+<span class="add"></span>
+<span class="add">  return resourceLoader.isLoaded()</span>
+<span class="add">    ? resourceLoader.leafData               // ← ветка A: загружен</span>
+<span class="add">    : {                                     // ← ветка B: ленивая</span>
+<span class="add">      store: resourceLoader.dataSource?.store(),   // filter/sort/map/select</span>
+<span class="add">      postProcess: (data) =&gt; resourceLoader         // остались в DataSource</span>
+<span class="add">        .collectLeafData(data),                    // и потерялись здесь</span>
+<span class="add">      paginate: false,</span>
+<span class="add">    };</span>
+<span class="add">};</span></code></pre>
+        </div>
+      </div>
+
+      <div class="intro">
+        <p>
+          Инвариант, из которого исходит правка, на самом деле уже́ ограничен ресурсами из
+          <code>groups</code> — сюда приходит только <code>resourceManager.groupResources()</code>:
+        </p>
+        <p class="filepath">…/view_model/filtration/utils/filter_by_attributes/is_appointment_matched_resources.ts</p>
+<pre><code>export const isAppointmentMatchedResources = (
+  appointment: SafeAppointment,
+<span class="hl">  groupsResources: ResourceLoader[],   // ← только ресурсы из groups</span>
+): boolean =&gt; {
+  ...
+  return groupsResources.every((resource) =&gt; {
+    const value = appointmentGroupValues[resource.resourceIndex];
+<span class="hl">    const validItems = resource.hasHierarchy ? resource.leafItems : resource.items;</span>
+    return value?.some((id) =&gt; validItems.some((item) =&gt; equalByValue(id, item.id)));
+  });
+};</code></pre>
+        <p>
+          Значит для ресурса <b>вне</b> <code>groups</code> родительское значение никем не
+          отбрасывается — встреча рисуется, и урезать редактор до листьев не требуется.
         </p>
       </div>
 
@@ -127,6 +257,35 @@
           Чем хуже: у встречи, которая нормально живёт в расписании, форма показывает пустое поле
           ресурса — пользователь видит «комната не назначена» и не может вернуть прежнее значение.
         </div>
+
+        <details open>
+          <summary>Код сценария 1 (ровно то, что выполняется в обоих iframe)</summary>
+<pre><code>const ROOMS = [
+  { id: 'board', text: '🏢 Board rooms' },              <span class="cmt">// родитель</span>
+  { id: 11, text: 'Room 11', parentId: 'board' },
+  { id: 12, text: 'Room 12', parentId: 'board' },
+  { id: 21, text: 'Room 21' },
+];
+
+$('#scheduler').dxScheduler({
+  views: ['day'], currentView: 'day', currentDate: new Date(2026, 7, 12),
+  startDayHour: 9, endDayHour: 16,
+  dataSource: [
+<span class="hl">    { text: 'Совещание в Board rooms', ownerId: 1, roomId: 'board', ... },  // ← родитель</span>
+    { text: 'Планёрка в Room 11',       ownerId: 2, roomId: 11,      ... },
+  ],
+<span class="hl">  groups: ['ownerId'],                 // ← roomId в группировке НЕ участвует</span>
+  resources: [
+    { fieldExpr: 'ownerId', dataSource: OWNERS, label: 'Owner' },
+    {
+      fieldExpr: 'roomId',
+<span class="hl">      parentIdExpr: 'parentId',        // ← иерархия есть, но группировки по ней нет</span>
+      dataSource: ROOMS,
+      label: 'Room',
+    },
+  ],
+});</code></pre>
+        </details>
       </div>
 
       <div class="cols">
@@ -168,6 +327,40 @@
           после загрузки (ветка <code>leafData</code>) отдаёт уже отфильтрованный список — состав
           списка зависит от тайминга.
         </div>
+
+        <details open>
+          <summary>Код сценария 2 (ровно то, что выполняется в обоих iframe)</summary>
+<pre><code>const LAZY_ROOMS = [
+  { id: 'board', text: '🏢 Board rooms', active: true },
+<span class="hl">  { id: 12, text: 'Room 12 (архивная)', parentId: 'board', active: false },  // ← отсекается filter</span>
+  { id: 11, text: 'Room 11', parentId: 'board', active: true },
+  { id: 21, text: 'Room 21', active: true },
+];
+
+const roomDataSourceConfig = {
+  store: LAZY_ROOMS,
+<span class="hl">  filter: ['active', '=', true],   // ← обе опции живут в DataSource,</span>
+<span class="hl">  sort: 'text',                    //   а не в store — их и теряет правка</span>
+  paginate: false,
+};
+
+$('#scheduler').dxScheduler({
+  ...
+  dataSource: [
+<span class="hl">    { text: 'Встреча без комнаты', ownerId: 1, ... },  // ← roomId не задан ни у одной встречи,</span>
+  ],                                                   //   поэтому ресурс не грузится заранее
+  groups: ['ownerId'],
+  resources: [
+    { fieldExpr: 'ownerId', dataSource: OWNERS, label: 'Owner' },
+    {
+      fieldExpr: 'roomId',
+      parentIdExpr: 'parentId',
+      dataSource: roomDataSourceConfig,
+      label: 'Room',
+    },
+  ],
+});</code></pre>
+        </details>
       </div>
 
       <div class="cols">
@@ -181,10 +374,65 @@
         </div>
       </div>
 
-      <div class="note">
-        Jest-репро обоих сценариев падает на head PR и проходит на merge-base:
-        <code>js/__internal/scheduler/appointment_popup/dxreview_34713.test.ts</code>
-        (в ревью-worktree, в PR не коммитился).
+      <h2>Jest-репро</h2>
+
+      <div class="intro">
+        <p>
+          <code>js/__internal/scheduler/appointment_popup/dxreview_34713.test.ts</code> —
+          три теста падают на head PR и проходят на merge-base <code>74a1770</code>
+          (в PR не коммитился, лежит в ревью-worktree).
+        </p>
+        <details>
+          <summary>Показать тесты</summary>
+<pre><code>it('A1: non-grouped hierarchical resource keeps a parent value displayable', async () =&gt; {
+  const { POM } = await createAppointmentPopup({
+    appointmentData: { text: 'App', startDate: ..., endDate: ..., roomId: 'board' },
+    resources: [{ fieldExpr: 'roomId', parentIdExpr: 'parentId', dataSource: rooms }],
+  });
+
+  const editor = POM.dxForm.getEditor('roomId');
+
+  expect(editor?.option('value')).toBe('board');
+<span class="hl">  expect(editor?.option('text')).toBe('Board rooms');   // head: '' </span>
+});
+
+it('A2: lazy hierarchical resource keeps the dataSource filter', async () =&gt; {
+  const { POM } = await createAppointmentPopup({
+<span class="hl">    preloadResources: false,                            // ресурс ещё не загружен</span>
+    appointmentData: { ..., roomId: 11 },
+    resources: [{
+      fieldExpr: 'roomId',
+      parentIdExpr: 'parentId',
+      dataSource: {
+        store: [
+          { id: 'board', text: 'Board rooms', active: true },
+          { id: 11, text: 'Room 11', parentId: 'board', active: true },
+          { id: 12, text: 'Room 12 (archived)', parentId: 'board', active: false },
+        ],
+        filter: ['active', '=', true],
+      },
+    }],
+  });
+
+  const editorDataSource = POM.dxForm.getEditor('roomId').getDataSource();
+  await editorDataSource.load();
+
+  const texts = editorDataSource.items().map((item) =&gt; item.text);
+
+<span class="hl">  expect(texts).not.toContain('Room 12 (archived)');   // head: запись в списке есть</span>
+});
+
+it('A2b: lazy hierarchical resource keeps the dataSource map', async () =&gt; {
+  <span class="cmt">// dataSource: { store: [{ id, title, pid }], map: (item) =&gt; ({ id, text, parentId }) }</span>
+  <span class="cmt">// postProcess получает НЕмапленные записи → text/parentId не читаются</span>
+<span class="hl">  expect(texts).toContain('Room 11');                  // head: [undefined, undefined, undefined]</span>
+});</code></pre>
+        </details>
+        <p>
+          Полный код этой страницы:
+          <a href="./frame.js">frame.js</a> (конфигурации сценариев и замеры),
+          <a href="./frame.html">frame.html</a> (выбор бандла по <code>?bundle=base|fixed</code>).
+        </p>
       </div>
     </div>
   </body>
