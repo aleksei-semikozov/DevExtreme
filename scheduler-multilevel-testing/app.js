@@ -346,7 +346,14 @@
 
     var truncated = [];
     Array.prototype.forEach.call(headers, function (cell) {
-      var content = cell.querySelector('.dx-scheduler-group-header-content') || cell;
+      // Многоточие живёт на самом глубоком элементе ячейки, а не на её обёртке.
+      var content = cell;
+
+      Array.prototype.forEach.call(cell.querySelectorAll('*'), function (node) {
+        if (node.scrollWidth > node.clientWidth + 1 || node.scrollHeight > node.clientHeight + 1) {
+          content = node;
+        }
+      });
 
       if (content.scrollWidth > content.clientWidth + 1 || content.scrollHeight > content.clientHeight + 1) {
         truncated.push({

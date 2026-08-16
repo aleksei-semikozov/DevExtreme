@@ -218,6 +218,59 @@
   });
 
   add({
+    id: 'data-form-parent-loss',
+    section: '8. Кривые данные',
+    title: 'Форма предлагает родителей → встреча пропадает',
+    tags: ['форма', 'потеря данных', 'риск'],
+    goal: 'Дефолтный редактор ресурса показывает все узлы дерева, включая Building и Floor. '
+      + 'Выбор родителя сохраняется в данные, но такая встреча не рисуется ни в одной группе.',
+    steps: [
+      'Открыть любую встречу двойным кликом и раскрыть список ресурса Room.',
+      'Убедиться, что в списке есть <b>Building A</b>, <b>Floor 1</b>, <b>Floor 2</b>, <b>Building B</b> — не только комнаты.',
+      'Выбрать <b>Building A</b> вместо комнаты и сохранить.',
+      'Посмотреть на сетку: встреча исчезла. Нажать <b>показать данные</b> — запись всё ещё в источнике, с id родителя.',
+      'Попробовать вернуть встречу через интерфейс: её больше не видно и открыть её нечем.',
+    ],
+    expect: 'В списке ресурса должны предлагаться только листья, либо выбор родителя должен быть осмысленно '
+      + 'обработан. Текущее поведение — молчаливая потеря встречи из интерфейса.',
+    fn: function (H, LAB) {
+      return H.base({
+        views: [{ type: 'week', groupOrientation: 'horizontal' }],
+        currentView: 'week',
+        dataSource: H.appts('roomId', H.leafIds(H.tree3)),
+        groups: ['roomId'],
+        resources: [{
+          fieldExpr: 'roomId', dataSource: H.tree3, parentIdExpr: 'parentId', label: 'Room', allowMultiple: true,
+        }],
+        onAppointmentUpdated: function (e) {
+          LAB.log('сохранено: roomId =', e.appointmentData.roomId);
+        },
+        toolbar: {
+          items: [
+            'dateNavigator',
+            {
+              widget: 'dxButton',
+              location: 'after',
+              options: {
+                text: 'показать данные',
+                onClick: function () {
+                  var source = LAB.scheduler().option('dataSource');
+
+                  LAB.log('в источнике записей:', source.length,
+                    '| в сетке встреч:', document.querySelectorAll('#scheduler .dx-scheduler-appointment').length);
+                  source.forEach(function (item) {
+                    LAB.log('   ', item.text, '→ roomId =', item.roomId);
+                  });
+                },
+              },
+            },
+          ],
+        },
+      });
+    },
+  });
+
+  add({
     id: 'data-multiple-branches',
     section: '8. Кривые данные',
     title: 'allowMultiple: одна встреча в листьях разных ветвей',
@@ -567,23 +620,25 @@
         resources: [{
           fieldExpr: 'roomId', dataSource: store, parentIdExpr: 'parentId', label: 'Room', allowMultiple: true,
         }],
-        toolbar: [
-          'viewSwitcher',
-          'dateNavigator',
-          {
-            widget: 'dxButton',
-            location: 'after',
-            options: {
-              text: 'перезагрузить ресурсы',
-              onClick: function () {
-                LAB.scheduler().option('resources', [{
-                  fieldExpr: 'roomId', dataSource: store, parentIdExpr: 'parentId', label: 'Room', allowMultiple: true,
-                }]);
-                setTimeout(LAB.diagnose, 1200);
+        toolbar: {
+          items: [
+            'viewSwitcher',
+            'dateNavigator',
+            {
+              widget: 'dxButton',
+              location: 'after',
+              options: {
+                text: 'перезагрузить ресурсы',
+                onClick: function () {
+                  LAB.scheduler().option('resources', [{
+                    fieldExpr: 'roomId', dataSource: store, parentIdExpr: 'parentId', label: 'Room', allowMultiple: true,
+                  }]);
+                  setTimeout(LAB.diagnose, 1200);
+                },
               },
             },
-          },
-        ],
+          ],
+        },
       });
     },
   });
@@ -672,19 +727,21 @@
         dataSource: H.appts('roomId', H.leafIds(H.tree3)),
         groups: ['roomId'],
         resources: [hierarchical],
-        toolbar: [
-          'dateNavigator',
-          button('убрать parentIdExpr', function (s) { s.option('resources', [flatResource]); }),
-          button('вернуть иерархию', function (s) { s.option('resources', [hierarchical]); }),
-          button('groups = []', function (s) { s.option('groups', []); }),
-          button('groups = [roomId]', function (s) { s.option('groups', ['roomId']); }),
-          button('другое дерево', function (s) {
-            s.option('resources', [{
-              fieldExpr: 'roomId', dataSource: H.tree2, parentIdExpr: 'parentId', label: 'Room', allowMultiple: true,
-            }]);
-            s.option('dataSource', H.appts('roomId', H.leafIds(H.tree2)));
-          }),
-        ],
+        toolbar: {
+          items: [
+            'dateNavigator',
+            button('убрать parentIdExpr', function (s) { s.option('resources', [flatResource]); }),
+            button('вернуть иерархию', function (s) { s.option('resources', [hierarchical]); }),
+            button('groups = []', function (s) { s.option('groups', []); }),
+            button('groups = [roomId]', function (s) { s.option('groups', ['roomId']); }),
+            button('другое дерево', function (s) {
+              s.option('resources', [{
+                fieldExpr: 'roomId', dataSource: H.tree2, parentIdExpr: 'parentId', label: 'Room', allowMultiple: true,
+              }]);
+              s.option('dataSource', H.appts('roomId', H.leafIds(H.tree2)));
+            }),
+          ],
+        },
       });
     },
   });
@@ -1008,36 +1065,39 @@
         resources: [{
           fieldExpr: 'roomId', dataSource: tree, parentIdExpr: 'parentId', label: 'Room', allowMultiple: true,
         }],
-        toolbar: [
-          'dateNavigator',
-          {
-            widget: 'dxButton',
-            location: 'after',
-            options: {
-              text: 'crossScrolling: on',
-              onClick: function () {
-                LAB.scheduler().option('crossScrollingEnabled', true);
-                setTimeout(LAB.diagnose, 500);
+        toolbar: {
+          items: [
+            'dateNavigator',
+            {
+              widget: 'dxButton',
+              location: 'after',
+              options: {
+                text: 'crossScrolling: on',
+                onClick: function () {
+                  LAB.scheduler().option('crossScrollingEnabled', true);
+                  setTimeout(LAB.diagnose, 500);
+                },
               },
             },
-          },
-          {
-            widget: 'dxButton',
-            location: 'after',
-            options: {
-              text: 'плоские ресурсы',
-              onClick: function () {
-                LAB.scheduler().option('resources', [{
-                  fieldExpr: 'roomId',
-                  dataSource: tree.filter(function (item) { return typeof item.id === 'number'; }),
-                  label: 'Room',
-                  allowMultiple: true,
-                }]);
-                setTimeout(LAB.diagnose, 500);
+            {
+              widget: 'dxButton',
+              location: 'after',
+              options: {
+                text: 'плоские ресурсы (crossScrolling off)',
+                onClick: function () {
+                  LAB.scheduler().option('crossScrollingEnabled', false);
+                  LAB.scheduler().option('resources', [{
+                    fieldExpr: 'roomId',
+                    dataSource: tree.filter(function (item) { return typeof item.id === 'number'; }),
+                    label: 'Room',
+                    allowMultiple: true,
+                  }]);
+                  setTimeout(LAB.diagnose, 500);
+                },
               },
             },
-          },
-        ],
+          ],
+        },
       });
     },
   });

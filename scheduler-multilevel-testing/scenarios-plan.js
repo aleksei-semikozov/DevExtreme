@@ -174,23 +174,25 @@
         resources: [{
           fieldExpr: 'roomId', dataSource: H.tree3, parentIdExpr: 'parentId', label: 'Room', allowMultiple: true,
         }],
-        toolbar: [
-          'viewSwitcher',
-          'dateNavigator',
-          {
-            widget: 'dxButton',
-            location: 'after',
-            options: {
-              text: 'horizontal ⇄ vertical',
-              onClick: function () {
-                orientation = orientation === 'horizontal' ? 'vertical' : 'horizontal';
-                LAB.scheduler().option('views', [{ type: 'week', groupOrientation: orientation }]);
-                LAB.log('groupOrientation =', orientation);
-                setTimeout(LAB.diagnose, 300);
+        toolbar: {
+          items: [
+            'viewSwitcher',
+            'dateNavigator',
+            {
+              widget: 'dxButton',
+              location: 'after',
+              options: {
+                text: 'horizontal ⇄ vertical',
+                onClick: function () {
+                  orientation = orientation === 'horizontal' ? 'vertical' : 'horizontal';
+                  LAB.scheduler().option('views', [{ type: 'week', groupOrientation: orientation }]);
+                  LAB.log('groupOrientation =', orientation);
+                  setTimeout(LAB.diagnose, 300);
+                },
               },
             },
-          },
-        ],
+          ],
+        },
       });
     },
   });
@@ -359,6 +361,7 @@
       + 'текст обрезается многоточием, а не ломает вёрстку сетки.',
     fn: function (H) {
       return H.base({
+        width: 760,
         views: [{ type: 'week', groupOrientation: 'horizontal' }],
         currentView: 'week',
         dataSource: H.appts('roomId', H.leafIds(H.treeLongNames)),
@@ -384,6 +387,7 @@
     expect: 'В иерархической вертикальной панели у заголовков есть <code>title</code> и <code>aria-label</code>.',
     fn: function (H) {
       return H.base({
+        width: 760,
         views: [{ type: 'week', groupOrientation: 'vertical' }],
         currentView: 'week',
         dataSource: H.appts('roomId', H.leafIds(H.treeLongNames)),
@@ -440,7 +444,8 @@
       'В логе под сеткой смотреть, что реально пришло в <code>onAppointmentFormOpening</code>.',
     ],
     expect: 'Ресурс предзаполнен id листа (не родителя); '
-      + 'в выпадающем списке ресурса перечислены только листья, без Building/Floor.',
+      + 'в выпадающем списке ресурса перечислены только листья, без Building/Floor. '
+      + '<b>Проверено: список отдаёт и родителей</b> — см. сценарий «Форма предлагает родителей → встреча пропадает».',
     fn: function (H, LAB) {
       return H.base({
         views: [{ type: 'week', groupOrientation: 'horizontal' }],
@@ -473,7 +478,8 @@
       'Открыть встречу снова и убедиться, что значение сохранилось.',
     ],
     expect: 'В редакторе ресурса нет родительских узлов (Building/Floor); '
-      + 'после сохранения встреча стоит в выбранной группе, и повторное открытие показывает то же значение.',
+      + 'после сохранения встреча стоит в выбранной группе, и повторное открытие показывает то же значение. '
+      + '<b>Проверено: родители в списке есть</b>, а выбор родителя убирает встречу из сетки.',
     fn: function (H, LAB) {
       return H.base({
         views: [{ type: 'week', groupOrientation: 'horizontal' }],
@@ -555,20 +561,22 @@
         resources: [{
           fieldExpr: 'roomId', dataSource: H.treeWide, parentIdExpr: 'parentId', label: 'Room', allowMultiple: true,
         }],
-        toolbar: [
-          'viewSwitcher',
-          'dateNavigator',
-          { widget: 'dxButton', location: 'after', options: { text: 'scrollTo Room 313', onClick: scrollTo(313) } },
-          { widget: 'dxButton', location: 'after', options: { text: 'scrollTo Room 111', onClick: scrollTo(111) } },
-          {
-            widget: 'dxButton',
-            location: 'after',
-            options: {
-              text: 'scrollToTime 18:00',
-              onClick: function () { LAB.scheduler().scrollToTime(18, 0, H.at(2, 0)); },
+        toolbar: {
+          items: [
+            'viewSwitcher',
+            'dateNavigator',
+            { widget: 'dxButton', location: 'after', options: { text: 'scrollTo Room 313', onClick: scrollTo(313) } },
+            { widget: 'dxButton', location: 'after', options: { text: 'scrollTo Room 111', onClick: scrollTo(111) } },
+            {
+              widget: 'dxButton',
+              location: 'after',
+              options: {
+                text: 'scrollToTime 18:00',
+                onClick: function () { LAB.scheduler().scrollToTime(18, 0, H.at(2, 0)); },
+              },
             },
-          },
-        ],
+          ],
+        },
       });
     },
   });
