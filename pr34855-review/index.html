@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PR 34855 — ресайз all-day встреч</title>
+  <style>
+    :root { color-scheme: light; }
+    body { margin: 0; font-family: -apple-system, "Segoe UI", Roboto, sans-serif; color: #1a1a1a; background: #f5f6f8; }
+    header { background: #fff; border-bottom: 1px solid #e0e2e6; padding: 20px 24px; }
+    h1 { margin: 0 0 6px; font-size: 20px; }
+    .meta { font-size: 13px; color: #666; }
+    .meta a { color: #0a67c2; }
+    main { padding: 20px 24px 60px; max-width: 1600px; margin: 0 auto; }
+    .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .tabs button { border: 1px solid #cbd0d6; background: #fff; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+    .tabs button.active { background: #0a67c2; border-color: #0a67c2; color: #fff; }
+    .desc { background: #fff; border: 1px solid #e0e2e6; border-radius: 8px; padding: 14px 16px; margin-bottom: 16px; font-size: 14px; line-height: 1.55; }
+    .desc b { color: #000; }
+    .desc .ok { color: #1a7f37; }
+    .desc .bad { color: #c0392b; }
+    .desc ol { margin: 8px 0 0 18px; padding: 0; }
+    .frames { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 1100px) { .frames { grid-template-columns: 1fr; } }
+    .pane { background: #fff; border: 1px solid #e0e2e6; border-radius: 8px; overflow: hidden; }
+    .pane h2 { margin: 0; padding: 10px 14px; font-size: 13px; border-bottom: 1px solid #e0e2e6; }
+    .pane.base h2 { background: #eef7ee; color: #1a7f37; }
+    .pane.pr h2 { background: #fdeeee; color: #c0392b; }
+    iframe { width: 100%; height: 720px; border: 0; display: block; }
+    code { background: #f0f1f3; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>PR 34855 — ресайз all-day встреч в таймлайнах и вертикальных представлениях</h1>
+  <div class="meta">
+    Слева — сборка <b>merge-base</b> (<code>51f0ee80eb</code>, main до PR), справа — сборка <b>head PR</b> (<code>98ace8572d</code>, ветка <code>v3_issue-1779_26_2</code>).
+    Один и тот же код демки в обоих фреймах, отличается только версия библиотеки. Задача
+    <a href="https://github.com/DevExpress/devextreme-private/issues/1779">#1779</a>,
+    PR <a href="https://github.com/DevExpress/DevExtreme/pull/34855">34855</a>.
+  </div>
+</header>
+<main>
+  <div class="tabs" id="tabs"></div>
+  <div class="desc" id="desc"></div>
+  <div class="frames">
+    <div class="pane base"><h2>merge-base (до PR) — 51f0ee80eb</h2><iframe id="f-base"></iframe></div>
+    <div class="pane pr"><h2>head PR 34855 (после) — 98ace8572d</h2><iframe id="f-pr"></iframe></div>
+  </div>
+</main>
+<script>
+  var SCENARIOS = [
+    {
+      id: 'multiday',
+      title: 'A1. Многодневная all-day встреча теряет последний день',
+      html: '<b>Данные:</b> одна встреча <code>allDay: true</code>, <code>startDate = 26.04 00:00</code>, <code>endDate = 28.04 00:00</code>. Представление <code>week</code>, <code>allDayPanelMode: "hidden"</code>, <code>showAllDayPanel: false</code>.' +
+            '<ol><li>Посмотрите, сколько дневных колонок занимает встреча в левом и правом фрейме.</li></ol>' +
+            '<b>Ожидается:</b> <span class="ok">встреча занимает 3 дня — 26, 27 и 28 апреля</span> (так она рисуется в all-day панели и в month view, которые PR не менял; документация обещает, что часы в датах all-day встречи игнорируются).<br>' +
+            '<b>Фактически на head PR:</b> <span class="bad">встреча занимает 2 дня — 26 и 27 апреля, 28 апреля потеряно.</span>'
+    },
+    {
+      id: 'hours',
+      title: 'A2. All-day встреча с часами превращается в часовой огрызок',
+      html: '<b>Данные:</b> встреча <code>allDay: true</code>, <code>startDate = 26.04 10:00</code>, <code>endDate = 26.04 11:00</code>. Представление <code>week</code>, <code>allDayPanelMode: "hidden"</code>.' +
+            '<ol><li>Сравните высоту блока встречи слева и справа.</li></ol>' +
+            '<b>Было до PR:</b> блок на целые сутки (24 часа от 10:00).<br>' +
+            '<b>Стало на head PR:</b> <span class="bad">блок ровно на 1 час (10:00–11:00)</span> — то есть часы в датах теперь учитываются, хотя документация обещает обратное. Это и есть механизм, который включает ресайз — но это <b>BC</b>: у существующих приложений all-day встречи с часами визуально сожмутся.'
+    },
+    {
+      id: 'panel-vs-grid',
+      title: 'A3. Длина одной и той же встречи зависит от allDayPanelMode',
+      html: '<b>Данные:</b> та же встреча 26.04 → 28.04, показана дважды в одном фрейме: сверху <code>allDayPanelMode: "allDay"</code> (all-day панель), снизу <code>allDayPanelMode: "hidden"</code> (сетка).' +
+            '<ol><li>Сравните длину верхней и нижней встречи внутри правого фрейма.</li></ol>' +
+            '<b>Ожидается:</b> <span class="ok">одинаковая длина — опция отображения не должна менять длительность встречи.</span><br>' +
+            '<b>Фактически на head PR:</b> <span class="bad">в панели 3 дня, в сетке 2 дня.</span> В левом фрейме (до PR) обе — 3 дня.'
+    },
+    {
+      id: 'resize',
+      title: 'Что PR починил (ресайз)',
+      html: '<b>Данные:</b> all-day встреча с часами 10:00–11:00 в <code>timelineWeek</code> и в <code>week</code> с <code>allDayPanelMode: "hidden"</code>.' +
+            '<ol><li>Потяните правый (в таймлайне) или нижний (в week) край встречи.</li></ol>' +
+            'Это положительный эффект PR: справа длительность меняется, слева — нет либо тянется только один край. Сценарий здесь для полноты картины.'
+    }
+  ];
+
+  var tabs = document.getElementById('tabs');
+  var desc = document.getElementById('desc');
+  var fBase = document.getElementById('f-base');
+  var fPr = document.getElementById('f-pr');
+
+  function show(i) {
+    var s = SCENARIOS[i];
+    Array.prototype.forEach.call(tabs.children, function (b, j) {
+      b.className = j === i ? 'active' : '';
+    });
+    desc.innerHTML = '<div style="font-weight:600;margin-bottom:6px">' + s.title + '</div>' + s.html;
+    fBase.src = 'base/frame.html?scenario=' + s.id;
+    fPr.src = 'pr/frame.html?scenario=' + s.id;
+  }
+
+  SCENARIOS.forEach(function (s, i) {
+    var b = document.createElement('button');
+    b.textContent = s.title.split('.')[0].trim() === s.title ? s.title : s.title.split('.')[0] + '. ' + s.title.split('.').slice(1).join('.').trim();
+    b.onclick = function () { show(i); };
+    tabs.appendChild(b);
+  });
+  show(0);
+</script>
+</body>
+</html>

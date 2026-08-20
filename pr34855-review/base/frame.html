@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>frame</title>
+  <link rel="stylesheet" href="theme/dx.fluent.blue.light.css">
+  <style>
+    body { margin: 0; padding: 8px; font-family: -apple-system, "Segoe UI", Roboto, sans-serif; background: #fff; }
+    .caption { font-size: 12px; color: #666; margin: 0 0 6px; }
+    .sub { font-weight: 600; font-size: 12px; margin: 10px 0 4px; color: #333; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="dx.all.js"></script>
+  <script>
+    var params = new URLSearchParams(location.search);
+    var scenario = params.get('scenario') || 'multiday';
+    var root = document.getElementById('root');
+
+    var MULTIDAY = [{
+      text: 'All day: 26 → 28 апреля',
+      startDate: new Date('2021-04-26T00:00:00.000Z'),
+      endDate: new Date('2021-04-28T00:00:00.000Z'),
+      allDay: true
+    }];
+    var WITH_HOURS = [{
+      text: 'All day с часами 10:00–11:00',
+      startDate: new Date('2021-04-26T10:00:00.000Z'),
+      endDate: new Date('2021-04-26T11:00:00.000Z'),
+      allDay: true
+    }];
+
+    function makeScheduler(container, options) {
+      var el = document.createElement('div');
+      container.appendChild(el);
+      new DevExpress.ui.dxScheduler(el, Object.assign({
+        timeZone: 'Etc/UTC',
+        currentDate: new Date('2021-04-26T00:00:00.000Z'),
+        views: [{ type: 'week' }],
+        currentView: 'week',
+        startDayHour: 0,
+        endDayHour: 24,
+        height: 420,
+        editing: { allowResizing: true, allowDragging: true }
+      }, options));
+    }
+
+    function label(text) {
+      var d = document.createElement('div');
+      d.className = 'sub';
+      d.textContent = text;
+      root.appendChild(d);
+    }
+
+    if (scenario === 'multiday') {
+      makeScheduler(root, { dataSource: MULTIDAY, allDayPanelMode: 'hidden', showAllDayPanel: false });
+    } else if (scenario === 'hours') {
+      makeScheduler(root, { dataSource: WITH_HOURS, allDayPanelMode: 'hidden', showAllDayPanel: false });
+    } else if (scenario === 'panel-vs-grid') {
+      label('allDayPanelMode: "allDay" — встреча в all-day панели');
+      makeScheduler(root, { dataSource: MULTIDAY, allDayPanelMode: 'allDay', showAllDayPanel: true, height: 300 });
+      label('allDayPanelMode: "hidden" — та же встреча в сетке');
+      makeScheduler(root, { dataSource: MULTIDAY, allDayPanelMode: 'hidden', showAllDayPanel: false, height: 300 });
+    } else if (scenario === 'resize') {
+      label('timelineWeek — тяните правый край встречи');
+      makeScheduler(root, {
+        dataSource: WITH_HOURS.map(function (a) { return Object.assign({}, a); }),
+        views: [{ type: 'timelineWeek' }],
+        currentView: 'timelineWeek',
+        height: 260,
+        crossScrollingEnabled: true
+      });
+      label('week, allDayPanelMode: "hidden" — тяните нижний/правый край встречи');
+      makeScheduler(root, {
+        dataSource: WITH_HOURS.map(function (a) { return Object.assign({}, a); }),
+        allDayPanelMode: 'hidden',
+        showAllDayPanel: false,
+        height: 320
+      });
+    }
+  </script>
+</body>
+</html>
