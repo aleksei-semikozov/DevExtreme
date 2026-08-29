@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Миграция на Playwright — критический разбор</title>
+<style>
+  :root {
+    --bg:#fbfbfa; --fg:#1a1a19; --muted:#6b6b66; --line:#e3e3df; --card:#fff;
+    --ok:#2f6f4f; --warn:#8a5a1a; --bad:#a33a2a; --accent:#2b5f8a;
+    --okbg:#eaf4ee; --warnbg:#faf1e2; --badbg:#faeceb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#17171a; --fg:#ececea; --muted:#9a9a95; --line:#2e2e33; --card:#1e1e22;
+      --ok:#7fc7a0; --warn:#d6a45f; --bad:#e08b7c; --accent:#7fb3dd;
+      --okbg:#1c2a23; --warnbg:#2a2419; --badbg:#2c1e1c;
+    }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:40px 20px 90px; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif; }
+  main { max-width:900px; margin:0 auto; }
+  h1 { font-size:30px; line-height:1.2; margin:0 0 6px; letter-spacing:-.02em; }
+  .lede { color:var(--muted); margin:0 0 6px; }
+  .stamp { color:var(--muted); font-size:13px; margin:0 0 34px; }
+  h2 { font-size:22px; margin:52px 0 14px; letter-spacing:-.01em; padding-bottom:8px; border-bottom:1px solid var(--line); }
+  h3 { font-size:17px; margin:30px 0 8px; }
+  p { margin:0 0 14px; }
+  code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.88em;
+    background:var(--card); border:1px solid var(--line); border-radius:4px; padding:1px 5px; }
+  .verdict { border-radius:12px; padding:20px 24px; margin:26px 0 8px; border:1px solid var(--line); }
+  .verdict.no { background:var(--warnbg); border-color:var(--warn); }
+  .verdict b { display:block; font-size:19px; margin-bottom:6px; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin:22px 0; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; }
+  .card b { display:block; font-size:27px; font-weight:650; letter-spacing:-.02em; line-height:1.2; }
+  .card span { display:block; font-size:13px; color:var(--muted); margin-top:3px; }
+  .card.ok b { color:var(--ok); } .card.warn b { color:var(--warn); } .card.bad b { color:var(--bad); }
+  table { border-collapse:collapse; width:100%; margin:16px 0; font-size:14.5px; }
+  th,td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { font-weight:620; color:var(--muted); font-size:13px; text-transform:uppercase; letter-spacing:.03em; }
+  td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .scroll { overflow-x:auto; }
+  .tag { display:inline-block; font-size:12px; font-weight:600; padding:2px 8px; border-radius:20px; }
+  .tag.ok { background:var(--okbg); color:var(--ok); }
+  .tag.warn { background:var(--warnbg); color:var(--warn); }
+  .tag.bad { background:var(--badbg); color:var(--bad); }
+  .note { border-left:3px solid var(--accent); padding:2px 0 2px 16px; margin:18px 0; color:var(--muted); }
+  ul,ol { margin:0 0 14px; padding-left:22px; }
+  li { margin-bottom:7px; }
+  .q { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px 20px; margin:16px 0; }
+  .q h4 { margin:0 0 6px; font-size:15.5px; }
+  .q p:last-child { margin-bottom:0; }
+  a { color:var(--accent); }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Миграция на Playwright: что реально сделано</h1>
+<p class="lede">Критический разбор PR <a href="https://github.com/DevExpress/DevExtreme/pull/34959">#34959</a> (инфраструктура, задача #4938) и <a href="https://github.com/DevExpress/DevExtreme/pull/34960">#34960</a> (тесты Scheduler + PivotGrid, задача #4939).</p>
+<p class="stamp">29 августа 2026. Все числа ниже получены измерением — из логов CI, локальных прогонов в CI-контейнере и сравнения файлов. Ничего не взято из памяти.</p>
+
+<div class="verdict no">
+  <b>Нет, «всё» на Playwright не переведено — и не должно быть на этом этапе.</b>
+  <p style="margin-bottom:0">Мигрированы два компонента: <strong>Scheduler</strong> и <strong>PivotGrid</strong>. Это <strong>191 файл спек из 578</strong> — примерно треть набора. Остальное (DataGrid, editors, navigation, cardView, accessibility, TreeList) живёт в TestCafe и в этих двух PR не тронуто. CI при этом зелёный, но зелёный он частично по нечестной причине — см. раздел «Зелёный CI обманчив».</p>
+</div>
+
+<div class="cards">
+  <div class="card ok"><b>0</b><span>падений на CI в обоих PR</span></div>
+  <div class="card"><b>191 / 578</b><span>файлов спек мигрировано</span></div>
+  <div class="card ok"><b>1506</b><span>тестов прошло локально, 0 упало</span></div>
+  <div class="card warn"><b>11</b><span>джобов Playwright не выполняют ни одного теста</span></div>
+</div>
+
+<h2>Что именно мигрировано</h2>
+
+<div class="scroll">
+<table>
+  <tr><th>Папка TestCafe</th><th class="num">Файлов спек</th><th>Playwright</th><th>Статус</th></tr>
+  <tr><td>scheduler</td><td class="num">171</td><td class="num">173</td><td><span class="tag ok">мигрировано</span></td></tr>
+  <tr><td>common / pivotGrid</td><td class="num">18</td><td class="num">18</td><td><span class="tag ok">мигрировано</span></td></tr>
+  <tr><td>common / treeList</td><td class="num">23</td><td class="num">—</td><td><span class="tag warn">не в объёме</span></td></tr>
+  <tr><td>common / прочее</td><td class="num">12</td><td class="num">—</td><td><span class="tag warn">не в объёме</span></td></tr>
+  <tr><td>dataGrid</td><td class="num">124</td><td class="num">—</td><td><span class="tag warn">не в объёме</span></td></tr>
+  <tr><td>accessibility</td><td class="num">78</td><td class="num">—</td><td><span class="tag warn">не в объёме</span></td></tr>
+  <tr><td>editors</td><td class="num">65</td><td class="num">—</td><td><span class="tag warn">не в объёме</span></td></tr>
+  <tr><td>cardView</td><td class="num">46</td><td class="num">—</td><td><span class="tag warn">не в объёме</span></td></tr>
+  <tr><td>navigation</td><td class="num">41</td><td class="num">—</td><td><span class="tag warn">не в объёме</span></td></tr>
+</table>
+</div>
+
+<h2>Зелёный CI обманчив</h2>
+
+<p>Матрица Playwright скопирована с матрицы TestCafe целиком, включая папки, которых в Playwright ещё нет. Флаг <code>--pass-with-no-tests</code> делает такие джобы зелёными, хотя они не запускают ни одного теста. Это осознанное решение прошлой сессии (чтобы матрица не краснела на полпути), но со стороны оно читается как «всё мигрировано и всё проходит».</p>
+
+<p>Проверяется по длительности — пустой джоб успевает только развернуть окружение:</p>
+
+<div class="scroll">
+<table>
+  <tr><th>Джоб</th><th class="num">TestCafe</th><th class="num">Playwright</th><th>Что это значит</th></tr>
+  <tr><td>dataGrid (1/4)</td><td class="num">5 мин 25 с</td><td class="num">1 мин 22 с</td><td>ноль тестов</td></tr>
+  <tr><td>cardView</td><td class="num">3 мин 21 с</td><td class="num">1 мин 26 с</td><td>ноль тестов</td></tr>
+  <tr><td>accessibility</td><td class="num">4 мин 07 с</td><td class="num">1 мин 25 с</td><td>ноль тестов</td></tr>
+  <tr><td>generic (тема)</td><td class="num">3 мин 08 с</td><td class="num">1 мин 58 с</td><td>работает: гоняет наши тесты с тегом</td></tr>
+</table>
+</div>
+
+<p>Пустых джобов одиннадцать: accessibility (×4 с учётом тёмных тем), cardView, dataGrid (×4), editors, navigation. Джоб <code>common</code> не пустой, но выполняет только PivotGrid — 109 тестов вместо всего набора common.</p>
+
+<div class="note">Это не дефект, а следствие поэтапной миграции. Но пока эти джобы висят зелёными, ни один график и ни один отчёт CI не покажет, что покрытие на две трети ещё в TestCafe. Стоит либо убрать их из матрицы до появления тестов, либо помечать в имени.</div>
+
+<h2>Паритет по мигрированной зоне</h2>
+
+<h3>Эталоны сошлись ровно</h3>
+<p>1382 файла эталонов в TestCafe против 1382 у нас (Scheduler); PivotGrid — 51 / 2 / 1 по темам с обеих сторон. Расхождений по именам ровно четыре, и все объяснены:</p>
+
+<div class="scroll">
+<table>
+  <tr><th>Эталон</th><th>Где</th><th>Объяснение</th></tr>
+  <tr><td><code>appointment-popup-screenshot</code></td><td>только TestCafe</td><td>сирота: на него не ссылается ни один тест ни там, ни у нас</td></tr>
+  <tr><td><code>drag-n-drop-from-tooltip-to-cell-below-in-month (fluent)</code></td><td>только TestCafe, папка <code>outlookDragging</code></td><td>вторая сирота: живой эталон этого снимка лежит в <code>dragAndDrop/</code> как <code>generic.light</code> и есть с обеих сторон. В TestCafe в <code>outlookDragging</code> 41 файл, у нас 40 — разница ровно в этой копии</td></tr>
+  <tr><td><code>month_day_number_contrast (generic.light)</code></td><td>только у нас</td><td>добавлен сегодня: TestCafe объявлял для этого теста четыре темы, но эталон хранил только fluent</td></tr>
+  <tr><td><code>T1255474-resize-all-day-appointment</code></td><td>только у нас</td><td>тест привязан к Берлину и лежит в <code>scheduler/common</code>, где часового пояса нет ни в одной матрице — он не выполняется ни там, ни у нас, поэтому TestCafe эталон и не записал</td></tr>
+</table>
+</div>
+
+<h3>Число тестов на CI</h3>
+<p>Подсчёт по логам одинаковых джобов одного и того же коммита. Метод грубый — счёт строк с галочкой, — поэтому ±2 считаю шумом, а не находкой.</p>
+
+<div class="scroll">
+<table>
+  <tr><th>Джобы</th><th class="num">TestCafe</th><th class="num">Playwright (до 29.08)</th><th class="num">Дельта</th></tr>
+  <tr><td>scheduler / common (3 шарда)</td><td class="num">860</td><td class="num">859</td><td class="num">−1</td></tr>
+  <tr><td>scheduler / viewOffset (2 шарда)</td><td class="num">539</td><td class="num">537</td><td class="num">−2</td></tr>
+  <tr><td>scheduler / timezones (2 пояса)</td><td class="num">81</td><td class="num">51</td><td class="num">−30</td></tr>
+</table>
+</div>
+
+<p>Провал в 30 тестов по часовым поясам был настоящим и сегодня закрыт: перенесены <code>dragAndDropDst</code> (12 тестов) и <code>excludeFromRecurrence_T1225416</code> (16 тестов). Оба прогнаны в обоих поясах, все зелёные.</p>
+
+<div class="note">Второй файл не находился при переносе по банальной причине: он называется <code>excludeFromRecurrence_T1225416&nbsp;.ts</code> — <strong>с пробелом перед расширением</strong>. Любая сверка по имени без учёта этого пробела его теряет.</div>
+
+<h2>Тонкие моменты и как они решены</h2>
+
+<div class="q">
+  <h4>Маски на скриншотах</h4>
+  <p>В TestCafe маска — это файл <code>&lt;эталон&gt;_mask.png</code> с чёрными прямоугольниками: «эту область не сравнивать». Во всём наборе таких файлов 26, в мигрированной зоне — 10.</p>
+  <p>Прямого аналога не переносили. У Playwright есть опция <code>mask: [locator]</code>, но она закрашивает <em>элементы DOM</em>, а не произвольные прямоугольники, и оставляет ту же слепую зону. Вместо этого страница получает замороженные часы: <code>page.clock.setFixedTime()</code> в <code>helpers/mockDate.ts</code>. Детерминизм вместо слепой зоны.</p>
+  <p>Почему это важно численно: маски закрывали от <strong>2058 до 6623 пикселей</strong>, а весь бюджет расхождения на CI — <strong>211–710 пикселей</strong> на снимок. То есть маска была в 10–30 раз больше, чем всё допустимое расхождение. Любая невычищенная нестабильность внутри бывшей маски мгновенно валит тест.</p>
+  <p>Проверка, что замена сработала: временно выставил <code>maxDiffPixelRatio: 0</code> и заставил Playwright напечатать фактическое число различающихся пикселей. Девять эталонов формы повторения давали ровно <strong>121 px</strong> в прямоугольнике 59×10 — вмёрзшая дата <code>3/11/2026</code>, съедавшая 57 % бюджета; панель загрузки — <strong>137 px</strong> в квадрате 30×30 (индикатор), 19 % бюджета. Эталоны были взяты из TestCafe байт-в-байт, вместе с содержимым бывшей маски. Все десять перезаписаны, повторный прогон при нулевом бюджете даёт ноль.</p>
+  <p>Отдельно: панели загрузки заморозка времени не нужна — её маска закрывала индикатор, а не дату, и анимации Playwright глушит сам.</p>
+</div>
+
+<div class="q">
+  <h4>Карантин (quarantine mode)</h4>
+  <p>В TestCafe есть отдельный джоб <code>quarantine</code>, список <code>quarantine.json</code> и повторный прогон упавших тестов (<code>retryFailed</code>). У Playwright аналога мы не делали, и <code>retries</code> в конфиге не задан — то есть ноль повторов.</p>
+  <p>Выглядит как потеря защиты, но по факту нет: в <code>runner.ts</code> стоит <code>FAILED_TESTS_RETRY_ATTEMPTS = 0</code>, а файла <code>quarantine.json</code> в репозитории <strong>нет вообще</strong>. Джоб карантина зелёный, потому что ему нечего запускать. Механика формально жива, фактически мертва — так что паритет соблюдён: ноль повторов там, ноль здесь.</p>
+  <p>Это стоит решить осознанно, а не по умолчанию. Playwright умеет и повторы (<code>retries</code>), и пометку <code>flaky</code>, и это дешевле, чем отдельный джоб со своим JSON.</p>
+</div>
+
+<div class="q">
+  <h4>Часовые пояса</h4>
+  <p>TestCafe менял часовой пояс <em>всей машины</em> агента. Playwright задаёт его контексту браузера (<code>timezoneId</code>), а конфиг дополнительно выставляет <code>process.env.TZ</code> — иначе дата, собранная в Node внутри спеки, и дата, увиденная страницей, разъезжаются.</p>
+  <p>Унаследованная дыра: в матрицах <code>scheduler/common</code> часового пояса нет ни в TestCafe, ни у нас. Там сидят <strong>7 объявлений <code>getTimezoneTest</code> в 2 файлах</strong> (<code>resizeAppointments/T1255474</code> и <code>T1294528</code>), которые не выполняются никогда и ни там, ни здесь. Паритет сохранён, но дыру стоит завести карточкой — миграция её не создала и не чинила.</p>
+</div>
+
+<div class="q">
+  <h4>Темы</h4>
+  <p>В TestCafe тема задавалась комментарием <code>// visual: generic.light</code> над тестом. У нас — тегом Playwright <code>{ tag: ['@generic.light'] }</code>; джоб темы запускает весь набор и фильтрует по тегу.</p>
+  <p>Здесь всплыло, что комментарии в TestCafe завышали реальное покрытие. Объявлений в Scheduler: material 22, generic 20, fluent 19, плюс семь тёмных и saas-вариантов. А эталонов — fluent 1369, generic 9, material 4, тёмных <strong>ноль</strong>. То есть тёмные темы никогда не снимались: джобов под них нет ни в одной матрице. Наши теги (generic 20, material 3) дают ровно то же множество эталонов — паритет по факту, а не по объявлениям.</p>
+</div>
+
+<div class="q">
+  <h4>Сравнение скриншотов</h4>
+  <p><code>toHaveScreenshot</code>, внутри pixelmatch. Два параметра: <code>threshold</code> (допуск по цвету на пиксель) и <code>maxDiffPixelRatio</code>. На CI — <code>0.1 / 0.001</code>, локально мягче — <code>0.2 / 0.05</code>: эталоны рождаются на CI, локальный прогон лишь говорит, туда ли идёт правка.</p>
+  <p>Ключевое отличие от TestCafe: <strong>размеры обязаны совпадать</strong>. При разном размере сравнение не выполняется вовсе, и никакой порог не спасает. Поэтому полностраничные снимки обрезаются по <code>clientWidth/clientHeight</code> — иначе Playwright включает полосу прокрутки и даёт 1200 px против 1185 px у TestCafe, и все полностраничные эталоны становятся несравнимыми.</p>
+  <p>Флейк Playwright гасит сам: пересниимает кадр, пока два подряд не совпадут, и только потом сравнивает.</p>
+</div>
+
+<div class="q">
+  <h4>Порядок перехвата запросов</h4>
+  <p><code>page.route</code> работает как LIFO, а TestCafe <code>RequestMock</code> — как FIFO. В <code>helpers/apiMock.ts</code> маршруты поэтому регистрируются в обратном порядке и последовательно, иначе первый же общий шаблон перехватывает всё.</p>
+</div>
+
+<div class="q">
+  <h4>Разбор двух «непроходящих» DST-тестов</h4>
+  <p>Это был главный открытый хвост. Перенос падал на двух весенних кейсах перехода на летнее время. Разобрано полностью, и это оказался не дефект автоматизации.</p>
+  <p>Позиции нашего drag совпадают с ожиданиями TestCafe <strong>до пикселя во всех восьми конфигурациях</strong>, включая саму дырку перехода (<code>0, 25, 25, 75…</code> — встречу нельзя положить в несуществующий час 02:00→03:00). Расходилась только высота: TestCafe утверждал «высота не меняется», а у нас часовая встреча, переехавшая через несуществующий час, рисуется на две ячейки — 50 px вместо 25.</p>
+  <p>Проверено и отброшено три гипотезы: способ измерения (TestCafe читал вычисленный CSS <code>height</code> — у нас там тоже 50px), системный часовой пояс контейнера (<code>-e TZ=Europe/Berlin</code> ничего не меняет), расщепление встречи на части (элемент один). Замер по всем восьми конфигурациям симметричен для Берлина и Лос-Анджелеса: высота удваивается ровно там, где встреча накрывает фантомный час — offset 0 → строки 1 и 2, offset −360 → строка 7, offset +360 → нигде.</p>
+  <p>Спека теперь проверяет высоту точечно, то есть <strong>строже</strong>, чем TestCafe. Но остаётся необъяснённым, почему TestCafe в тех же строках видит 25 px: его джоб <code>scheduler / timezones (Europe/Berlin)</code> реально выполняет тест (8,22 с) и зелёный. Это расхождение среды, а не миграции, и его стоит завести отдельной карточкой.</p>
+</div>
+
+<h2>Что сделано сегодня</h2>
+<ol>
+  <li>Закоммичены два эталона virtual scrolling, из-за которых падал единственный красный джоб. CI после этого зелёный целиком.</li>
+  <li>Перезаписаны девять эталонов формы повторения и эталон панели загрузки — те самые, что несли в себе содержимое бывших масок.</li>
+  <li>Полный локальный прогон в CI-контейнере: <strong>1506 прошло, 0 упало</strong>, 82 пропущено (ждали часового пояса), 1 час 24 минуты.</li>
+  <li>Отчёт по эталонам пересобран: 685 идентичны, 749 перегенерированы (672 — только рамка, 77 — содержимое).</li>
+  <li>Написана и прогнана в обоих поясах спека <code>dragAndDropDst</code> (12 тестов).</li>
+  <li>Закрыты две дыры покрытия, найденные при сверке: <code>a11y/contrast</code> и <code>excludeFromRecurrence_T1225416</code>.</li>
+</ol>
+
+<h2>Что осталось и о чём стоит договориться</h2>
+
+<div class="scroll">
+<table>
+  <tr><th>Пункт</th><th>Оценка</th></tr>
+  <tr><td>Выкинуть 7 мигрированных джобов Scheduler из <code>testcafe_tests.yml</code></td><td><span class="tag warn">не сделано</span> — последний пункт плана; теперь безопасно, дыры покрытия закрыты</td></tr>
+  <tr><td>11 пустых джобов Playwright, зелёных из-за <code>--pass-with-no-tests</code></td><td><span class="tag warn">решить</span> — убрать из матрицы или пометить в имени</td></tr>
+  <tr><td>Повторы упавших тестов / карантин</td><td><span class="tag warn">решить</span> — сейчас ноль, как и в TestCafe по факту</td></tr>
+  <tr><td>7 тестов Берлина в <code>scheduler/common</code> не выполняются</td><td><span class="tag warn">карточка</span> — дыра унаследована от TestCafe</td></tr>
+  <tr><td>Расхождение высоты в DST-строках между TestCafe и Playwright</td><td><span class="tag warn">карточка</span> — среда, не миграция</td></tr>
+  <tr><td>PivotGrid дублируется: джоб <code>common</code> в TestCafe продолжает его гонять</td><td><span class="tag warn">решить</span> — джоб нельзя удалить целиком, там ещё TreeList и остальные</td></tr>
+  <tr><td>−2 теста в <code>viewOffset</code></td><td><span class="tag ok">вероятно шум</span> — метод подсчёта грубый, стоит перепроверить точным сличением названий</td></tr>
+  <tr><td>Зависимость: PR <a href="https://github.com/DevExpress/DevExtreme/pull/34757">#34757</a> (Stage 1) не влит</td><td><span class="tag bad">блокирует</span> оба PR</td></tr>
+</table>
+</div>
+
+<h2>Состояние на момент отчёта</h2>
+<div class="scroll">
+<table>
+  <tr><th>Что</th><th>Состояние</th></tr>
+  <tr><td>PR #34959 (инфраструктура)</td><td>107 проверок зелёные, 16 пропущены, <strong>0 падений</strong></td></tr>
+  <tr><td>PR #34960 (тесты)</td><td>101 зелёная, 3 в работе, 14 пропущены, <strong>0 падений</strong></td></tr>
+  <tr><td>Ветка <code>playwright-scheduler-pivotgrid</code></td><td>всё запушено, незакоммиченного нет</td></tr>
+  <tr><td>Локальный прогон</td><td>1506 прошло / 0 упало / 82 пропущено</td></tr>
+  <tr><td>Прогон по поясам</td><td>Берлин 40 прошло, Лос-Анджелес 39 прошло, 0 упало</td></tr>
+</table>
+</div>
+
+</main>
+</body>
+</html>
