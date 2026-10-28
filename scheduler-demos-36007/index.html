@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scheduler Demos Preview</title>
+<style>
+:root { --bg: #f6f6f4; --surface: #fff; --text: #1d1d1b; --muted: #6b6b66; --line: #e2e1dc; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #161615; --surface: #1f1f1d; --text: #ecebe6; --muted: #a09f98; --line: #34332f; }
+}
+:root[data-theme="dark"] { --bg: #161615; --surface: #1f1f1d; --text: #ecebe6; --muted: #a09f98; --line: #34332f; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+.layout { display: grid; grid-template-columns: 260px 1fr; height: 100vh; }
+nav { background: var(--surface); border-right: 1px solid var(--line); overflow-y: auto; padding: 16px; }
+nav h1 { font-size: 16px; margin: 0 0 4px; }
+nav p { font-size: 12px; color: var(--muted); margin: 0 0 12px; }
+nav label { display: block; font-size: 13px; margin-bottom: 12px; }
+nav select { width: 100%; font: inherit; margin-top: 4px; }
+nav a { display: block; padding: 4px 8px; border-radius: 6px; color: inherit; text-decoration: none; font-size: 14px; }
+nav a.active { background: var(--line); font-weight: 600; }
+iframe { width: 100%; height: 100%; border: 0; background: #fff; }
+@media (max-width: 700px) { .layout { grid-template-columns: 1fr; grid-template-rows: auto 1fr; height: auto; } iframe { height: 80vh; } }
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav>
+    <h1>Scheduler demos</h1>
+    <p>Built from DevExpress/DevExtreme#35089 + #36007</p>
+    <label>Theme
+      <select id="theme">
+        <option value="fluent.blue.light">fluent.blue.light</option>
+        <option value="fluent.blue.dark">fluent.blue.dark</option>
+        <option value="fluent-next.blue.light">fluent-next.blue.light</option>
+        <option value="fluent-next.blue.dark">fluent-next.blue.dark</option>
+        <option value="material.blue.light">material.blue.light</option>
+        <option value="material.blue.dark">material.blue.dark</option>
+        <option value="light">generic.light</option>
+      </select>
+    </label>
+    <div id="list"></div>
+  </nav>
+  <iframe id="frame" title="Demo"></iframe>
+</div>
+<script>
+const themeSel = document.getElementById('theme');
+const list = document.getElementById('list');
+const frame = document.getElementById('frame');
+const params = new URLSearchParams(location.search);
+let current = params.get('demo') || 'Resources';
+themeSel.value = params.get('theme') || 'fluent.blue.light';
+
+function open() {
+  frame.src = `Demos/Scheduler/${current}/jQuery/index.html?theme=${themeSel.value}`;
+  history.replaceState(null, '', `?demo=${current}&theme=${themeSel.value}`);
+  [...list.children].forEach((a) => a.classList.toggle('active', a.dataset.demo === current));
+}
+
+fetch('demos.txt').then((r) => r.text()).then((text) => {
+  text.trim().split('\n').forEach((demo) => {
+    const a = document.createElement('a');
+    a.href = '#';
+    a.textContent = demo.replace(/([a-z])([A-Z])/g, '$1 $2');
+    a.dataset.demo = demo;
+    a.addEventListener('click', (e) => { e.preventDefault(); current = demo; open(); });
+    list.append(a);
+  });
+  open();
+});
+themeSel.addEventListener('change', open);
+</script>
+</body>
+</html>

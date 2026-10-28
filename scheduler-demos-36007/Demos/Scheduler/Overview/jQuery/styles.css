@@ -1,0 +1,165 @@
+.dx-scheduler-group-header,
+.dx-scheduler-date-table-cell {
+  position: relative;
+}
+
+.dx-scheduler-group-header-content {
+  padding-left: 8px;
+}
+
+.dx-color-scheme-light,
+.dx-color-scheme-carmine,
+.dx-color-scheme-softblue,
+.dx-color-scheme-blue-light,
+.dx-color-scheme-saas-light,
+.dx-color-scheme-lime-light,
+.dx-color-scheme-orange-light,
+.dx-color-scheme-purple-light,
+.dx-color-scheme-teal-light {
+  --text-color-1: var(--dxds-color-content-subtle, rgba(0, 0, 0, .6));
+  --text-color-2: var(--dxds-color-content-inverted, rgba(255, 255, 255, 1));
+  --disabled-color: var(--dxds-color-content-subtler, rgba(0, 0, 0, 0.38));
+  --person-color-1: var(--dxds-color-content-green, rgba(50, 134, 56, 1));
+  --person-color-2: var(--dxds-color-content-orange, rgba(194, 81, 0, 1));
+}
+
+.dx-color-scheme-dark,
+.dx-color-scheme-darkviolet,
+.dx-color-scheme-darkmoon,
+.dx-color-scheme-blue-dark,
+.dx-color-scheme-saas-dark,
+.dx-color-scheme-lime-dark,
+.dx-color-scheme-orange-dark,
+.dx-color-scheme-purple-dark,
+.dx-color-scheme-teal-dark {
+  --text-color-1: var(--dxds-color-content-subtle, rgba(255, 255, 255, 1));
+  --text-color-2: var(--dxds-color-content-inverted, rgba(54, 54, 64, 1));
+  --disabled-color: var(--dxds-color-content-disabled, rgba(255, 255, 255, 0.38));
+  --person-color-1: var(--dxds-color-content-green, rgba(159, 213, 161, 1));
+  --person-color-2: var(--dxds-color-content-orange, rgba(255, 181, 127, 1));
+}
+
+.dx-scheduler-header .dx-toolbar .dx-button,
+.dx-scheduler-header .dx-toolbar .dx-button .dx-icon {
+  color: var(--text-color-1);
+}
+
+.dx-scheduler-date-table-other-month.dx-scheduler-date-table-cell {
+  opacity: 1;
+  color: var(--disabled-color) !important;
+}
+
+.dx-scheduler-work-space-month .dx-scheduler-date-table-cell {
+  color: var(--text-color-1);
+}
+
+.dx-scheduler-work-space-month .dx-scheduler-appointment,
+.dx-scheduler-work-space-month .dx-scheduler-appointment.dx-state-focused {
+  color: var(--text-color-2);
+  line-height: 22px;
+}
+
+.dx-scheduler-work-space-month .dx-scheduler-appointment .dx-scheduler-appointment-content {
+  padding-top: 0;
+}
+
+.dx-scheduler-date-table-cell .dx-template-wrapper {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  padding-right: 6px;
+}
+
+.avatar {
+  width: 124px;
+  float: left;
+  overflow: hidden;
+  position: relative;
+  height: 124px;
+  border: 1px solid var(--dxds-color-border-static-light, rgba(0, 0, 0, 0.24));
+  border-radius: 50%;
+  background-color: var(--dxds-color-bg-static-light, #fff);
+}
+
+.avatar img {
+  position: relative;
+  width: 126px;
+  height: 130px;
+  object-fit: contain;
+}
+
+.avatar[title="John Heart"] img {
+  top: 5px;
+  left: 3px;
+}
+
+.avatar[title="Greta Sims"] img {
+  top: 5px;
+  left: -7px;
+}
+
+.name {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+}
+
+.name h2 {
+  color: var(--text-color-2);
+  font-size: 28px;
+  text-align: left;
+  padding: 0 0 0 170px;
+  margin: 0;
+  height: 40px;
+  line-height: 40px;
+}
+
+.info {
+  width: auto;
+  text-align: left;
+  height: 100%;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: normal;
+  padding: 25px 20px 25px 40px;
+}
+
+.dx-color-scheme-contrast .info {
+  color: var(--dxds-color-content-on-color, #fff);
+}
+
+.day-cell {
+  width: 100%;
+  height: 100%;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+.employee-1 {
+  background-color: rgb(from var(--person-color-1, #377e3a) r g b / var(--dxds-opacity-10, 0.1));
+}
+
+.employee-2 {
+  background-color: rgb(from var(--person-color-2, #c25100) r g b / var(--dxds-opacity-10, 0.1));
+}
+
+.employee-weekend-1 {
+  background-color: rgb(from var(--person-color-1, #377e3a) r g b / var(--dxds-opacity-15, 0.15));
+}
+
+.employee-weekend-2 {
+  background-color: rgb(from var(--person-color-2, #c25100) r g b / var(--dxds-opacity-15, 0.15));
+}
+
+.training-background-0 {
+  background-image: url("../../../../images/Scheduler/Overview/icon-abs.png");
+}
+
+.training-background-1 {
+  background-image: url("../../../../images/Scheduler/Overview/icon-step.png");
+}
+
+.training-background-2 {
+  background-image: url("../../../../images/Scheduler/Overview/icon-fitball.png");
+}
