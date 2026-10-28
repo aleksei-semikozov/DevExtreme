@@ -32,7 +32,10 @@ select { font: inherit; }
 input[type=color] { width: 44px; height: 30px; border: 1px solid var(--line); border-radius: 6px; padding: 0; background: none; }
 .live { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
 .col-title { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
-.appt { border-radius: 4px; padding: 6px 8px; min-height: 52px; font-size: 13px; line-height: 1.35; }
+.appt { position: relative; border-radius: 4px; padding: 6px 8px; min-height: 52px; font-size: 13px; line-height: 1.35; cursor: pointer; user-select: none; }
+.appt > div { position: relative; }
+.appt.focused::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: rgba(0, 0, 0, 0.3); opacity: 0.98; }
+.b.f { color: var(--muted); background: var(--line); }
 .appt .t { font-weight: 600; }
 .appt.big { min-height: 84px; font-size: 15px; padding: 10px 12px; }
 .badges { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
@@ -71,6 +74,8 @@ td.hex { font: 12px ui-monospace, Menlo, monospace; white-space: nowrap; }
       <option value="#fff|0.7">fluent dark</option>
     </select>
   </label>
+  <label><input type="checkbox" id="focusAll"> Focus all</label>
+  <span class="muted" style="font-size:13px">Click an appointment to focus it</span>
 </div>
 <div class="live" id="live"></div>
 
@@ -109,18 +114,30 @@ const VARIANTS = [
 
 const badge = (r, label) => `<span class="b ${r >= AA ? 'ok' : 'bad'}">${label} ${r.toFixed(2)}</span>`;
 
-function tile(variant, bgHex, theme, big) {
+const FOCUS_OVERLAY = 0.3 * 0.98;
+const focusedBg = (bg) => blend([0, 0, 0], bg, FOCUS_OVERLAY);
+const focused = new Set();
+const isFocused = (key) => document.getElementById('focusAll').checked || focused.has(key);
+
+function badges(fg, bg, op, isOn) {
+  const back = isOn ? focusedBg(bg) : bg;
+  return `${badge(textRatio(fg, back, 1), 'title')}${badge(textRatio(fg, back, op), 'date')}${isOn ? '<span class="b f">focused</span>' : ''}`;
+}
+
+function tile(variant, bgHex, theme, big, key) {
   const bg = hexToRgb(bgHex);
   const fg = variant.text(bg, theme);
   const op = variant.date(theme);
-  const rt = textRatio(fg, bg, 1);
-  const rd = textRatio(fg, bg, op);
+  const on = isFocused(key);
+  const back = on ? focusedBg(bg) : bg;
+  const rt = textRatio(fg, back, 1);
+  const rd = textRatio(fg, back, op);
   return {
-    html: `<div class="appt${big ? ' big' : ''}" style="background:${bgHex};color:${css(fg)}">
+    html: `<div class="appt${big ? ' big' : ''}${on ? ' focused' : ''}" data-key="${key}" style="background:${bgHex};color:${css(fg)}">
       <div class="t">Website Re-Design Plan</div>
       <div style="opacity:${op}">9:30 AM - 11:30 AM</div>
     </div>
-    <div class="badges">${badge(rt, 'title')}${badge(rd, 'date')}</div>`,
+    <div class="badges">${badges(fg, bg, op, on)}</div>`,
     rt, rd,
   };
 }
@@ -138,20 +155,29 @@ const currentTheme = () => { const [color, op] = themeSel.value.split('|'); retu
 function renderLive() {
   const theme = currentTheme();
   document.getElementById('live').innerHTML = VARIANTS.map((v) =>
-    `<div><div class="col-title">${v.name}</div>${tile(v, pick.value, theme, true).html}</div>`).join('');
+    `<div><div class="col-title">${v.name}</div>${tile(v, pick.value, theme, true, `live-${v.name}`).html}</div>`).join('');
 }
 
 function renderTable() {
   const theme = currentTheme();
-  const rows = PALETTE.map((hex) => ({ hex, cells: VARIANTS.map((v) => tile(v, hex, theme, false)) }));
+  const rows = PALETTE.map((hex) => ({ hex, cells: VARIANTS.map((v) => tile(v, hex, theme, false, `${hex}-${v.name}`)) }));
+  const all = document.getElementById('focusAll').checked;
   document.getElementById('summary').innerHTML = VARIANTS.map((v, i) => {
     const pass = rows.filter((r) => r.cells[i].rt >= AA && r.cells[i].rd >= AA).length;
-    return `<div class="stat"><div class="v">${pass} / ${rows.length}</div><div class="l">${v.name}: title and date ≥ 4.5</div></div>`;
+    return `<div class="stat"><div class="v">${pass} / ${rows.length}</div><div class="l">${v.name}${all ? ', focused' : ''}: title and date ≥ 4.5</div></div>`;
   }).join('');
   document.getElementById('table').innerHTML = `<tr><th>Color</th>${VARIANTS.map((v) => `<th>${v.name}</th>`).join('')}</tr>`
     + rows.map((r) => `<tr><td class="hex"><span class="sw" style="background:${r.hex}"></span>${r.hex}</td>${r.cells.map((c) => `<td>${c.html}</td>`).join('')}</tr>`).join('');
 }
 
+document.addEventListener('click', (e) => {
+  const appt = e.target.closest('.appt');
+  if (!appt) return;
+  const { key } = appt.dataset;
+  if (focused.has(key)) focused.delete(key); else focused.add(key);
+  renderLive(); renderTable();
+});
+document.getElementById('focusAll').addEventListener('change', () => { renderLive(); renderTable(); });
 pick.addEventListener('input', renderLive);
 themeSel.addEventListener('change', () => { renderLive(); renderTable(); });
 renderLive(); renderTable();
