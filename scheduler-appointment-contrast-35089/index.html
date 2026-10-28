@@ -158,11 +158,14 @@ const currentTheme = () => { const [color, op] = themeSel.value.split('|'); retu
 
 function renderFocus() {
   const theme = currentTheme();
-  const [, current, proposed] = VARIANTS;
-  const examples = ['#337ab7', '#808080', '#679ec5', '#ff6741', '#ee53dc', '#a067bd'];
-  document.getElementById('focusTable').innerHTML = `<tr><th>Color</th><th>Current focus</th><th>Proposed focus</th></tr>`
-    + examples.map((hex) => `<tr><td class="hex"><span class="sw" style="background:${hex}"></span>${hex}</td>`
-      + [current, proposed].map((v) => `<td>${tile(v, hex, theme, true, `focus${hex}-${v.name}`).html}</td>`).join('') + '</tr>').join('');
+  const groups = [
+    ['Dark text', ['#337ab7', '#808080', '#679ec5', '#ff6741', '#ee53dc', '#a067bd']],
+    ['Light text', ['#1564c0', '#2d7c31', '#7b1fa2', '#cd2900']],
+  ];
+  const head = `<tr><th>Color</th>${['1. Before (main)', '2. After #35089', '3. With the focus fix'].map((t) => `<th>${t}</th>`).join('')}</tr>`;
+  document.getElementById('focusTable').innerHTML = groups.map(([title, colors]) => `<tr><th colspan="4">${title}</th></tr>${head}`
+    + colors.map((hex) => `<tr><td class="hex"><span class="sw" style="background:${hex}"></span>${hex}</td>`
+      + VARIANTS.map((v) => `<td>${tile(v, hex, theme, true, `focus${hex}-${v.name}`).html}</td>`).join('') + '</tr>').join('')).join('');
 }
 
 function renderLive() {
