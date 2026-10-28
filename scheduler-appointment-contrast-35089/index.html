@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scheduler Appointment Contrast</title>
+<style>
+:root {
+  --bg: #f6f6f4; --surface: #fff; --text: #1d1d1b; --muted: #6b6b66; --line: #e2e1dc;
+  --ok: #1a7f37; --ok-bg: #dcf3e1; --bad: #b42318; --bad-bg: #fde4e1;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161615; --surface: #1f1f1d; --text: #ecebe6; --muted: #a09f98; --line: #34332f;
+    --ok: #6fd58a; --ok-bg: #173a22; --bad: #ff8a7a; --bad-bg: #4a1d18;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #161615; --surface: #1f1f1d; --text: #ecebe6; --muted: #a09f98; --line: #34332f;
+  --ok: #6fd58a; --ok-bg: #173a22; --bad: #ff8a7a; --bad-bg: #4a1d18;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 1000px; margin: 0 auto; padding: 32px 16px 64px; }
+h1 { font-size: 26px; margin: 0 0 4px; }
+h2 { font-size: 19px; margin: 40px 0 12px; }
+a { color: inherit; }
+.muted { color: var(--muted); }
+.controls { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; margin: 12px 0; }
+.controls label { display: flex; gap: 8px; align-items: center; font-size: 14px; }
+select { font: inherit; }
+input[type=color] { width: 44px; height: 30px; border: 1px solid var(--line); border-radius: 6px; padding: 0; background: none; }
+.live { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.col-title { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+.appt { border-radius: 4px; padding: 6px 8px; min-height: 52px; font-size: 13px; line-height: 1.35; }
+.appt .t { font-weight: 600; }
+.appt.big { min-height: 84px; font-size: 15px; padding: 10px 12px; }
+.badges { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+.b { font-size: 12px; font-variant-numeric: tabular-nums; padding: 1px 7px; border-radius: 99px; font-weight: 600; }
+.b.ok { color: var(--ok); background: var(--ok-bg); }
+.b.bad { color: var(--bad); background: var(--bad-bg); }
+.summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 12px 0; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+.stat .v { font-size: 26px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.stat .l { font-size: 13px; color: var(--muted); }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 560px; }
+th, td { padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; text-align: left; }
+th { font-size: 13px; font-weight: 600; }
+td.hex { font: 12px ui-monospace, Menlo, monospace; white-space: nowrap; }
+.sw { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: -2px; margin-right: 6px; border: 1px solid var(--line); }
+.shots { display: grid; gap: 20px; }
+.shot { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+.shot h3 { margin: 0 0 8px; font-size: 15px; }
+.shot img { width: 100%; height: auto; display: block; border-radius: 4px; }
+</style>
+</head>
+<body>
+<main>
+<h1>Scheduler appointment contrast</h1>
+<p class="muted">Before: <code>main</code> · After: <a href="https://github.com/DevExpress/DevExtreme/pull/35089">DevExpress/DevExtreme#35089</a> · Badges: WCAG contrast ratio, AA = 4.5</p>
+
+<h2>Try a color</h2>
+<div class="controls">
+  <label>Resource color <input type="color" id="pick" value="#2d7c31"></label>
+  <label>Theme
+    <select id="theme">
+      <option value="#fff|0.7">generic light</option>
+      <option value="#fff|0.7">material light</option>
+      <option value="#000|0.7">fluent light</option>
+      <option value="#fff|0.7">fluent dark</option>
+    </select>
+  </label>
+</div>
+<div class="live" id="live"></div>
+
+<h2>Demo palettes</h2>
+<div class="summary" id="summary"></div>
+<div class="table-wrap"><table id="table"></table></div>
+
+<h2>Screenshots</h2>
+<div class="shots">
+  <div class="shot"><h3>Fluent-next dark · resource color</h3><img src="screenshots/A-fluentnext-dark-resource-zoom.png" alt="Fluent-next dark, before and after"></div>
+  <div class="shot"><h3>Fluent-next · Virtual Scrolling demo</h3><img src="screenshots/B-fluentnext-virtualscrolling-zoom.png" alt="Fluent-next Virtual Scrolling, before and after"></div>
+  <div class="shot"><h3>Fluent · Virtual Scrolling demo</h3><img src="screenshots/E-fluent-virtualscrolling-zoom.png" alt="Fluent Virtual Scrolling, before and after"></div>
+  <div class="shot"><h3>Fluent · grouped appointments</h3><img src="screenshots/C-fluent-group-overflow-zoom.png" alt="Fluent grouped appointments, before and after"></div>
+  <div class="shot"><h3>Material · Grouping by Resources demo</h3><img src="screenshots/D-material-grouping-by-resources-zoom.png" alt="Material Grouping by Resources, before and after"></div>
+</div>
+</main>
+
+<script>
+const CONTENT_OPACITY = 0.99;
+const THRESHOLD = Math.sqrt(1.05 * 0.05) - 0.05;
+const AA = 4.5;
+
+const hexToRgb = (h) => { h = h.replace('#', ''); if (h.length === 3) h = [...h].map((c) => c + c).join(''); return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)); };
+const lin = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+const lum = ([r, g, b]) => 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+const blend = (fg, bg, a) => fg.map((c, i) => c * a + bg[i] * (1 - a));
+const autoText = (bg) => (lum(bg) > THRESHOLD ? [0, 0, 0] : [255, 255, 255]);
+const css = ([r, g, b]) => `rgb(${r}, ${g}, ${b})`;
+const textRatio = (fg, bg, opacity) => ratio(blend(fg, bg, opacity * CONTENT_OPACITY), bg);
+
+const VARIANTS = [
+  { name: 'Before', text: (bg, theme) => hexToRgb(theme.color), date: (theme) => theme.dateOpacity },
+  { name: 'After', text: (bg) => autoText(bg), date: () => 1 },
+];
+
+const badge = (r, label) => `<span class="b ${r >= AA ? 'ok' : 'bad'}">${label} ${r.toFixed(2)}</span>`;
+
+function tile(variant, bgHex, theme, big) {
+  const bg = hexToRgb(bgHex);
+  const fg = variant.text(bg, theme);
+  const op = variant.date(theme);
+  const rt = textRatio(fg, bg, 1);
+  const rd = textRatio(fg, bg, op);
+  return {
+    html: `<div class="appt${big ? ' big' : ''}" style="background:${bgHex};color:${css(fg)}">
+      <div class="t">Website Re-Design Plan</div>
+      <div style="opacity:${op}">9:30 AM - 11:30 AM</div>
+    </div>
+    <div class="badges">${badge(rt, 'title')}${badge(rd, 'date')}</div>`,
+    rt, rd,
+  };
+}
+
+const PALETTE = ['#CD2900', '#1564C0', '#2D7C31', '#C2185B', '#7B1FA2', '#C62828', '#F9E2AE', '#F1BBBC', '#CFE4FA', '#A7E3A5',
+  '#B4D6FA', '#C6B1DE', '#EDBBE7', '#9FD89F', '#4ddcca', '#3d44ec', '#ffc720', '#ffaa66', '#FF9747', '#ff7d8a', '#ff6741',
+  '#fcb65e', '#f665aa', '#f5564a', '#ef9e44', '#ee53dc', '#eb3573', '#e18e92', '#d1c974', '#c34cb9', '#b6d623', '#a63db8',
+  '#a067bd', '#9d67cc', '#97c95c', '#8ecd3c', '#795ac3', '#74d57b', '#68e18f', '#679ec5',
+  '#337ab7', '#1565c0', '#0f6cbd', '#767676', '#808080'];
+
+const pick = document.getElementById('pick');
+const themeSel = document.getElementById('theme');
+const currentTheme = () => { const [color, op] = themeSel.value.split('|'); return { color, dateOpacity: Number(op) }; };
+
+function renderLive() {
+  const theme = currentTheme();
+  document.getElementById('live').innerHTML = VARIANTS.map((v) =>
+    `<div><div class="col-title">${v.name}</div>${tile(v, pick.value, theme, true).html}</div>`).join('');
+}
+
+function renderTable() {
+  const theme = currentTheme();
+  const rows = PALETTE.map((hex) => ({ hex, cells: VARIANTS.map((v) => tile(v, hex, theme, false)) }));
+  document.getElementById('summary').innerHTML = VARIANTS.map((v, i) => {
+    const pass = rows.filter((r) => r.cells[i].rt >= AA && r.cells[i].rd >= AA).length;
+    return `<div class="stat"><div class="v">${pass} / ${rows.length}</div><div class="l">${v.name}: title and date ≥ 4.5</div></div>`;
+  }).join('');
+  document.getElementById('table').innerHTML = `<tr><th>Color</th>${VARIANTS.map((v) => `<th>${v.name}</th>`).join('')}</tr>`
+    + rows.map((r) => `<tr><td class="hex"><span class="sw" style="background:${r.hex}"></span>${r.hex}</td>${r.cells.map((c) => `<td>${c.html}</td>`).join('')}</tr>`).join('');
+}
+
+pick.addEventListener('input', renderLive);
+themeSel.addEventListener('change', () => { renderLive(); renderTable(); });
+renderLive(); renderTable();
+</script>
+</body>
+</html>
